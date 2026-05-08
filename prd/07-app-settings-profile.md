@@ -1,0 +1,47 @@
+# 07 个人资料页
+
+- 路由：`/app/settings/profile`
+- 目标：让用户查看和维护自己的基础资料。
+
+## 功能范围
+
+个人资料页负责让用户查看和维护自己的基础资料。
+
+## 页面布局
+
+- 页面标题区：个人资料和说明。
+- 表单卡片：头像、名称、邮箱、用户 ID、创建时间。
+- 底部操作：保存、取消。
+
+## 用户动作
+
+- 修改名称。
+- 修改头像 URL 或上传头像，上传可后置。
+- 查看邮箱和用户 ID。
+- 保存资料。
+
+## 接口与逻辑
+
+- `profile.get`：tRPC 读取当前 session user 和扩展 profile。
+- `profile.update`：校验当前用户身份后更新 name/image 等字段。
+- `authClient.updateUser`：使用 Better Auth 更新用户基础字段。
+
+## 实现要点
+
+- 邮箱第一版建议只读，换邮箱作为后续增强。
+- 保存前做名称长度校验。
+- 保存成功后刷新 session 或重新拉取 user。
+
+## 通用工程约束
+
+- Create T3 App: Next.js App Router, TypeScript, tRPC, Prisma, Tailwind CSS
+- Better Auth: authentication, session, admin, organization, team, passkey, 2FA, API key plugins
+- PostgreSQL: Better Auth tables plus optional product-specific extension tables
+- shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
+
+## 验收标准
+
+- 页面在未授权、加载、空数据、错误、成功状态下均有明确反馈。
+- 所有敏感动作必须在服务端重新校验 session 和权限。
+- 表单字段均有客户端和服务端校验。
+- 高危操作必须二次确认。

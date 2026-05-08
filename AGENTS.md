@@ -1,209 +1,236 @@
 # AGENTS.md
 
-This file provides guidance to Codex and other coding agents when working with code in this repository.
+This file provides guidance to Codex and other coding agents when working in this repository.
+
+## Product Source of Truth
+
+- Product requirements live in `prd/`.
+- Each file in `prd/` describes one page, including scope, layout, user actions, interfaces, server logic, implementation notes, and acceptance criteria.
+- Before implementing or changing a page, read the matching PRD file first.
+- If implementation details conflict with a PRD, prefer the PRD and call out the conflict before making broad architecture changes.
+- Keep the first version focused on the identity and permission management product described in `prd/`.
+
+## Product Scope
+
+Build `lever-admin`, a lightweight identity, organization, permission, and API key management admin system.
+
+The product should focus on Better Auth-native capabilities:
+
+- Authentication: sign in, sign up, email verification, password reset, OAuth, Magic Link or OTP where specified.
+- Account security: password change, sessions, 2FA, passkeys, linked OAuth accounts.
+- Admin user management: user list, user detail, role changes, banning, unbanning, password reset, session revocation, impersonation where specified.
+- Organization management: organizations, active organization, members, invitations, roles.
+- Team management: teams inside organizations and team membership.
+- Developer auth: API key management and bearer/JWT-oriented access where specified.
+
+Out of scope for the first version unless the user explicitly asks:
+
+- Menu management
+- Dictionary management
+- File center
+- Scheduled jobs
+- Workflow
+- CRM, ERP, mall, MES, AI, IoT, reporting, payment, or map business modules
 
 ## Commands
 
 ```bash
 # Development
-pnpm dev              # Start dev server with Turbo
+pnpm dev              # Start Next.js dev server
 pnpm build            # Production build
 pnpm start            # Start production server
+pnpm preview          # Build and start production server
 
-# Type checking & linting
-pnpm typecheck        # TypeScript validation (tsc --noEmit)
+# Type checking and linting
+pnpm typecheck        # TypeScript validation
 pnpm check            # Biome lint + format check
-pnpm check:write      # Auto-fix with Biome (safe fixes only)
-pnpm check:unsafe     # Auto-fix with Biome (including unsafe fixes)
+pnpm check:write      # Apply safe Biome fixes
+pnpm check:unsafe     # Apply Biome unsafe fixes
 
 # Database
-pnpm db:generate      # Generate Drizzle migration files
-pnpm db:migrate       # Apply migrations to the database
-pnpm db:push          # Push schema directly (dev only, skips migrations)
-pnpm db:studio        # Open Drizzle Studio UI
+pnpm db:generate      # Generate Drizzle migration files; do not run during dependency/config prep
+pnpm db:migrate       # Apply migrations
+pnpm db:push          # Push schema directly, dev only
+pnpm db:studio        # Open Drizzle Studio
 ```
 
-There are no automated tests. Type checking (`pnpm typecheck`) and linting (`pnpm check`) are the primary validation tools. Run `pnpm check:write` before committing.
+There are no automated tests configured yet. Use `pnpm typecheck` and `pnpm check` as the primary verification commands.
 
-## Tech Stack
+## Current Tech Stack
 
-- **Frontend:** React 19, Next.js 16 (App Router), shadcn/ui, Tailwind CSS 4, Motion 12
-- **State:** Zustand (global), TanStack Query (server cache)
-- **API:** tRPC 11 (primary, type-safe), REST endpoints (secondary, OpenAPI-documented)
-- **Database:** PostgreSQL + Drizzle ORM
-- **Auth:** Better Auth 1.3+ with API Key plugin
-- **Forms:** @tanstack/react-form
-- **Tables:** @tanstack/react-table
-- **Maps:** Baidu Maps 3D (@baidumap/mapv-three, Three.js)
-- **Code quality:** Biome (lint + format), TypeScript strict mode
+The repository is a Create T3-style Next.js application:
 
-## Architecture
+- React 19
+- Next.js 16 App Router
+- TypeScript strict mode
+- tRPC 11
+- TanStack Query
+- PostgreSQL
+- Drizzle ORM and Drizzle Kit
+- Better Auth 1.3+
+- Tailwind CSS 4
+- Biome
+- Zod
+- `@t3-oss/env-nextjs`
 
-### Dual API Layer
+Important: this repository currently uses Drizzle, not Prisma. If a PRD mentions Prisma, treat that as product-level planning language and follow the existing Drizzle setup unless the user explicitly asks to migrate ORM.
 
-Two parallel API layers serve different scenarios:
+During dependency/configuration prep work, do not run `pnpm db:generate`, `pnpm db:migrate`, or `pnpm db:push` unless the user explicitly asks.
 
-1. **tRPC (primary)** — type-safe RPC for internal client-server communication
-   - Routers in `src/server/api/routers/`
-   - Used by Next.js UI components
-   - Client: `api.project.page.useQuery()`
-   - Server (RSC prefetch): `api.project.page.prefetch()`
+## Key Directories
 
-2. **REST (secondary)** — OpenAPI-documented HTTP endpoints for external integrations
-   - In `src/app/api/` (Next.js route handlers)
-   - Accessed by external clients via API Key auth
-   - Documented in `public/openapi/openapi.json` and `API.md`
+- `prd/` — page-level PRDs. Read these first.
+- `src/app/` — Next.js routes. Server Components by default. Page-local components go in `_components/`.
+- `src/app/api/auth/[...all]/` — Better Auth route handler.
+- `src/app/api/trpc/` — tRPC route handler.
+- `src/server/api/` — tRPC context, middleware, root router, and routers.
+- `src/server/db/` — Drizzle schema and database connection.
+- `src/server/better-auth/` — Better Auth config, server helpers, and client.
+- `src/trpc/` — tRPC React Query and RSC helpers.
+- `src/styles/` — global styles.
+- `src/env.js` — Zod-validated environment variables.
 
-**Both layers delegate to the same service layer** (`src/server/service/`) — never duplicate business logic in routers.
+## Architecture Rules
 
-### Request Flow
+### Better Auth
 
-```
-Client (browser / external)
-  ↓
-tRPC Router / REST Route Handler
-  ↓
-Zod validation
-  ↓
-Auth middleware (Better Auth session / API Key)
-  ↓
-Service layer (business logic)
-  ↓
-Drizzle ORM → PostgreSQL
-```
+- Better Auth owns authentication, sessions, organization, admin, passkey, 2FA, and API key features.
+- Keep Better Auth handlers under `/api/auth/[...all]`.
+- Use Better Auth server APIs for session validation in Server Components, Route Handlers, and tRPC context.
+- Use official Better Auth plugins instead of custom auth logic.
+- When a plugin requires server and client configuration, configure both sides.
+- After schema-affecting Better Auth changes, update Drizzle schema and migrations consistently.
 
-For RSC: `src/trpc/server.ts` pre-fetches via `HydrateClient` and `prefetch*` helpers; the client rehydrates from cache without a second network request.
+Expected plugins, depending on the PRD page:
 
-### Key Directories
+- Admin
+- Organization
+- API Key
+- Two-Factor Authentication
+- Passkey
+- Magic Link
+- Email OTP
+- Generic OAuth
+- JWT or Bearer
 
-- `src/app/` — Next.js routes. Server Components by default; `_components/` holds page-local Client Components.
-- `src/server/api/routers/` — tRPC routers. `trpc.ts` defines context, middleware, `publicProcedure`/`protectedProcedure`. `root.ts` combines all routers.
-- `src/server/service/` — Business logic (`project-service.ts`, `route-service.ts`, `task-service.ts`, etc.)
-- `src/server/db/` — Drizzle schema (`schema.ts`) and connection pool (`index.ts`). All tables prefixed `time-line_`.
-- `src/server/better-auth/` — Auth config (`config.ts` with API Key plugin), server session helper, client-side auth client.
-- `src/trpc/` — tRPC/React Query wiring: `react.tsx` (provider + hooks + type exports), `server.ts` (RSC helpers), `query-client.ts`.
-- `src/stores/` — Zustand stores. `application-store.tsx` holds global state (`currentProjectId`, `projectList`, `currentRoutes`, `selectedRouteId`, `mapEngine`). Only `currentProjectId` is persisted to localStorage.
-- `src/components/` — Shared components (must include usage docs). `src/components/ui/` holds shadcn/ui base components.
-- `src/utils/` — Constants, enum mappings, coordinate transforms, GeoJSON helpers, waypoint field definitions.
-- `src/env.js` — Zod-validated environment variables via `@t3-oss/env-nextjs`.
+### tRPC
 
-### Enum Constants Pattern
+- tRPC owns product-level aggregation, admin screens, dashboard data, and application-specific server procedures.
+- Prefer small, typed procedures over broad multi-purpose handlers.
+- Do not duplicate Better Auth internals in tRPC. Wrap or aggregate only when the UI needs product-specific behavior.
 
-All status enums follow this three-file pattern:
+### Authorization
 
-```typescript
-// src/utils/constants.ts
-export const TASK_STATUS_PENDING = "PENDING" as const
-export const TASK_STATUS_VALUES = [TASK_STATUS_PENDING, ...] as const
-export type TaskStatusType = (typeof TASK_STATUS_VALUES)[number]
+- Every protected tRPC procedure must validate session server-side.
+- Every admin procedure must validate platform role server-side.
+- Every organization procedure must validate organization membership server-side.
+- Every organization admin or owner action must validate the user's organization role server-side.
+- Middleware/proxy may be used for optimistic redirects only. Do not rely on cookie existence as authorization.
+- Never rely on hidden UI alone for security.
 
-// src/server/db/schema.ts
-export const taskStatusEnum = pgEnum("task_status", TASK_STATUS_VALUES)
+## Page Implementation Rules
 
-// src/utils/enum-mapping.ts
-export const TASK_STATUS_MAP: Record<TaskStatusType, string> = { PENDING: "待处理" }
-```
+Each page should follow its matching PRD and include:
 
-Never use magic strings; always reference constants.
+- Loading, empty, error, forbidden, and success states.
+- Zod validation for inputs.
+- Server-side authorization for every sensitive action.
+- Confirmation dialogs for destructive or high-risk actions.
+- Toast feedback for user-triggered mutations.
+- Accessible labels, focus states, and keyboard-friendly controls.
 
-## Mandatory Coding Rules
+Layout expectations:
 
-These rules are enforced by Biome and project convention — no exceptions.
+- Public auth pages use an auth-focused layout.
+- Authenticated pages use an app layout with topbar, sidebar, and main content.
+- Tables should support search, filtering, pagination, and empty states when the PRD asks for them.
+- Mobile views must remain usable. Sidebars should collapse into drawers and dense tables should become responsive lists or cards.
+
+## Coding Rules
 
 ### Arrow Functions Only
 
-The `function` keyword is **banned** everywhere in this codebase.
+Do not use the `function` keyword.
 
 ```typescript
-// ✅ Correct
 const fetchData = async (): Promise<Data> => {
-  return await fetch('/api/data').then(res => res.json())
+  return await loadData()
 }
-const HomePage = () => <div>Home</div>
 
-// ❌ Banned
-function fetchData() { ... }
-function HomePage() { ... }
-```
-
-Next.js App Router pages export default arrow functions:
-
-```typescript
 export default () => {
   return <main>Page</main>
 }
 ```
 
-### No `any` / `unknown` Types
+### Avoid `any` and `unknown`
 
-Use interfaces, generics, or union types instead:
-
-```typescript
-// ✅ Correct
-interface User { id: string; name: string }
-type Status = 'success' | 'error' | 'loading'
-
-// ❌ Banned
-const x: any = ...
-const y: unknown = ...
-```
-
-### tRPC Type Imports
-
-Always derive types from the tRPC client — never hand-write parallel interfaces:
+Use interfaces, inferred types, generics, discriminated unions, and tRPC-derived types.
 
 ```typescript
 import { type RouterOutputs } from "@/trpc/react"
-type ProjectData = RouterOutputs["project"]["page"]["data"][number]
+
+type UserRow = RouterOutputs["admin"]["user"]["list"]["items"][number]
 ```
 
-### Biome Formatting
+### Formatting
 
-- Max line width: 180 characters
-- Semicolons: only when syntactically required (`asNeeded`)
-- Trailing commas: **banned** everywhere
-- Indentation: spaces only (no tabs)
-- Import order: third-party libraries → local modules → styles (auto-organized)
+- Use Biome, not Prettier.
+- Do not add `.prettierrc`.
+- Let Biome organize imports and formatting.
+- Keep imports ordered by tooling.
 
-### Component Organization
+### Components
 
-- Before creating a component, search `src/components/` to avoid duplication.
-- If a component may be reused across pages → place in `src/components/` with usage docs.
-- If a component is page-local → place in the page's `_components/` directory.
+- Search existing components before creating new ones.
+- Shared reusable components belong in `src/components/` if that directory exists or is introduced intentionally.
+- Page-local components belong in the page's `_components/` directory.
+- Prefer lucide-react icons only after adding the dependency or confirming it exists.
 
-### Library Requirements
+### Forms and Tables
 
-| Purpose | Required | Banned alternatives |
-|---------|----------|---------------------|
-| UI components | shadcn/ui | Ant Design, MUI, Chakra UI |
-| Forms | @tanstack/react-form | react-hook-form, Formik |
-| Tables | @tanstack/react-table | other table libs |
-| Auth | better-auth | NextAuth, Auth.js, Clerk |
-| Icons | lucide-react (check `src/components/ui/` first) | FontAwesome, Material Icons |
-| Package manager | pnpm | npm, yarn |
+- Use the libraries already installed unless the user asks to add another dependency.
+- Validate form inputs with Zod.
+- For tables, prefer TanStack Table if added; otherwise keep simple typed table components until the dependency is introduced.
 
-### Error Handling
+## Data and Security Rules
 
-All async operations must use try/catch. Uncaught Promise rejections are banned. Validate inputs with Zod schemas (defined in `src/server/validations.ts`).
+- API keys must show plaintext only once immediately after creation.
+- Store and display only masked API key values after creation.
+- Do not expose full session tokens to the client.
+- Banning a user should revoke active sessions when the PRD requires it.
+- High-risk operations include deleting users, deleting organizations, banning users, resetting passwords, revoking all sessions, disabling 2FA, deleting passkeys, and impersonation.
+- Error messages should be useful but should not leak sensitive account existence details.
 
-### Documentation
+## Development Workflow
 
-- Key logic: `//` inline comments; complex functions: JSDoc
-- REST API changes: update `public/openapi/openapi.json` with Chinese field descriptions
-- No separate markdown docs — all documentation lives as code comments
-- This project uses **Biome**, not Prettier — do not create `.prettierrc`
+- Read the relevant PRD before implementing.
+- Keep changes scoped to the requested page or module.
+- Follow existing project conventions.
+- Add or update tests if tests are introduced for the touched area.
+- Run relevant verification before claiming completion.
 
-## Authentication
+## Verification Expectations
 
-Better Auth handles sessions. `createTRPCContext` (in `src/server/api/trpc.ts`) fetches the session via `auth.api.getSession`; it is available as `ctx.session`. `protectedProcedure` throws `UNAUTHORIZED` when no session exists. API Keys (when `enableSessionForAPIKeys: true`) automatically create sessions; default rate limit is 1000 requests/day per key.
+Before reporting work as complete, run the relevant checks:
 
-## Mobile-First Design
+- `pnpm typecheck`
+- `pnpm check`
+- `pnpm build` when practical or when routing/build behavior changed
 
-Detect responsive behavior via `use-mobile.ts` hook (breakpoint: 768px / `md`). On mobile use drawer patterns (Vaul) for Sheet/Dialog; on desktop use overlays and popovers.
+If a command cannot be run, state exactly why.
 
 ## Environment Variables
 
-Copy `.env.example` to `.env`. Required:
+Copy `.env.example` to `.env`.
+
+Common variables:
+
 - `DATABASE_URL` — PostgreSQL connection string
-- `BETTER_AUTH_SECRET` — session signing secret
-- `BETTER_AUTH_GITHUB_CLIENT_ID` / `BETTER_AUTH_GITHUB_CLIENT_SECRET` — GitHub OAuth credentials
+- `BETTER_AUTH_SECRET` — Better Auth secret
+- `BETTER_AUTH_GITHUB_CLIENT_ID` / `BETTER_AUTH_GITHUB_CLIENT_SECRET` — GitHub OAuth credentials when GitHub login is enabled
+
+## Documentation
+
+- Keep product requirements in `prd/`.
+- If implementation intentionally differs from a PRD, update the PRD or add a clear implementation note.
+- Prefer concise inline comments for non-obvious code. Avoid comments that restate the code.
