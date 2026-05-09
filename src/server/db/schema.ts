@@ -1,27 +1,9 @@
 import { relations } from "drizzle-orm"
-import { boolean, index, pgTable, pgTableCreator, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, pgTableCreator, text, timestamp } from "drizzle-orm/pg-core"
 
-export const createTable = pgTableCreator((name) => `pg-drizzle_${name}`)
+export const createSystemTable = pgTableCreator((name) => `system_${name}`)
 
-export const posts = createTable(
-  "post",
-  (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    name: d.varchar({ length: 256 }),
-    createdById: d
-      .varchar({ length: 255 })
-      .notNull()
-      .references(() => user.id),
-    createdAt: d
-      .timestamp({ withTimezone: true })
-      .$defaultFn(() => new Date())
-      .notNull(),
-    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date())
-  }),
-  (t) => [index("created_by_idx").on(t.createdById), index("name_idx").on(t.name)]
-)
-
-export const user = pgTable("user", {
+export const user = createSystemTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
@@ -37,7 +19,7 @@ export const user = pgTable("user", {
     .notNull()
 })
 
-export const session = pgTable("session", {
+export const session = createSystemTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
@@ -50,7 +32,7 @@ export const session = pgTable("session", {
     .references(() => user.id, { onDelete: "cascade" })
 })
 
-export const account = pgTable("account", {
+export const account = createSystemTable("account", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
@@ -68,7 +50,7 @@ export const account = pgTable("account", {
   updatedAt: timestamp("updated_at").notNull()
 })
 
-export const verification = pgTable("verification", {
+export const verification = createSystemTable("verification", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),

@@ -11,22 +11,27 @@
 
 - 表单区：新密码、确认新密码、提交按钮。
 - 异常状态：token 缺失、过期或无效。
+- 返回登录按钮使用纯图标按钮，固定在右侧操作区域左上角，与右上角主题切换按钮同高、同尺寸，不占用卡片内容空间。
+- 移动端：隐藏左侧品牌插画栏，返回图标按钮固定在页面左上角，主题切换按钮固定在页面右上角；表单卡片在 24px 横向安全边距内居中展示。
 
 ## 用户动作
 
 - 填写新密码并提交。
 - 重置成功后跳转登录页。
 - token 无效时返回忘记密码页重新发送。
+- 打开控制台输出的重置链接后，Better Auth 先验证链接中的临时 token，再回跳到 `/reset-password?token=...`。
 
 ## 接口与逻辑
 
 - `authClient.resetPassword`：验证 reset token，更新密码凭据，并使 token 失效。
+- `emailAndPassword.revokeSessionsOnPasswordReset=true`：密码重置成功后撤销其它会话，降低旧会话继续使用的风险。
 
 ## 实现要点
 
 - 从 searchParams 读取 token。
 - 密码复杂度用 Zod 和 Better Auth 配置保持一致。
 - 成功后清空表单并 router.replace('/sign-in')。
+- 无 token 时展示链接无效状态，并提供返回忘记密码页重新发送入口。
 
 ## 通用工程约束
 

@@ -7,6 +7,8 @@ This file provides guidance to Codex and other coding agents when working in thi
 - Product requirements live in `prd/`.
 - Each file in `prd/` describes one page, including scope, layout, user actions, interfaces, server logic, implementation notes, and acceptance criteria.
 - Before implementing or changing a page, read the matching PRD file first.
+- Every behavior, layout, route, interface, or interaction change must update the matching PRD in the same work session.
+- Any page-level layout, route, interaction, or user-visible UI change must be designed in pencli first and confirmed by the user before coding begins.
 - If implementation details conflict with a PRD, prefer the PRD and call out the conflict before making broad architecture changes.
 - Keep the first version focused on the identity and permission management product described in `prd/`.
 
@@ -81,6 +83,8 @@ During dependency/configuration prep work, do not run `pnpm db:generate`, `pnpm 
 
 - `prd/` — page-level PRDs. Read these first.
 - `src/app/` — Next.js routes. Server Components by default. Page-local components go in `_components/`.
+- `src/app/(auth)/_components/` — components shared by multiple public auth pages, such as auth layout shells, shared panels, shared OAuth controls, and shared status UI.
+- `src/app/(auth)/<route>/_components/` — components used by only one public auth page, such as a route-specific form or page-specific state component.
 - `src/app/api/auth/[...all]/` — Better Auth route handler.
 - `src/app/api/trpc/` — tRPC route handler.
 - `src/server/api/` — tRPC context, middleware, root router, and routers.
@@ -146,6 +150,20 @@ Layout expectations:
 - Tables should support search, filtering, pagination, and empty states when the PRD asks for them.
 - Mobile views must remain usable. Sidebars should collapse into drawers and dense tables should become responsive lists or cards.
 
+### Public Auth Pages
+
+- Implement `prd/01-sign-in.md` through `prd/05-verify-email.md` from `prd/00-auth-pages-design.md`.
+- Use `src/app/(auth)/` as the route group for public auth pages.
+- Shared auth components belong in `src/app/(auth)/_components/`.
+- Page-specific auth components belong in each page's `_components/` directory.
+- Keep `page.tsx` focused on route composition, server redirects, and search param wiring.
+- Use `@tanstack/react-form` for auth forms and Zod for validation. Do not introduce `react-hook-form`.
+- The left auth illustration is a full-height desktop-only image background. Use distinct light and dark assets per page from `public/auth/`.
+- Theme switching uses `next-themes` with `attribute="class"`, `defaultTheme="system"`, and `enableSystem`.
+- Keep the theme toggle fixed at the page top-right, outside the form card.
+- Do not enable Better Auth advanced plugins until matching Drizzle schema and migrations are ready.
+- Do not run `pnpm db:generate`, `pnpm db:migrate`, or `pnpm db:push` while implementing these pages unless the user explicitly asks.
+
 ## Coding Rules
 
 ### Arrow Functions Only
@@ -182,8 +200,11 @@ type UserRow = RouterOutputs["admin"]["user"]["list"]["items"][number]
 ### Components
 
 - Search existing components before creating new ones.
-- Shared reusable components belong in `src/components/` if that directory exists or is introduced intentionally.
-- Page-local components belong in the page's `_components/` directory.
+- Components shared by several pages within one route group belong in that route group's `_components/` directory. For example, components shared by `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, and `/verify-email` belong in `src/app/(auth)/_components/`.
+- Components used by only one page belong in that page's own `_components/` directory. For example, login-only components belong in `src/app/(auth)/sign-in/_components/`.
+- Global reusable components belong in `src/components/` only when they are intentionally usable across unrelated product areas.
+- Do not put all page logic into `page.tsx`. Keep `page.tsx` focused on route-level composition, redirects, and search param wiring; move forms, stateful client logic, and page-specific UI into components.
+- Keep each component file under 500 lines. Split large files by responsibility before they become hard to review.
 - Prefer lucide-react icons only after adding the dependency or confirming it exists.
 
 ### Forms and Tables
@@ -204,6 +225,8 @@ type UserRow = RouterOutputs["admin"]["user"]["list"]["items"][number]
 ## Development Workflow
 
 - Read the relevant PRD before implementing.
+- For any page change, use pencli to update or create the relevant design in `prd/`, ask the user to confirm it, and only then implement the code.
+- Update the relevant PRD whenever you change product behavior, page layout, routes, API calls, validation, redirects, or user-visible states.
 - Keep changes scoped to the requested page or module.
 - Follow existing project conventions.
 - Add or update tests if tests are introduced for the touched area.

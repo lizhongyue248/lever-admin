@@ -17,20 +17,23 @@ export const auth = betterAuth({
     provider: "pg"
   }),
   emailAndPassword: {
-    enabled: true
-    // Enable after the email verification flow is implemented.
-    // requireEmailVerification: true,
-    // revokeSessionsOnPasswordReset: true,
-    // sendResetPassword: async ({ user, url }) => {
-    //   console.info("[auth:reset-password]", { to: user.email, url })
-    // }
+    enabled: true,
+    requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      // Development placeholder: replace with a real email provider before production.
+      console.info("[auth:reset-password]", { to: user.email, url })
+    }
   },
-  // Enable after the email verification page is implemented.
-  // emailVerification: {
-  //   sendVerificationEmail: async ({ user, url }) => {
-  //     console.info("[auth:verify-email]", { to: user.email, url })
-  //   }
-  // },
+  emailVerification: {
+    autoSignInAfterVerification: true,
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      // Development placeholder: replace with a real email provider before production.
+      console.info("[auth:verify-email]", { to: user.email, url })
+    }
+  },
   socialProviders: {
     github: {
       clientId: env.BETTER_AUTH_GITHUB_CLIENT_ID,
