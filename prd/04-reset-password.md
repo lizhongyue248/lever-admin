@@ -40,6 +40,29 @@
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
 
+## Playwright E2E 测试用例
+
+测试环境使用 `prd/99-e2e-testing-method.md` 中定义的 Playwright + Testcontainers PostgreSQL。
+
+| 用例 ID | 场景 | 前置数据 | 操作 | 预期结果 |
+| --- | --- | --- | --- | --- |
+| `auth-reset-password-001` | 无 token 访问重置密码页 | 无 | 访问 `/reset-password` | 页面返回 200，展示“链接无效”状态和重新发送重置邮件入口 |
+| `auth-reset-password-002` | 桌面端布局 | 无 | 使用桌面 viewport 访问 `/reset-password` | 左侧品牌插画区可见，返回图标按钮固定在右侧操作区左上角，主题切换按钮固定在右上角 |
+| `auth-reset-password-003` | 移动端布局 | 无 | 使用移动 viewport 访问 `/reset-password` | 左侧品牌插画区不可见，返回图标按钮位于页面左上角，主题切换按钮位于页面右上角，卡片不横向溢出 |
+| `auth-reset-password-004` | 无 token 时重新发送入口 | 无 | 在无 token 状态点击“重新发送重置邮件” | 跳转 `/forgot-password` |
+| `auth-reset-password-005` | 新密码必填校验 | 准备有效 reset token | 访问 `/reset-password?token=...` 后空表单提交 | 页面展示新密码或确认密码校验提示，不更新密码 |
+| `auth-reset-password-006` | 密码确认不一致 | 准备有效 reset token | 输入不同的新密码和确认密码提交 | 页面展示确认密码不一致提示，不更新密码 |
+| `auth-reset-password-007` | 有效 token 重置成功 | seed 邮箱密码用户并生成有效 reset token | 输入符合规则的新密码并提交 | 密码更新成功，跳转 `/sign-in`；旧密码无法登录，新密码可以登录 |
+| `auth-reset-password-008` | 无效或过期 token | 准备无效 token | 访问 `/reset-password?token=invalid` 并提交新密码 | 页面展示重置失败提示或保持错误状态，不更新密码 |
+| `auth-reset-password-009` | 返回登录 | 无 | 点击左上角返回图标按钮 | 跳转 `/sign-in` |
+| `auth-reset-password-010` | 主题切换 | 无 | 点击主题切换按钮 | `html` 的 `dark` class 在 light/dark 间切换 |
+
+### 自动化落地
+
+- 对应测试文件：`e2e/specs/04-reset-password.spec.ts`。
+- DB-backed 流程只在 Chromium 项目执行，移动端项目跳过同一套数据库写入/密码更新断言。
+- 已覆盖：无 token 状态、重新发送入口、客户端校验、密码确认校验、无效 token、Better Auth reset callback、有效 token 重置成功、旧密码失效、新密码登录、返回登录、主题切换。
+
 ## 验收标准
 
 - 页面在未授权、加载、空数据、错误、成功状态下均有明确反馈。

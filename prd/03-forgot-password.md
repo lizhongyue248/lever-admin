@@ -42,6 +42,22 @@
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
 
+## Playwright E2E 测试用例
+
+测试环境使用 `prd/99-e2e-testing-method.md` 中定义的 Playwright + Testcontainers PostgreSQL。
+
+| 用例 ID | 场景 | 前置数据 | 操作 | 预期结果 |
+| --- | --- | --- | --- | --- |
+| `auth-forgot-password-001` | 未登录用户访问忘记密码页 | 无 | 访问 `/forgot-password` | 页面返回 200，显示标题“忘记密码”、邮箱输入框、发送重置链接按钮、返回登录图标按钮和主题切换按钮 |
+| `auth-forgot-password-002` | 桌面端布局 | 无 | 使用桌面 viewport 访问 `/forgot-password` | 左侧品牌插画区可见，返回图标按钮固定在右侧操作区左上角，主题切换按钮固定在右上角 |
+| `auth-forgot-password-003` | 移动端布局 | 无 | 使用移动 viewport 访问 `/forgot-password` | 左侧品牌插画区不可见，返回图标按钮位于页面左上角，主题切换按钮位于页面右上角，表单卡片不横向溢出 |
+| `auth-forgot-password-004` | 邮箱必填或格式校验 | 无 | 空邮箱或非法邮箱提交 | 页面停留在 `/forgot-password`，展示邮箱校验提示，不调用重置请求 |
+| `auth-forgot-password-005` | 存在邮箱请求重置 | seed 一个邮箱密码用户 | 输入该邮箱并提交 | 页面展示统一成功提示，按钮进入冷却状态；服务端日志可包含重置链接 |
+| `auth-forgot-password-006` | 不存在邮箱请求重置 | 数据库无对应邮箱 | 输入不存在邮箱并提交 | 页面仍展示统一成功提示，不暴露邮箱是否存在 |
+| `auth-forgot-password-007` | 冷却状态防重复提交 | 任意邮箱 | 成功提交后立即再次点击发送按钮 | 发送按钮禁用或展示冷却倒计时，不重复发起请求 |
+| `auth-forgot-password-008` | 返回登录 | 无 | 点击左上角返回图标按钮 | 跳转 `/sign-in` |
+| `auth-forgot-password-009` | 主题切换 | 无 | 点击主题切换按钮 | `html` 的 `dark` class 在 light/dark 间切换 |
+
 ## 验收标准
 
 - 页面在未授权、加载、空数据、错误、成功状态下均有明确反馈。

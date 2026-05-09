@@ -47,6 +47,24 @@
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
 
+## Playwright E2E 测试用例
+
+测试环境使用 `prd/99-e2e-testing-method.md` 中定义的 Playwright + Testcontainers PostgreSQL。
+
+| 用例 ID | 场景 | 前置数据 | 操作 | 预期结果 |
+| --- | --- | --- | --- | --- |
+| `auth-sign-in-001` | 未登录用户访问登录页 | 无 | 访问 `/sign-in` | 页面返回 200，显示标题“登录”、邮箱输入框、密码输入框、登录按钮、忘记密码入口、注册入口和主题切换按钮 |
+| `auth-sign-in-002` | 桌面端布局 | 无 | 使用桌面 viewport 访问 `/sign-in` | 左侧品牌插画区可见，表单卡片在右侧操作区居中，主题切换按钮固定在页面右上角 |
+| `auth-sign-in-003` | 移动端布局 | 无 | 使用移动 viewport 访问 `/sign-in` | 左侧品牌插画区不可见，表单卡片在 24px 横向安全边距内展示，主题切换按钮固定在页面右上角 |
+| `auth-sign-in-004` | 客户端校验 | 无 | 不输入邮箱和密码直接提交 | 页面停留在 `/sign-in`，展示邮箱或密码校验提示，不产生已登录会话 |
+| `auth-sign-in-005` | 登录失败 | 数据库无对应用户 | 输入不存在的邮箱和任意密码提交 | 页面展示克制的登录失败提示，不暴露账号是否存在 |
+| `auth-sign-in-006` | 已验证用户登录成功 | Testcontainers DB seed 一个 `emailVerified=true` 的邮箱密码用户 | 输入正确邮箱和密码提交 | 登录成功后跳转 `/app`，页面显示测试应用页，session cookie 已写入 |
+| `auth-sign-in-007` | redirectTo 登录成功回跳 | seed 一个 `emailVerified=true` 的用户 | 访问 `/sign-in?redirectTo=/app` 并登录 | 登录成功后进入 `/app` |
+| `auth-sign-in-008` | 未验证邮箱登录 | seed 一个 `emailVerified=false` 的邮箱密码用户 | 输入正确邮箱和密码提交 | 跳转 `/verify-email?status=pending&email=...`，页面展示等待验证提示；服务端日志可包含验证链接 |
+| `auth-sign-in-009` | 忘记密码入口 | 无 | 点击“忘记密码” | 跳转 `/forgot-password` |
+| `auth-sign-in-010` | 注册入口 | 无 | 点击“创建账号”或注册入口 | 跳转 `/sign-up` |
+| `auth-sign-in-011` | 主题切换 | 无 | 点击主题切换按钮 | `html` 的 `dark` class 在 light/dark 间切换；支持 View Transition 的浏览器执行过渡，未支持时仍完成主题切换 |
+
 ## 验收标准
 
 - 页面在未授权、加载、空数据、错误、成功状态下均有明确反馈。

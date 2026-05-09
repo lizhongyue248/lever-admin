@@ -6,6 +6,7 @@ import "./src/env.js"
 
 /** @type {import("next").NextConfig} */
 const config = {
+  ...(process.env.E2E_NEXT_DIST_DIR ? { distDir: process.env.E2E_NEXT_DIST_DIR } : {}),
   images: {
     remotePatterns: [
       {

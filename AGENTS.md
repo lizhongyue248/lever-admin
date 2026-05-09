@@ -49,6 +49,12 @@ pnpm check            # Biome lint + format check
 pnpm check:write      # Apply safe Biome fixes
 pnpm check:unsafe     # Apply Biome unsafe fixes
 
+# E2E testing
+pnpm test:e2e         # Playwright E2E with Testcontainers PostgreSQL
+pnpm test:e2e:ui      # Open Playwright UI mode
+pnpm test:e2e:headed  # Run Playwright with visible browser
+pnpm verify:e2e       # typecheck + check + build + E2E
+
 # Database
 pnpm db:generate      # Generate Drizzle migration files; do not run during dependency/config prep
 pnpm db:migrate       # Apply migrations
@@ -56,7 +62,7 @@ pnpm db:push          # Push schema directly, dev only
 pnpm db:studio        # Open Drizzle Studio
 ```
 
-There are no automated tests configured yet. Use `pnpm typecheck` and `pnpm check` as the primary verification commands.
+Playwright E2E tests are configured under `e2e/`. They use Testcontainers PostgreSQL, so Docker must be running before `pnpm test:e2e`. E2E tests must use the Testcontainers database and must not point at the local development `DATABASE_URL`.
 
 ## Current Tech Stack
 

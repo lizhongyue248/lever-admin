@@ -6,6 +6,9 @@
     "useIgnoreFile": true,
     "clientKind": "git"
   },
+  "files": {
+    "includes": ["**", "!.next-e2e", "!playwright-report", "!test-results", "!blob-report"]
+  },
   "assist": {
     "enabled": true,
     "actions": {
