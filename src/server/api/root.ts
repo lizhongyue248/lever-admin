@@ -1,5 +1,6 @@
 import { dashboardRouter } from "@/server/api/routers/dashboard"
 import { profileRouter } from "@/server/api/routers/profile"
+import { securityRouter } from "@/server/api/routers/security"
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc"
 
 /**
@@ -9,7 +10,8 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc"
  */
 export const appRouter = createTRPCRouter({
   dashboard: dashboardRouter,
-  profile: profileRouter
+  profile: profileRouter,
+  security: securityRouter
 })
 
 // export type definition of API

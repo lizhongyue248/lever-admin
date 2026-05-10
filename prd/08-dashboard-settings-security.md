@@ -38,10 +38,13 @@
 - 关闭 2FA、删除 Passkey、解绑最后登录方式必须二次确认。
 - Passkey 注册必须在客户端组件中调用浏览器 WebAuthn API。
 - 所有安全操作完成后显示 toast 并刷新当前分区。
+- 首版 GitHub 绑定使用现有 Better Auth GitHub provider；Google provider 暂未配置时只展示为「未配置」，按钮禁用。
+- 自动化测试不直接完成 WebAuthn 设备注册和真实 TOTP 校验，只覆盖入口、弹窗、校验提示和可用状态；真实浏览器能力由 Better Auth 客户端 API 承接。
+- 页面聚合接口只返回展示所需字段，不返回 session token、OAuth token、Passkey public key / credential ID、2FA secret 或 backup codes。
 
 ## 通用工程约束
 
-- Create T3 App: Next.js App Router, TypeScript, tRPC, Prisma, Tailwind CSS
+- Create T3 App: Next.js App Router, TypeScript, tRPC, Drizzle ORM, Tailwind CSS
 - Better Auth: authentication, session, admin, organization, team, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
