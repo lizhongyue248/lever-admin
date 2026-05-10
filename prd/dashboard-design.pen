@@ -1,0 +1,117 @@
+{
+  "version": "2.11",
+  "children": [
+    {
+      "type": "frame",
+      "name": "Dashboard / Personal / Light Theme",
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 1024,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/personal-light.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Personal / Dark Theme",
+      "x": 1500,
+      "y": 0,
+      "width": 1440,
+      "height": 1024,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/personal-dark.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Organization Admin / Light Theme",
+      "x": 0,
+      "y": 1120,
+      "width": 1440,
+      "height": 1024,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/organization-light.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Organization Admin / Dark Theme",
+      "x": 1500,
+      "y": 1120,
+      "width": 1440,
+      "height": 1024,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/organization-dark.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Personal / Light Theme / Mobile",
+      "x": 3100,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/personal-light-mobile.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Personal / Dark Theme / Mobile",
+      "x": 3550,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/personal-dark-mobile.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Organization Admin / Light Theme / Mobile",
+      "x": 3100,
+      "y": 940,
+      "width": 390,
+      "height": 844,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/organization-light-mobile.png",
+        "mode": "fill"
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Dashboard / Organization Admin / Dark Theme / Mobile",
+      "x": 3550,
+      "y": 940,
+      "width": 390,
+      "height": 844,
+      "layout": "none",
+      "fill": {
+        "type": "image",
+        "url": "./dashboard-design-export/organization-dark-mobile.png",
+        "mode": "fill"
+      }
+    }
+  ]
+}

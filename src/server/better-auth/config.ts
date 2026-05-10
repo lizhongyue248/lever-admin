@@ -1,17 +1,23 @@
+import { apiKey } from "@better-auth/api-key"
+import { passkey } from "@better-auth/passkey"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { APIError, createAuthMiddleware } from "better-auth/api"
+import { admin, organization, twoFactor } from "better-auth/plugins"
+import { adminAc, userAc } from "better-auth/plugins/admin/access"
 import { sql } from "drizzle-orm"
-// Enable these plugins after the matching Drizzle schema and migrations are ready.
-// import { magicLink, admin, organization, twoFactor } from "better-auth/plugins"
-// import { apiKey } from "@better-auth/api-key"
-// import { passkey } from "@better-auth/passkey"
 
 import { env } from "@/env"
 import { db } from "@/server/db"
 import { user as userTable } from "@/server/db/schema"
 
-const authBaseUrl = env.BETTER_AUTH_URL ?? "http://localhost:3000"
+const defaultAuthBaseUrl = "http://localhost:4000"
+const authBaseUrl = env.BETTER_AUTH_URL ?? defaultAuthBaseUrl
+const developmentTrustedOrigins =
+  env.NODE_ENV === "production"
+    ? []
+    : [defaultAuthBaseUrl, "http://127.0.0.1:4000", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
+const trustedOrigins = Array.from(new Set([authBaseUrl, ...developmentTrustedOrigins]))
 const duplicateSignUpEmailMessage = "该邮箱已注册，请直接登录。"
 
 const findUserIdByEmail = async (email: string) => {
@@ -28,6 +34,13 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg"
   }),
+  trustedOrigins,
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60
+    }
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -79,43 +92,51 @@ export const auth = betterAuth({
     //   clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
     //   redirectURI: `${authBaseUrl}/api/auth/callback/google`
     // }
-  }
-  // Enable these plugins after plugin tables are added to Drizzle schema.
-  // plugins: [
-  //   admin({
-  //     defaultRole: "user",
-  //     adminRoles: ["admin", "super_admin"]
-  //   }),
-  //   organization({
-  //     teams: {
-  //       enabled: true
-  //     },
-  //     sendInvitationEmail: async ({ email, invitation, organization }) => {
-  //       console.info("[auth:organization-invitation]", {
-  //         to: email,
-  //         organization: organization.name,
-  //         invitationId: invitation.id
-  //       })
-  //     }
-  //   }),
-  //   twoFactor({
-  //     issuer: "Lever Admin",
-  //     allowPasswordless: true
-  //   }),
-  //   magicLink({
-  //     sendMagicLink: async ({ email, url }) => {
-  //       console.info("[auth:magic-link]", { to: email, url })
-  //     }
-  //   }),
-  //   passkey({
-  //     rpName: "Lever Admin",
-  //     rpID: new URL(authBaseUrl).hostname,
-  //     origin: authBaseUrl
-  //   }),
-  //   apiKey({
-  //     enableSessionForAPIKeys: true
-  //   })
-  // ]
+  },
+  plugins: [
+    admin({
+      adminRoles: ["admin", "super_admin"],
+      defaultRole: "user",
+      roles: {
+        admin: adminAc,
+        support: userAc,
+        super_admin: adminAc,
+        user: userAc
+      }
+    }),
+    organization({
+      requireEmailVerificationOnInvitation: true,
+      teams: {
+        enabled: true
+      },
+      sendInvitationEmail: async ({ email, invitation, organization }) => {
+        console.info("[auth:organization-invitation]", {
+          invitationId: invitation.id,
+          organization: organization.name,
+          to: email
+        })
+      }
+    }),
+    twoFactor({
+      allowPasswordless: true,
+      issuer: "Lever Admin"
+    }),
+    passkey({
+      origin: authBaseUrl,
+      rpID: new URL(authBaseUrl).hostname,
+      rpName: "Lever Admin"
+    }),
+    apiKey([
+      {
+        configId: "user",
+        references: "user"
+      },
+      {
+        configId: "organization",
+        references: "organization"
+      }
+    ])
+  ]
 })
 
 export type Session = typeof auth.$Infer.Session

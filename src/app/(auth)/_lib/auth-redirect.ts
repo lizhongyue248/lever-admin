@@ -1,4 +1,4 @@
-export const defaultAuthRedirect = "/app"
+export const defaultAuthRedirect = "/dashboard"
 
 export const normalizeRedirectTo = (value: string | string[] | undefined, fallback = defaultAuthRedirect) => {
   const redirectTo = Array.isArray(value) ? value[0] : value

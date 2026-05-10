@@ -45,8 +45,8 @@ test.describe("01 sign in", () => {
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
 
-    await expect(page).toHaveURL(/\/app$/)
-    await expect(page.getByRole("heading", { name: "工作台测试页" })).toBeVisible()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByText("我的安全待办")).toBeVisible()
     await expect(page.getByText(email)).toBeVisible()
   })
 
@@ -55,10 +55,10 @@ test.describe("01 sign in", () => {
 
     const email = await createVerifiedUser(page, "redirect")
 
-    await page.goto("/sign-in?redirectTo=/app")
+    await page.goto("/sign-in?redirectTo=/dashboard")
     await signInViaUi(page, { email })
 
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 
   test("redirects an unverified email-password user to verify email", async ({ page }, testInfo) => {

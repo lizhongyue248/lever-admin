@@ -51,17 +51,17 @@ test.describe("05 verify email", () => {
     await expect(page.getByRole("button", { name: /秒后可重新发送/u })).toBeDisabled()
   })
 
-  test("redirects a verified signed-in user to app", async ({ page }, testInfo) => {
+  test("redirects a verified signed-in user to dashboard", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
 
     const email = await createVerifiedUser(page, "verify-redirect")
 
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
 
     await page.goto("/verify-email")
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 
   test("verifies a valid token from the page flow", async ({ page }, testInfo) => {
@@ -81,7 +81,7 @@ test.describe("05 verify email", () => {
     await expect.poll(async () => (await getUserByEmail(email))?.email_verified).toBe(true)
   })
 
-  test("Better Auth verification link enters the app after success", async ({ page }, testInfo) => {
+  test("Better Auth verification link enters the dashboard after success", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
 
     const email = uniqueEmail("verify-api")
@@ -92,9 +92,9 @@ test.describe("05 verify email", () => {
     await page.context().clearCookies()
 
     const token = createEmailVerificationToken(email)
-    await page.goto(`/api/auth/verify-email?token=${token}&callbackURL=/app`)
+    await page.goto(`/api/auth/verify-email?token=${token}&callbackURL=/dashboard`)
 
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByText(email)).toBeVisible()
     await expect.poll(async () => (await getUserByEmail(email))?.email_verified).toBe(true)
   })

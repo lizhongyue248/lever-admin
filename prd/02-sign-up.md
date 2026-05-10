@@ -24,16 +24,16 @@
 ## 接口与逻辑
 
 - `authClient.signUp.email`：创建 Better Auth user/account 记录，按配置触发验证邮件。
-  - 注册请求提交时传入 `callbackURL=/app`，用于用户点击邮件验证链接后的成功回跳。
+  - 注册请求提交时传入 `callbackURL=/dashboard`，用于用户点击邮件验证链接后的成功回跳。
   - 注册接口成功返回后，页面跳转 `/verify-email?status=pending`，提示用户前往邮箱点击验证链接。
 - `authClient.signIn.social`：OAuth 首次登录时创建用户，后续登录复用账号。
-- `auth.api.getSession`：已登录用户访问注册页时跳转 /app。
+- `auth.api.getSession`：已登录用户访问注册页时跳转 /dashboard。
 
 ## 实现要点
 
 - 密码和确认密码必须一致。
 - 如果 requireEmailVerification 为 true，注册后跳转 /verify-email?status=pending。
-- 邮箱验证链接成功验证后直接进入 /app，不继续显示等待验证状态。
+- 邮箱验证链接成功验证后直接进入 /dashboard，不继续显示等待验证状态。
 - 避免暴露邮箱是否已注册的过多细节，错误提示保持克制。
 - 新用户默认平台角色为 user。
 
@@ -58,7 +58,7 @@
 | `auth-sign-up-006` | 密码确认不一致 | 无 | 输入不同的密码和确认密码后提交 | 页面展示确认密码不一致提示，不创建用户 |
 | `auth-sign-up-007` | 注册成功进入待验证 | 数据库无同邮箱用户 | 输入有效名称、唯一邮箱和符合规则的密码提交 | Better Auth 创建用户，页面跳转 `/verify-email?status=pending`，数据库用户 `emailVerified=false` |
 | `auth-sign-up-008` | 重复邮箱注册 | seed 一个相同邮箱用户 | 使用相同邮箱提交注册 | 页面停留在 `/sign-up`，展示“该邮箱已注册，请直接登录。”，不创建重复用户 |
-| `auth-sign-up-009` | 已登录用户访问注册页 | seed 已验证用户并通过登录 helper 建立会话 | 访问 `/sign-up` | 服务端重定向 `/app` |
+| `auth-sign-up-009` | 已登录用户访问注册页 | seed 已验证用户并通过登录 helper 建立会话 | 访问 `/sign-up` | 服务端重定向 `/dashboard` |
 | `auth-sign-up-010` | 返回登录入口 | 无 | 点击“返回登录”入口 | 跳转 `/sign-in` |
 | `auth-sign-up-011` | 主题切换 | 无 | 点击主题切换按钮 | `html` 的 `dark` class 在 light/dark 间切换，移动端和桌面端均可点击 |
 

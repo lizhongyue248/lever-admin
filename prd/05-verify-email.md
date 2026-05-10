@@ -10,7 +10,7 @@
 ## 页面布局
 
 - 结果卡片：验证中、成功、失败、待验证四种状态。
-- 成功状态页：仅用于手动 token 验证或异常回退；正常邮件链接验证完成后直接进入 /app。
+- 成功状态页：仅用于手动 token 验证或异常回退；正常邮件链接验证完成后直接进入 /dashboard。
 - 失败状态页：展示“验证失败”，主动作重新发送验证邮件，次动作返回登录。
 - 操作区：进入应用、重新发送验证邮件、返回登录。
 - 返回登录按钮使用纯图标按钮，固定在右侧操作区域左上角，与右上角主题切换按钮同高、同尺寸，不占用卡片内容空间。
@@ -21,21 +21,21 @@
 - 打开验证链接后自动验证 token。
 - 打开 Better Auth 生成的 `/api/auth/verify-email?token=...&callbackURL=...` 链接后，由 Better Auth 服务端验证 token 并按 callbackURL 回跳。
 - 验证失败后重新发送验证邮件。
-- 验证成功后进入 /app，不停留在 /verify-email。
+- 验证成功后进入 /dashboard，不停留在 /verify-email。
 
 ## 接口与逻辑
 
 - `authClient.verifyEmail`：验证邮件 token，更新 user.emailVerified。
 - `authClient.sendVerificationEmail`：重新发送验证邮件。
-  - 重新发送时使用 `callbackURL=/app`，确保用户点击新验证链接并成功验证后直接进入应用。
+  - 重新发送时使用 `callbackURL=/dashboard`，确保用户点击新验证链接并成功验证后直接进入应用。
 - 登录页因 `EMAIL_NOT_VERIFIED` 跳转过来时，URL 可携带 `email` 参数，用于预填重新发送验证邮件的邮箱输入框。
 - `auth.api.getSession`：读取当前用户邮箱验证状态。
-  - Better Auth 服务端启用 `emailVerification.autoSignInAfterVerification=true`，确保邮件链接验证成功后可以直接访问 /app。
+  - Better Auth 服务端启用 `emailVerification.autoSignInAfterVerification=true`，确保邮件链接验证成功后可以直接访问 /dashboard。
 
 ## 实现要点
 
 - 页面可根据 token 参数决定自动验证，或根据 status=pending/status=success/status=failed 展示对应状态。
-- 已登录且邮箱已验证的用户访问 /verify-email 时直接重定向 /app，除非当前 URL 是失败状态。
+- 已登录且邮箱已验证的用户访问 /verify-email 时直接重定向 /dashboard，除非当前 URL 是失败状态。
 - 如果 Better Auth 回跳携带 error 参数，例如 token 无效或过期，页面展示验证失败状态。
 - `email` search param 仅作为表单预填，不作为授权依据；真正发送验证邮件仍由 Better Auth 服务端按邮箱和账号状态判断。
 - 重新发送按钮增加冷却时间。
@@ -56,12 +56,12 @@
 | --- | --- | --- | --- | --- |
 | `auth-verify-email-001` | 待验证状态 | 无 | 访问 `/verify-email?status=pending` | 页面返回 200，展示“等待验证”提示、邮箱输入框、重新发送验证邮件按钮、返回登录按钮和主题切换按钮 |
 | `auth-verify-email-002` | 失败状态 | 无 | 访问 `/verify-email?status=failed` | 页面展示“验证失败”提示，主动作是重新发送验证邮件 |
-| `auth-verify-email-003` | error 参数状态 | 无 | 访问 `/verify-email?error=invalid_token` | 页面展示验证失败提示，不进入 `/app` |
-| `auth-verify-email-004` | 成功状态展示 | 无 | 访问 `/verify-email?status=success` | 页面展示“验证成功”提示和进入应用按钮；如果当前已有已验证 session，可按实现重定向 `/app` |
-| `auth-verify-email-005` | 已验证登录用户访问 | seed 已验证用户并建立 session | 访问 `/verify-email` | 服务端重定向 `/app` |
+| `auth-verify-email-003` | error 参数状态 | 无 | 访问 `/verify-email?error=invalid_token` | 页面展示验证失败提示，不进入 `/dashboard` |
+| `auth-verify-email-004` | 成功状态展示 | 无 | 访问 `/verify-email?status=success` | 页面展示“验证成功”提示和进入应用按钮；如果当前已有已验证 session，可按实现重定向 `/dashboard` |
+| `auth-verify-email-005` | 已验证登录用户访问 | seed 已验证用户并建立 session | 访问 `/verify-email` | 服务端重定向 `/dashboard` |
 | `auth-verify-email-006` | 重新发送验证邮件校验 | 无 | 待验证状态下空邮箱或非法邮箱提交 | 页面展示邮箱校验提示，不发送请求 |
 | `auth-verify-email-007` | 重新发送验证邮件成功 | seed 未验证用户 | 在待验证状态输入该邮箱并提交 | 页面展示验证邮件已发送提示，按钮进入冷却状态；服务端日志可包含验证链接 |
-| `auth-verify-email-008` | 有效 token 验证成功 | seed 未验证用户并生成有效 email verification token | 访问 `/verify-email?token=...` | 页面进入验证中后验证成功，刷新 session；正常 Better Auth 邮件链接应最终进入 `/app` |
+| `auth-verify-email-008` | 有效 token 验证成功 | seed 未验证用户并生成有效 email verification token | 访问 `/verify-email?token=...` | 页面进入验证中后验证成功，刷新 session；正常 Better Auth 邮件链接应最终进入 `/dashboard` |
 | `auth-verify-email-009` | 无效 token 验证失败 | 准备无效 token | 访问 `/verify-email?token=invalid` | 页面展示验证失败提示，不更新用户 `emailVerified` |
 | `auth-verify-email-010` | 桌面端布局 | 无 | 使用桌面 viewport 访问 `/verify-email?status=pending` | 左侧品牌插画区可见，返回图标按钮固定在右侧操作区左上角，主题切换按钮固定在右上角 |
 | `auth-verify-email-011` | 移动端布局 | 无 | 使用移动 viewport 访问 `/verify-email?status=pending` | 左侧品牌插画区不可见，返回图标按钮位于页面左上角，主题切换按钮位于页面右上角，状态卡片不横向溢出 |
@@ -72,7 +72,7 @@
 
 - 对应测试文件：`e2e/specs/05-verify-email.spec.ts`。
 - DB-backed 流程只在 Chromium 项目执行，移动端项目跳过同一套数据库写入/邮箱验证断言。
-- 已覆盖：pending/failed/error/success 状态、重新发送邮箱校验、重新发送成功与冷却、已验证用户访问重定向 `/app`、页面 token 验证、Better Auth 邮件验证链接进入 `/app`、无效 token 不更新 `emailVerified`、返回登录、主题切换。
+- 已覆盖：pending/failed/error/success 状态、重新发送邮箱校验、重新发送成功与冷却、已验证用户访问重定向 `/dashboard`、页面 token 验证、Better Auth 邮件验证链接进入 `/dashboard`、无效 token 不更新 `emailVerified`、返回登录、主题切换。
 
 ## 验收标准
 

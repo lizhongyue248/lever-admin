@@ -20,7 +20,7 @@
 - 点击 GitHub / Google OAuth 登录。
 - 点击忘记密码跳转 /forgot-password。
 - 点击注册跳转 /sign-up。
-- 登录成功后根据 redirectTo 返回原页面，否则进入 /app。
+- 登录成功后根据 redirectTo 返回原页面，否则进入 /dashboard。
 - 如果邮箱密码正确但邮箱尚未验证，自动发送验证邮件并跳转 `/verify-email?status=pending&email=...`。
 
 ## 接口与逻辑
@@ -28,9 +28,9 @@
 - `authClient.signIn.email`：调用 Better Auth 邮箱密码登录，成功后写入 session cookie。
   - 登录请求使用当前 `redirectTo` 作为 `callbackURL`，确保已验证账号登录成功后进入目标应用页。
   - 当 Better Auth 返回 `EMAIL_NOT_VERIFIED` 时，说明密码已通过但邮箱未验证；页面跳转邮箱验证等待页。
-  - Better Auth 服务端配置 `emailVerification.sendOnSignIn=true` 时，该错误返回前会触发 `sendVerificationEmail`；邮件中的验证链接成功后回跳 `redirectTo`，默认进入 `/app`。
+  - Better Auth 服务端配置 `emailVerification.sendOnSignIn=true` 时，该错误返回前会触发 `sendVerificationEmail`；邮件中的验证链接成功后回跳 `redirectTo`，默认进入 `/dashboard`。
 - `authClient.signIn.social`：发起 OAuth 登录，provider 可配置为 github/google。
-- `auth.api.getSession`：服务端页面加载时检查已登录用户，已登录则重定向 /app。
+- `auth.api.getSession`：服务端页面加载时检查已登录用户，已登录则重定向 /dashboard。
 
 ## 实现要点
 
@@ -58,8 +58,8 @@
 | `auth-sign-in-003` | 移动端布局 | 无 | 使用移动 viewport 访问 `/sign-in` | 左侧品牌插画区不可见，表单卡片在 24px 横向安全边距内展示，主题切换按钮固定在页面右上角 |
 | `auth-sign-in-004` | 客户端校验 | 无 | 不输入邮箱和密码直接提交 | 页面停留在 `/sign-in`，展示邮箱或密码校验提示，不产生已登录会话 |
 | `auth-sign-in-005` | 登录失败 | 数据库无对应用户 | 输入不存在的邮箱和任意密码提交 | 页面展示克制的登录失败提示，不暴露账号是否存在 |
-| `auth-sign-in-006` | 已验证用户登录成功 | Testcontainers DB seed 一个 `emailVerified=true` 的邮箱密码用户 | 输入正确邮箱和密码提交 | 登录成功后跳转 `/app`，页面显示测试应用页，session cookie 已写入 |
-| `auth-sign-in-007` | redirectTo 登录成功回跳 | seed 一个 `emailVerified=true` 的用户 | 访问 `/sign-in?redirectTo=/app` 并登录 | 登录成功后进入 `/app` |
+| `auth-sign-in-006` | 已验证用户登录成功 | Testcontainers DB seed 一个 `emailVerified=true` 的邮箱密码用户 | 输入正确邮箱和密码提交 | 登录成功后跳转 `/dashboard`，页面显示工作台首页，session cookie 已写入 |
+| `auth-sign-in-007` | redirectTo 登录成功回跳 | seed 一个 `emailVerified=true` 的用户 | 访问 `/sign-in?redirectTo=/dashboard` 并登录 | 登录成功后进入 `/dashboard` |
 | `auth-sign-in-008` | 未验证邮箱登录 | seed 一个 `emailVerified=false` 的邮箱密码用户 | 输入正确邮箱和密码提交 | 跳转 `/verify-email?status=pending&email=...`，页面展示等待验证提示；服务端日志可包含验证链接 |
 | `auth-sign-in-009` | 忘记密码入口 | 无 | 点击“忘记密码” | 跳转 `/forgot-password` |
 | `auth-sign-in-010` | 注册入口 | 无 | 点击“创建账号”或注册入口 | 跳转 `/sign-up` |

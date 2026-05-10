@@ -137,7 +137,7 @@ Pencil/pencli 已导出以下页面设计图：
 交互状态：
 
 - 密码与确认密码不一致时在字段下方提示。
-- 注册成功后根据邮箱验证策略进入 `/verify-email?status=pending` 或 `/app`。
+- 注册成功后根据邮箱验证策略进入 `/verify-email?status=pending` 或 `/dashboard`。
 - 错误提示保持克制，避免明确暴露邮箱是否已注册。
 
 ### 03 忘记密码页
@@ -201,7 +201,7 @@ Pencil/pencli 已导出以下页面设计图：
 交互状态：
 
 - `token` 存在时自动进入验证中状态。
-- 验证成功后刷新 session 并允许进入 `/app`。
+- 验证成功后刷新 session 并允许进入 `/dashboard`。
 - 验证失败时提示 token 无效或过期。
 - `status=pending` 时展示等待验证与重新发送入口。
 

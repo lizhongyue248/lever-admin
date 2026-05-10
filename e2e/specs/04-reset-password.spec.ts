@@ -82,7 +82,7 @@ test.describe("04 reset password", () => {
 
     await page.goto("/sign-in")
     await signInViaUi(page, { email, password: e2eNewPassword })
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 
   test("back button returns to sign in", async ({ page }) => {

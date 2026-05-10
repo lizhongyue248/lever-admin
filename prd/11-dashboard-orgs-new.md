@@ -1,6 +1,6 @@
 # 11 创建组织页
 
-- 路由：`/app/orgs/new`
+- 路由：`/dashboard/orgs/new`
 - 目标：让有权限的用户创建新组织，并进入该组织工作区。
 
 ## 功能范围
@@ -9,9 +9,15 @@
 
 ## 页面布局
 
-- 简单表单：组织名称、slug、logo URL。
-- slug 输入旁展示可用性状态。
-- 底部：创建、取消。
+- 整体布局继承 `06-dashboard.md` 的 DashboardLayout：
+  - Sidebar、Topbar、左下角用户菜单、主题切换、面包屑与响应式行为均保持一致。
+  - 本页只定义 Main 内容区域布局，不重复定义全局壳层。
+- Main 内容区域：
+  - 页面标题区展示「创建组织」和创建后权限说明。
+  - 简单表单包含组织名称、slug、logo URL。
+  - slug 输入旁展示可用性状态、校验中状态和错误说明。
+  - 底部操作区展示创建、取消按钮。
+  - 创建成功后进入新组织设置页。
 
 ## 用户动作
 
@@ -29,7 +35,7 @@
 
 - slug 使用小写字母、数字、短横线。
 - 创建权限通过 organization.allowUserToCreateOrganization 或 tRPC 中间件限制。
-- 创建成功后 router.replace('/app/orgs/[slug]/settings')。
+- 创建成功后 router.replace('/dashboard/orgs/[slug]/settings')。
 
 ## 通用工程约束
 

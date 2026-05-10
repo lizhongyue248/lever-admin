@@ -100,10 +100,10 @@ test.describe("02 sign up", () => {
 
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
 
     await page.goto("/sign-up")
-    await expect(page).toHaveURL(/\/app$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 
   test("back link returns to sign in", async ({ page }) => {

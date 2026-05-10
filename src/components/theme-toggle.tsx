@@ -420,7 +420,7 @@ export const ThemeToggle = ({ blur = false, className, disabled, gifUrl = defaul
         "inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-border bg-background/85 p-0 text-foreground shadow-sm outline-none backdrop-blur transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
         className
       )}
-      disabled={disabled || !mounted}
+      disabled={disabled}
       onClick={toggleTheme}
       type="button"
       whileTap={prefersReducedMotion ? undefined : { scale: 0.94 }}
