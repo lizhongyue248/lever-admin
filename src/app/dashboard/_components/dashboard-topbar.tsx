@@ -1,6 +1,7 @@
 "use client"
 
 import { Menu } from "lucide-react"
+import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 
@@ -21,9 +22,27 @@ type DashboardTopbarProps = {
 
 const BreadcrumbLink = ({ children }: { children: ReactNode }) => <span className="text-muted-foreground text-xs sm:text-sm">{children}</span>
 
+const getBreadcrumbs = (pathname: string) => {
+  if (pathname === "/dashboard/settings/profile") {
+    return ["首页", "设置", "个人资料"]
+  }
+
+  if (pathname === "/dashboard/settings/security") {
+    return ["首页", "设置", "安全设置"]
+  }
+
+  if (pathname === "/dashboard/settings/sessions") {
+    return ["首页", "设置", "我的会话"]
+  }
+
+  return ["首页", "工作台"]
+}
+
 export const DashboardTopbar = ({ collapsed, data, onToggleSidebar }: DashboardTopbarProps) => {
+  const pathname = usePathname()
   const [hydrated, setHydrated] = useState(false)
   const [open, setOpen] = useState(false)
+  const breadcrumbs = getBreadcrumbs(pathname)
 
   useEffect(() => {
     setHydrated(true)
@@ -61,9 +80,16 @@ export const DashboardTopbar = ({ collapsed, data, onToggleSidebar }: DashboardT
         </Button>
         <Separator className="hidden h-5 sm:block" orientation="vertical" />
         <nav aria-label="面包屑" className="flex min-w-0 items-center gap-2">
-          <BreadcrumbLink>首页</BreadcrumbLink>
-          <span className="text-muted-foreground text-xs">/</span>
-          <span className="truncate font-medium text-xs sm:text-sm">工作台</span>
+          {breadcrumbs.map((breadcrumb, index) => {
+            const isLast = index === breadcrumbs.length - 1
+
+            return (
+              <span className="flex min-w-0 items-center gap-2" key={breadcrumb}>
+                {isLast ? <span className="truncate font-medium text-xs sm:text-sm">{breadcrumb}</span> : <BreadcrumbLink>{breadcrumb}</BreadcrumbLink>}
+                {!isLast ? <span className="text-muted-foreground text-xs">/</span> : null}
+              </span>
+            )
+          })}
         </nav>
       </div>
 

@@ -1,3 +1,4 @@
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import type { ReactNode } from "react"
 
@@ -9,7 +10,9 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession()
 
   if (!session?.user) {
-    redirect("/sign-in?redirectTo=%2Fdashboard")
+    const headerList = await headers()
+    const currentPath = headerList.get("x-current-path") ?? "/dashboard"
+    redirect(`/sign-in?redirectTo=${encodeURIComponent(currentPath)}`)
   }
 
   const shellData = await api.dashboard.getShell()

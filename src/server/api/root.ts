@@ -1,4 +1,5 @@
 import { dashboardRouter } from "@/server/api/routers/dashboard"
+import { profileRouter } from "@/server/api/routers/profile"
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc"
 
 /**
@@ -7,7 +8,8 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc"
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  dashboard: dashboardRouter
+  dashboard: dashboardRouter,
+  profile: profileRouter
 })
 
 // export type definition of API
