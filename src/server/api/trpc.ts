@@ -28,6 +28,9 @@ import { db } from "@/server/db"
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth.api.getSession({
+    query: {
+      disableCookieCache: true
+    },
     headers: opts.headers
   })
   return {

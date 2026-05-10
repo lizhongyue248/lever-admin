@@ -1,5 +1,11 @@
 import { headers } from "next/headers"
-import { cache } from "react"
+
 import { auth } from "."
 
-export const getSession = cache(async () => auth.api.getSession({ headers: await headers() }))
+export const getSession = async () =>
+  auth.api.getSession({
+    query: {
+      disableCookieCache: true
+    },
+    headers: await headers()
+  })
