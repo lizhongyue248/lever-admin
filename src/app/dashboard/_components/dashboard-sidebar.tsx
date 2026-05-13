@@ -38,7 +38,10 @@ const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: stri
       label: "账号设置"
     },
     {
-      items: [{ href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" }],
+      items: [
+        { href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
+        { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" }
+      ],
       label: "管理"
     }
   ]

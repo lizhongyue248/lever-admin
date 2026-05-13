@@ -52,6 +52,56 @@ export const createUserRecord = async ({ email, name, role = "user" }: { email: 
   }
 }
 
+export const createAdminUserFixture = async ({ banned = false, email, name, role = "user" }: { banned?: boolean; email: string; name: string; role?: string }) => {
+  const sql = createE2eSql()
+  const id = `user-${email.replace(/[^a-z0-9]/giu, "-")}`
+
+  try {
+    await sql`
+      insert into "system_user" ("id", "name", "email", "email_verified", "role", "banned", "created_at", "updated_at")
+      values (${id}, ${name}, ${email}, true, ${role}, ${banned}, now(), now())
+      on conflict ("email") do update set
+        "name" = excluded."name",
+        "email_verified" = true,
+        "role" = excluded."role",
+        "banned" = excluded."banned",
+        "updated_at" = now()
+    `
+
+    return { email, id, name, role }
+  } finally {
+    await sql.end()
+  }
+}
+
+export const createUserSessionFixture = async ({ email, userAgent = "E2E Chrome" }: { email: string; userAgent?: string }) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ id: string }[]>`
+      select "id"
+      from "system_user"
+      where "email" = ${email}
+      limit 1
+    `
+    const userId = rows[0]?.id
+
+    if (!userId) {
+      throw new Error(`Cannot create session for missing user: ${email}`)
+    }
+
+    const token = `session-${randomUUID()}`
+    await sql`
+      insert into "system_session" ("id", "token", "user_id", "expires_at", "ip_address", "user_agent", "created_at", "updated_at")
+      values (${`session-${randomUUID()}`}, ${token}, ${userId}, now() + interval '7 days', '127.0.0.1', ${userAgent}, now(), now())
+    `
+
+    return { token, userId }
+  } finally {
+    await sql.end()
+  }
+}
+
 export const seedOrganizationWithDepartments = async ({ departmentName, rootName, rootSlug }: { departmentName: string; rootName: string; rootSlug: string }) => {
   const sql = createE2eSql()
   const rootId = `org-${rootSlug}`

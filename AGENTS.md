@@ -206,6 +206,8 @@ type UserRow = RouterOutputs["admin"]["user"]["list"]["items"][number]
 ### Components
 
 - Search existing components before creating new ones.
+- Prefer shadcn/ui components from `src/components/ui` for common UI primitives before writing custom implementations.
+- If a needed shadcn/ui primitive is missing, install or add that component instead of hand-rolling the primitive.
 - Components shared by several pages within one route group belong in that route group's `_components/` directory. For example, components shared by `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, and `/verify-email` belong in `src/app/(auth)/_components/`.
 - Components used by only one page belong in that page's own `_components/` directory. For example, login-only components belong in `src/app/(auth)/sign-in/_components/`.
 - Global reusable components belong in `src/components/` only when they are intentionally usable across unrelated product areas.
