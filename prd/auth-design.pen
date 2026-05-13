@@ -13464,6 +13464,2172 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "EdwSt",
+      "x": 10780,
+      "y": 0,
+      "name": "01A Sign In 2FA",
+      "width": 1440,
+      "height": 900,
+      "fill": "$background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "P1jUK",
+          "name": "Brand panel",
+          "width": 520,
+          "height": "fill_container",
+          "fill": "#f7faff",
+          "stroke": {
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$border"
+          },
+          "layout": "vertical",
+          "padding": [
+            56,
+            64
+          ],
+          "justifyContent": "space_between",
+          "children": [
+            {
+              "type": "frame",
+              "id": "NUOaz",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Illustration image background - two factor",
+              "width": 520,
+              "height": 900,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./images/generated-1778468778155.png",
+                "mode": "fill"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "KRFy6",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Text legibility overlay",
+              "width": 520,
+              "height": 900,
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 90,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#f8fbffe8",
+                    "position": 0
+                  },
+                  {
+                    "color": "#f8fbffb8",
+                    "position": 0.45
+                  },
+                  {
+                    "color": "#f8fbff66",
+                    "position": 1
+                  }
+                ]
+              }
+            },
+            {
+              "type": "frame",
+              "id": "xMp3X",
+              "name": "siBrand",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "a0Txl",
+                  "name": "siLogo",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "OoPjB",
+                      "name": "siLogoMark",
+                      "width": 32,
+                      "height": 32,
+                      "fill": "$primary",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t4XFu",
+                          "name": "siLogoText",
+                          "fill": "$primary-foreground",
+                          "content": "L",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "QJ1b8",
+                      "name": "siBrandName",
+                      "fill": "$foreground",
+                      "content": "Lever Admin",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "650"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "t9Jke",
+                  "name": "siTitle",
+                  "fill": "$foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Secure second-step verification",
+                  "lineHeight": 1.12,
+                  "fontFamily": "Inter",
+                  "fontSize": 34,
+                  "fontWeight": "680"
+                },
+                {
+                  "type": "text",
+                  "id": "p7Zst",
+                  "name": "siDesc",
+                  "fill": "$muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Protect privileged admin access with authenticator codes, trusted devices and recovery codes.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "V4rcsN",
+                  "name": "siMetrics",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "bSRVS",
+                      "name": "siMetric1",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "cBOO3",
+                          "name": "siDot1",
+                          "width": 8,
+                          "height": 8,
+                          "fill": "$primary",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "text",
+                          "id": "joUuT",
+                          "name": "siMetricText1",
+                          "fill": "$muted-foreground",
+                          "content": "Authenticator verification before session creation",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "WmkIw",
+                      "name": "siMetric2",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "fsnlR",
+                          "name": "siDot2",
+                          "width": 8,
+                          "height": 8,
+                          "fill": "$primary",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "text",
+                          "id": "t8HeN",
+                          "name": "siMetricText2",
+                          "fill": "$muted-foreground",
+                          "content": "Trusted device and backup code recovery",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "H9LxF",
+          "name": "Form area",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$background",
+          "layout": "vertical",
+          "padding": 64,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "O2URly",
+              "name": "siCard",
+              "width": 430,
+              "fill": "$card",
+              "cornerRadius": 10,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000026",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24,
+                "spread": -8
+              },
+              "layout": "vertical",
+              "gap": 22,
+              "padding": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zxhvL",
+                  "name": "siTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "OCpz5",
+                      "name": "siHeading",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "B4TONC",
+                          "name": "siH1",
+                          "fill": "$foreground",
+                          "content": "二次验证",
+                          "fontFamily": "Inter",
+                          "fontSize": 26,
+                          "fontWeight": "680"
+                        },
+                        {
+                          "type": "text",
+                          "id": "xocop",
+                          "name": "siSub",
+                          "fill": "$muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "输入认证器验证码，完成本次登录。",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QGYFQ",
+                  "name": "siAlert",
+                  "width": "fill_container",
+                  "fill": "$accent",
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#bfd7ff"
+                  },
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Y0Ciy",
+                      "name": "siAlertTitle",
+                      "fill": "#000000",
+                      "content": "需要二次验证",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "650"
+                    },
+                    {
+                      "type": "text",
+                      "id": "g1QKbj",
+                      "name": "siAlertText",
+                      "fill": "$muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "账号密码已通过，请输入认证器应用中的 6 位验证码完成登录。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JFUj6",
+                  "name": "twoFactorForm",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "usheI",
+                      "name": "codeLabel",
+                      "fill": "$foreground",
+                      "content": "验证码",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gyd9j",
+                      "name": "otpBoxes",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "c1XIWT",
+                          "name": "otpBox1",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "a4E7La",
+                              "name": "otpDigit1",
+                              "fill": "$foreground",
+                              "content": "1",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gqHZp",
+                          "name": "otpBox2",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "PEKKX",
+                              "name": "otpDigit2",
+                              "fill": "$foreground",
+                              "content": "2",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gVXlK",
+                          "name": "otpBox3",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "pcLhR",
+                              "name": "otpDigit3",
+                              "fill": "$foreground",
+                              "content": "8",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "c6XoD",
+                          "name": "otpBox4",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "FQdv9",
+                              "name": "otpDigit4",
+                              "fill": "$foreground",
+                              "content": "4",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "lh0GZ",
+                          "name": "otpBox5",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "QWwEi",
+                              "name": "otpDigit5",
+                              "fill": "$foreground",
+                              "content": "0",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "XsrQN",
+                          "name": "otpBox6",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "X4pJi",
+                              "name": "otpDigit6",
+                              "fill": "$foreground",
+                              "content": "6",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fXrHD",
+                      "name": "trustDeviceRow",
+                      "width": "fill_container",
+                      "gap": 9,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "U6irY",
+                          "name": "trustCheckbox",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$background",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "y5wlkf",
+                          "name": "trustDeviceText",
+                          "fill": "$muted-foreground",
+                          "content": "信任此设备 30 天",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "k0Rgi",
+                  "name": "siSubmit",
+                  "width": "fill_container",
+                  "height": 42,
+                  "fill": "$primary",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "m7E5c3",
+                      "name": "siSubmitText",
+                      "fill": "$primary-foreground",
+                      "content": "验证并进入应用",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "650"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "tzyhG",
+                  "name": "siSwitch",
+                  "fill": "$muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "无法使用认证器？使用备用恢复码",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "L1fi89",
+          "layoutPosition": "absolute",
+          "x": 1372,
+          "y": 24,
+          "name": "siTheme",
+          "width": 36,
+          "height": 36,
+          "fill": "$muted",
+          "cornerRadius": 6,
+          "stroke": {
+            "thickness": 1,
+            "fill": "$border"
+          },
+          "gap": 2,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "f7ihRl",
+              "name": "siThemeIcon",
+              "width": 18,
+              "height": 18,
+              "iconFontName": "sun-moon",
+              "iconFontFamily": "lucide",
+              "fill": "$foreground"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "JCkeW",
+      "x": 10780,
+      "y": 1040,
+      "name": "Dark 01A Sign In 2FA",
+      "theme": {
+        "mode": "dark"
+      },
+      "width": 1440,
+      "height": 900,
+      "fill": "#333333",
+      "children": [
+        {
+          "type": "frame",
+          "id": "dl8Um",
+          "name": "Brand panel",
+          "width": 520,
+          "height": "fill_container",
+          "fill": "#333333",
+          "stroke": {
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$border"
+          },
+          "layout": "vertical",
+          "padding": [
+            56,
+            64
+          ],
+          "justifyContent": "space_between",
+          "children": [
+            {
+              "type": "frame",
+              "id": "TjOgH",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Illustration image background - two factor",
+              "width": 520,
+              "height": 900,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "./images/generated-1778468774079.png",
+                "mode": "fill"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "yy7jE",
+              "layoutPosition": "absolute",
+              "x": 0,
+              "y": 0,
+              "name": "Text legibility overlay",
+              "width": 520,
+              "height": 900,
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 90,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#333333e6",
+                    "position": 0
+                  },
+                  {
+                    "color": "#333333b8",
+                    "position": 0.45
+                  },
+                  {
+                    "color": "#33333355",
+                    "position": 1
+                  }
+                ]
+              }
+            },
+            {
+              "type": "frame",
+              "id": "yIVvW",
+              "name": "siBrand",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "p1mFk8",
+                  "name": "siLogo",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "N4XCR",
+                      "name": "siLogoMark",
+                      "width": 32,
+                      "height": 32,
+                      "fill": "$primary",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "bGwZz",
+                          "name": "siLogoText",
+                          "fill": "$primary-foreground",
+                          "content": "L",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "vqGr2",
+                      "name": "siBrandName",
+                      "fill": "$foreground",
+                      "content": "Lever Admin",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "650"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "gFXr3",
+                  "name": "siTitle",
+                  "fill": "$foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Secure second-step verification",
+                  "lineHeight": 1.12,
+                  "fontFamily": "Inter",
+                  "fontSize": 34,
+                  "fontWeight": "680"
+                },
+                {
+                  "type": "text",
+                  "id": "T4P0C",
+                  "name": "siDesc",
+                  "fill": "$muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Protect privileged admin access with authenticator codes, trusted devices and recovery codes.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "cNMlx",
+                  "name": "siMetrics",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "rCxC8",
+                      "name": "siMetric1",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "TH1rc",
+                          "name": "siDot1",
+                          "width": 8,
+                          "height": 8,
+                          "fill": "$primary",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "text",
+                          "id": "uRptQ",
+                          "name": "siMetricText1",
+                          "fill": "$muted-foreground",
+                          "content": "Authenticator verification before session creation",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MSocO",
+                      "name": "siMetric2",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "jUO7s",
+                          "name": "siDot2",
+                          "width": 8,
+                          "height": 8,
+                          "fill": "$primary",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "text",
+                          "id": "GsTl8",
+                          "name": "siMetricText2",
+                          "fill": "$muted-foreground",
+                          "content": "Trusted device and backup code recovery",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "oh7Nf",
+          "name": "Form area",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$background",
+          "layout": "vertical",
+          "padding": 64,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "yeF5X",
+              "name": "siCard",
+              "width": 430,
+              "fill": "$card",
+              "cornerRadius": 10,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000026",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24,
+                "spread": -8
+              },
+              "layout": "vertical",
+              "gap": 22,
+              "padding": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oxHLc",
+                  "name": "siTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PsfYl",
+                      "name": "siHeading",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rdxw1",
+                          "name": "siH1",
+                          "fill": "$foreground",
+                          "content": "二次验证",
+                          "fontFamily": "Inter",
+                          "fontSize": 26,
+                          "fontWeight": "680"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZBaUR",
+                          "name": "siSub",
+                          "fill": "$muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "输入认证器验证码，完成本次登录。",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SGBIA",
+                  "name": "siAlert",
+                  "width": "fill_container",
+                  "fill": "$accent",
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#3f7df4"
+                  },
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "YlAYZ",
+                      "name": "siAlertTitle",
+                      "fill": "#ebebeb",
+                      "content": "需要二次验证",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "650"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lF2t2",
+                      "name": "siAlertText",
+                      "fill": "$muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "账号密码已通过，请输入认证器应用中的 6 位验证码完成登录。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w8wIf",
+                  "name": "twoFactorForm",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "i07VUZ",
+                      "name": "codeLabel",
+                      "fill": "$foreground",
+                      "content": "验证码",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "wsvsj",
+                      "name": "otpBoxes",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "tEdZM",
+                          "name": "otpBox1",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Tp7cJ",
+                              "name": "otpDigit1",
+                              "fill": "$foreground",
+                              "content": "1",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "RyHdV",
+                          "name": "otpBox2",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "npZdr",
+                              "name": "otpDigit2",
+                              "fill": "$foreground",
+                              "content": "2",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "S7eOd",
+                          "name": "otpBox3",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "dnPWB",
+                              "name": "otpDigit3",
+                              "fill": "$foreground",
+                              "content": "8",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Zgy26",
+                          "name": "otpBox4",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "a8D4Fe",
+                              "name": "otpDigit4",
+                              "fill": "$foreground",
+                              "content": "4",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Zy6Yw",
+                          "name": "otpBox5",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ovZt5",
+                              "name": "otpDigit5",
+                              "fill": "$foreground",
+                              "content": "0",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "h9PoT",
+                          "name": "otpBox6",
+                          "width": 48,
+                          "height": 48,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "LkzG4",
+                              "name": "otpDigit6",
+                              "fill": "$foreground",
+                              "content": "6",
+                              "fontFamily": "Inter",
+                              "fontSize": 20,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "BxpQz",
+                      "name": "trustDeviceRow",
+                      "width": "fill_container",
+                      "gap": 9,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "JeWDi",
+                          "name": "trustCheckbox",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$background",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "guUR2",
+                          "name": "trustDeviceText",
+                          "fill": "$muted-foreground",
+                          "content": "信任此设备 30 天",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "J11sh",
+                  "name": "siSubmit",
+                  "width": "fill_container",
+                  "height": 42,
+                  "fill": "$primary",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "b4EOh",
+                      "name": "siSubmitText",
+                      "fill": "$primary-foreground",
+                      "content": "验证并进入应用",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "650"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "i4x88",
+                  "name": "siSwitch",
+                  "fill": "$muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "无法使用认证器？使用备用恢复码",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "uiA8j",
+          "layoutPosition": "absolute",
+          "x": 1372,
+          "y": 24,
+          "name": "siTheme",
+          "width": 36,
+          "height": 36,
+          "fill": "$muted",
+          "cornerRadius": 6,
+          "stroke": {
+            "thickness": 1,
+            "fill": "$border"
+          },
+          "gap": 2,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "iF9ee",
+              "name": "siThemeIcon",
+              "width": 18,
+              "height": 18,
+              "iconFontName": "sun-moon",
+              "iconFontFamily": "lucide",
+              "fill": "$foreground"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "EshWK",
+      "x": 3066,
+      "y": 2080,
+      "name": "Mobile 01A Sign In 2FA",
+      "width": 390,
+      "height": 844,
+      "fill": "$background",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "bqSSG",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile content",
+          "width": 390,
+          "height": 844,
+          "fill": "$background",
+          "layout": "vertical",
+          "padding": [
+            88,
+            24,
+            32,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "FIrT8",
+              "name": "m01Card",
+              "width": "fill_container",
+              "fill": "$card",
+              "cornerRadius": 10,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000026",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24,
+                "spread": -8
+              },
+              "layout": "vertical",
+              "gap": 20,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bhePG",
+                  "name": "siTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "OOgGm",
+                      "name": "siHeading",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "D43MOZ",
+                          "name": "siH1",
+                          "fill": "$foreground",
+                          "content": "二次验证",
+                          "fontFamily": "Inter",
+                          "fontSize": 26,
+                          "fontWeight": "680"
+                        },
+                        {
+                          "type": "text",
+                          "id": "unjib",
+                          "name": "siSub",
+                          "fill": "$muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "输入认证器验证码，完成本次登录。",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w7Ad9U",
+                  "name": "siAlert",
+                  "width": "fill_container",
+                  "fill": "$accent",
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#bfd7ff"
+                  },
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "euhgO",
+                      "name": "siAlertTitle",
+                      "fill": "#000000",
+                      "content": "需要二次验证",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "650"
+                    },
+                    {
+                      "type": "text",
+                      "id": "i2kIr",
+                      "name": "siAlertText",
+                      "fill": "$muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "输入认证器应用中的 6 位验证码完成登录。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "A0wfu",
+                  "name": "twoFactorForm",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "l5NZt",
+                      "name": "codeLabel",
+                      "fill": "$foreground",
+                      "content": "验证码",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jUOd8",
+                      "name": "otpBoxes",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pjpTB",
+                          "name": "otpBox1",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qsQVN",
+                              "name": "otpDigit1",
+                              "fill": "$foreground",
+                              "content": "1",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SE7Pg",
+                          "name": "otpBox2",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "nsgV7",
+                              "name": "otpDigit2",
+                              "fill": "$foreground",
+                              "content": "2",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "pyDGx",
+                          "name": "otpBox3",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GrQZm",
+                              "name": "otpDigit3",
+                              "fill": "$foreground",
+                              "content": "8",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SqdHM",
+                          "name": "otpBox4",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "J5eNu",
+                              "name": "otpDigit4",
+                              "fill": "$foreground",
+                              "content": "4",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "EIilC",
+                          "name": "otpBox5",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "D7l7Mt",
+                              "name": "otpDigit5",
+                              "fill": "$foreground",
+                              "content": "0",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "b5Gou9",
+                          "name": "otpBox6",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "POTbv",
+                              "name": "otpDigit6",
+                              "fill": "$foreground",
+                              "content": "6",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fk3GI",
+                      "name": "trustDeviceRow",
+                      "width": "fill_container",
+                      "gap": 9,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "sgVa5",
+                          "name": "trustCheckbox",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$background",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "rp91g",
+                          "name": "trustDeviceText",
+                          "fill": "$muted-foreground",
+                          "content": "信任此设备 30 天",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "D5Ncg",
+                  "name": "siSubmit",
+                  "width": "fill_container",
+                  "height": 42,
+                  "fill": "$primary",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "A8Ozf",
+                      "name": "siSubmitText",
+                      "fill": "$primary-foreground",
+                      "content": "验证并进入应用",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "650"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "QcoGR",
+                  "name": "siSwitch",
+                  "fill": "$muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "无法使用认证器？使用备用恢复码",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "iBkvj",
+          "x": 330,
+          "y": 24,
+          "name": "Mobile theme button",
+          "width": 36,
+          "height": 36,
+          "fill": "$muted",
+          "cornerRadius": 6,
+          "stroke": {
+            "thickness": 1,
+            "fill": "$border"
+          },
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "ppHpq",
+              "name": "m01ThemeIcon",
+              "width": 18,
+              "height": 18,
+              "iconFontName": "sun-moon",
+              "iconFontFamily": "lucide",
+              "fill": "$foreground"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "NNJO8",
+      "x": 3066,
+      "y": 2972,
+      "name": "Mobile Dark 01A Sign In 2FA",
+      "theme": {
+        "mode": "dark"
+      },
+      "width": 390,
+      "height": 844,
+      "fill": "$background",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "c5XteD",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile content",
+          "width": 390,
+          "height": 844,
+          "fill": "$background",
+          "layout": "vertical",
+          "padding": [
+            88,
+            24,
+            32,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "EZTjh",
+              "name": "dm01Card",
+              "width": "fill_container",
+              "fill": "$card",
+              "cornerRadius": 10,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000026",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24,
+                "spread": -8
+              },
+              "layout": "vertical",
+              "gap": 20,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "WQ8LB",
+                  "name": "siTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "FNuZP",
+                      "name": "siHeading",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "M1lEwn",
+                          "name": "siH1",
+                          "fill": "$foreground",
+                          "content": "二次验证",
+                          "fontFamily": "Inter",
+                          "fontSize": 26,
+                          "fontWeight": "680"
+                        },
+                        {
+                          "type": "text",
+                          "id": "djFSM",
+                          "name": "siSub",
+                          "fill": "$muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "输入认证器验证码，完成本次登录。",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XL2f0",
+                  "name": "siAlert",
+                  "width": "fill_container",
+                  "fill": "$accent",
+                  "cornerRadius": 6,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#3f7df4"
+                  },
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Rm7bV",
+                      "name": "siAlertTitle",
+                      "fill": "#ebebeb",
+                      "content": "需要二次验证",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "650"
+                    },
+                    {
+                      "type": "text",
+                      "id": "g7Rcj5",
+                      "name": "siAlertText",
+                      "fill": "$muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "输入认证器应用中的 6 位验证码完成登录。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "A7iEW",
+                  "name": "twoFactorForm",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Y56tey",
+                      "name": "codeLabel",
+                      "fill": "$foreground",
+                      "content": "验证码",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "I8EOF",
+                      "name": "otpBoxes",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "U0qrTL",
+                          "name": "otpBox1",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ZmgIc",
+                              "name": "otpDigit1",
+                              "fill": "$foreground",
+                              "content": "1",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DUoMZ",
+                          "name": "otpBox2",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Os73f",
+                              "name": "otpDigit2",
+                              "fill": "$foreground",
+                              "content": "2",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "H0dKV8",
+                          "name": "otpBox3",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "R1Jk1e",
+                              "name": "otpDigit3",
+                              "fill": "$foreground",
+                              "content": "8",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DhgsZ",
+                          "name": "otpBox4",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Q7Dow5",
+                              "name": "otpDigit4",
+                              "fill": "$foreground",
+                              "content": "4",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Xb84f",
+                          "name": "otpBox5",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "elT68",
+                              "name": "otpDigit5",
+                              "fill": "$foreground",
+                              "content": "0",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "fL0gs",
+                          "name": "otpBox6",
+                          "width": 42,
+                          "height": 46,
+                          "fill": "$background",
+                          "cornerRadius": 6,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "y3Ofzj",
+                              "name": "otpDigit6",
+                              "fill": "$foreground",
+                              "content": "6",
+                              "fontFamily": "Inter",
+                              "fontSize": 19,
+                              "fontWeight": "650"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "skfQj",
+                      "name": "trustDeviceRow",
+                      "width": "fill_container",
+                      "gap": 9,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "os0LB",
+                          "name": "trustCheckbox",
+                          "width": 16,
+                          "height": 16,
+                          "fill": "$background",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border"
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "jdG4U",
+                          "name": "trustDeviceText",
+                          "fill": "$muted-foreground",
+                          "content": "信任此设备 30 天",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DygRw",
+                  "name": "siSubmit",
+                  "width": "fill_container",
+                  "height": 42,
+                  "fill": "$primary",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "eI4a6",
+                      "name": "siSubmitText",
+                      "fill": "$primary-foreground",
+                      "content": "验证并进入应用",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "650"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "lZbsp",
+                  "name": "siSwitch",
+                  "fill": "$muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "无法使用认证器？使用备用恢复码",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "sDgU7",
+          "x": 330,
+          "y": 24,
+          "name": "Mobile theme button",
+          "width": 36,
+          "height": 36,
+          "fill": "$muted",
+          "cornerRadius": 6,
+          "stroke": {
+            "thickness": 1,
+            "fill": "$border"
+          },
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "cRExw",
+              "name": "dm01ThemeIcon",
+              "width": 18,
+              "height": 18,
+              "iconFontName": "sun-moon",
+              "iconFontFamily": "lucide",
+              "fill": "$foreground"
+            }
+          ]
+        }
+      ]
     }
   ],
   "themes": {

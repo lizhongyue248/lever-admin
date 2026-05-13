@@ -38,6 +38,16 @@ export const verifyEmailSchema = z.object({
   email: emailSchema
 })
 
+export const twoFactorTotpSchema = z.object({
+  code: z.string().regex(/^\d{6}$/, "请输入 6 位数字验证码。"),
+  trustDevice: z.boolean()
+})
+
+export const twoFactorBackupCodeSchema = z.object({
+  code: z.string().min(1, "请输入备用恢复码。").max(64, "备用恢复码格式不正确。"),
+  trustDevice: z.boolean()
+})
+
 export type FieldErrors<TField extends string> = Partial<Record<TField, string>>
 
 export const getZodFieldErrors = <TField extends string>(error: z.ZodError): FieldErrors<TField> => {
@@ -58,4 +68,6 @@ export type SignInValues = z.infer<typeof signInSchema>
 export type SignUpValues = z.infer<typeof signUpSchema>
 export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
+export type TwoFactorBackupCodeValues = z.infer<typeof twoFactorBackupCodeSchema>
+export type TwoFactorTotpValues = z.infer<typeof twoFactorTotpSchema>
 export type VerifyEmailValues = z.infer<typeof verifyEmailSchema>

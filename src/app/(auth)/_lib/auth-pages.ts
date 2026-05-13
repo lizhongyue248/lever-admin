@@ -1,4 +1,4 @@
-export type AuthPageKey = "sign-in" | "sign-up" | "forgot-password" | "reset-password" | "verify-email"
+export type AuthPageKey = "sign-in" | "sign-in-2fa" | "sign-up" | "forgot-password" | "reset-password" | "verify-email"
 
 export interface AuthPageContent {
   imageAlt: string
@@ -11,6 +11,11 @@ export const authPages: Record<AuthPageKey, AuthPageContent> = {
     imageAlt: "登录页安全身份验证插画",
     imageDark: "/auth/sign-in-dark.png",
     imageLight: "/auth/sign-in-light.png"
+  },
+  "sign-in-2fa": {
+    imageAlt: "登录二次验证安全挑战插画",
+    imageDark: "/auth/sign-in-2fa-dark.png",
+    imageLight: "/auth/sign-in-2fa-light.png"
   },
   "sign-up": {
     imageAlt: "注册页账号创建插画",

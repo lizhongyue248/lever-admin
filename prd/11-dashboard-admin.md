@@ -1,0 +1,53 @@
+# 11 管理概览页
+
+- 路由：`/dashboard/admin`
+- 目标：为平台管理员提供用户、组织和 API Key 的平台级治理入口。
+
+## 功能范围
+
+管理概览页负责展示平台级治理摘要。它面向平台 admin/super_admin，不面向普通用户或普通组织管理员。
+
+## 页面布局
+
+- 整体布局继承 `06-dashboard.md` 的 DashboardLayout：
+  - Sidebar、Topbar、左下角用户菜单、主题切换、面包屑与响应式行为均保持一致。
+  - 本页只定义 Main 内容区域布局，不重复定义全局壳层。
+- Main 内容区域：
+  - 页面标题区展示「管理概览」和平台治理说明。
+  - 统计卡片展示用户总数、活跃用户、平台组织数、异常会话和 API Key 数。
+  - 快捷入口卡片提供用户管理、平台组织管理、API Key 管理跳转。
+  - 风险列表展示待处理封禁、异常登录、过期邀请和高风险 API Key。
+
+## 用户动作
+
+- 查看平台治理摘要。
+- 跳转用户管理。
+- 跳转平台组织管理。
+- 跳转 API Key 管理。
+- 处理平台风险事项。
+
+## 接口与逻辑
+
+- `admin.dashboard.getOverview`：聚合平台级用户、组织、会话、邀请和 API Key 摘要。
+- `admin.dashboard.getRiskItems`：读取平台待处理风险事项。
+
+## 实现要点
+
+- 本页必须使用 adminProcedure 校验平台管理员角色。
+- 普通用户和组织管理员不能访问。
+- 快捷入口只展示当前管理员有权限访问的模块。
+- 平台组织统计包含公司组织数量、部门数量、成员数量、待处理邀请和停用组织摘要；部门不是独立组织。
+
+## 通用工程约束
+
+- Create T3 App: Next.js App Router, TypeScript, tRPC, Drizzle ORM, Tailwind CSS
+- Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
+- PostgreSQL: Better Auth tables plus optional product-specific extension tables
+- shadcn/ui + Zod: forms, tables, dialogs, validation
+
+## 验收标准
+
+- 页面在未授权、加载、空数据、错误、成功状态下均有明确反馈。
+- 所有敏感动作必须在服务端重新校验 session 和权限。
+- 表单字段均有客户端和服务端校验。
+- 高危操作必须二次确认。

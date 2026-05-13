@@ -11,6 +11,7 @@ import { initTRPC, TRPCError } from "@trpc/server"
 import superjson from "superjson"
 import { ZodError } from "zod"
 
+import { PLATFORM_ADMIN_ROLES } from "@/lib/const"
 import { auth } from "@/server/better-auth"
 import { db } from "@/server/db"
 
@@ -129,6 +130,27 @@ export const protectedProcedure = t.procedure.use(timingMiddleware).use(({ ctx, 
     ctx: {
       // infers the `session` as non-nullable
       session: { ...ctx.session, user: ctx.session.user }
+    }
+  })
+})
+
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  const role = ctx.session.user.role
+
+  if (!PLATFORM_ADMIN_ROLES.some((adminRole) => adminRole === role)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "需要平台管理员权限。" })
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      session: {
+        ...ctx.session,
+        user: {
+          ...ctx.session.user,
+          role
+        }
+      }
     }
   })
 })

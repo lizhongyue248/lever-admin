@@ -1,11 +1,10 @@
 import { TRPCError } from "@trpc/server"
-import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import { and, desc, eq, gt, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 
+import { ORGANIZATION_ADMIN_ROLES } from "@/lib/const"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { account, apikey, invitation, member, organization, passkey, session, team, twoFactor, user } from "@/server/db/schema"
-
-const organizationAdminRoles = ["owner", "admin"] as const
 
 const countRows = async (query: Promise<{ value: number }[]>) => {
   const [row] = await query
@@ -13,7 +12,7 @@ const countRows = async (query: Promise<{ value: number }[]>) => {
   return row?.value ?? 0
 }
 
-const isOrganizationAdminRole = (role: string | null | undefined) => organizationAdminRoles.some((adminRole) => adminRole === role)
+const isOrganizationAdminRole = (role: string | null | undefined) => ORGANIZATION_ADMIN_ROLES.some((adminRole) => adminRole === role)
 
 const getActiveSessionOrganizationId = (activeSession: typeof session.$inferSelect) => activeSession.activeOrganizationId ?? null
 
@@ -37,9 +36,17 @@ export const dashboardRouter = createTRPCRouter({
 
     const activeOrganizationId = activeSession ? getActiveSessionOrganizationId(activeSession) : null
     const activeOrganization = memberships.find((membership) => membership.organizationId === activeOrganizationId) ?? memberships[0] ?? null
+    const [pendingNotificationCount] = await ctx.db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(invitation)
+      .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, "pending"), gt(invitation.expiresAt, new Date())))
 
     return {
       activeOrganizationId: activeOrganization?.organizationId ?? null,
+      notifications: {
+        pendingCount: pendingNotificationCount?.value ?? 0,
+        unreadCount: pendingNotificationCount?.value ?? 0
+      },
       organizations: memberships,
       user: {
         email: ctx.session.user.email,
@@ -134,9 +141,13 @@ export const dashboardRouter = createTRPCRouter({
       return {
         activeOrganization: activeMembership,
         actions: [
-          { description: `${memberCount - twoFactorEnabledMembers} 位成员尚未开启 2FA`, href: "/dashboard/orgs/members", title: "未开启 2FA 成员" },
-          { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: "/dashboard/orgs/members", title: "过期或撤销邀请" },
-          { description: `${activeSessionCount} 个成员会话可供检查`, href: "/dashboard/settings/sessions", title: "异常会话待检查" },
+          {
+            description: `${memberCount - twoFactorEnabledMembers} 位成员尚未开启 2FA`,
+            href: `/dashboard/orgs/${activeMembership.organizationSlug}/information`,
+            title: "未开启 2FA 成员"
+          },
+          { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: `/dashboard/orgs/${activeMembership.organizationSlug}/invite`, title: "过期或撤销邀请" },
+          { description: `${activeSessionCount} 个成员会话可供检查`, href: `/dashboard/orgs/${activeMembership.organizationSlug}/auth`, title: "异常会话待检查" },
           { description: `${apiKeyCount - enabledApiKeyCount} 个组织密钥需要复核`, href: "/dashboard/admin/api-keys", title: "即将过期 API Key" }
         ].map((action) => ({ ...action, count: action.description.match(/^\d+/)?.[0] ?? "0" })),
         metrics: [
@@ -182,7 +193,7 @@ export const dashboardRouter = createTRPCRouter({
       actions: [
         { description: twoFactorCount > 0 ? "已启用 2FA，建议保管恢复码" : "开启 2FA 可显著降低账号接管风险", href: "/dashboard/settings/security", title: "开启 2FA" },
         { description: passkeyCount > 0 ? "已添加 Passkey，可继续添加备用设备" : "添加 Passkey 提升无密码登录体验", href: "/dashboard/settings/security", title: "添加 Passkey" },
-        { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: "/dashboard/orgs", title: "处理组织邀请" },
+        { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: "/dashboard", title: "处理组织邀请" },
         { description: `${activeSessionCount} 个活跃会话可供检查`, href: "/dashboard/settings/sessions", title: "检查长期会话" }
       ].map((action, index) => ({ ...action, count: index < 2 ? (index + 1).toString() : (action.description.match(/^\d+/)?.[0] ?? (index + 1).toString()) })),
       metrics: [

@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
+import { DashboardNotificationMenu } from "./dashboard-notification-menu"
 import { DashboardSidebar } from "./dashboard-sidebar"
 import type { DashboardShellData } from "./types"
 
@@ -93,7 +94,10 @@ export const DashboardTopbar = ({ collapsed, data, onToggleSidebar }: DashboardT
         </nav>
       </div>
 
-      <ThemeToggle blur start="top-right" variant="circle" />
+      <div className="flex items-center gap-1">
+        <DashboardNotificationMenu disabled={!hydrated} initialCounts={data.notifications} />
+        <ThemeToggle blur disabled={!hydrated} start="top-right" variant="circle" />
+      </div>
     </header>
   )
 }

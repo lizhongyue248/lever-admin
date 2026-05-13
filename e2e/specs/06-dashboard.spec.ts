@@ -1,6 +1,12 @@
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
+
+const waitForDashboardReady = async (page: Page) => {
+  await expect(page.getByRole("banner")).toBeVisible()
+  await expect(page.getByRole("button", { name: "折叠菜单栏" })).toBeEnabled()
+  await expect(page.getByRole("button", { name: "切换主题" })).toBeEnabled()
+}
 
 test.describe("06 dashboard", () => {
   test("redirects anonymous users to sign in with dashboard redirect target", async ({ page }) => {
@@ -19,6 +25,7 @@ test.describe("06 dashboard", () => {
     await signInViaUi(page, { email })
 
     await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
     await expect(page.getByRole("banner")).toBeVisible()
     await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible()
     await expect(page.getByText("Lever Admin")).toBeVisible()
@@ -44,6 +51,7 @@ test.describe("06 dashboard", () => {
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
     await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
 
     const themeButton = page.getByRole("button", { name: "切换主题" })
 
@@ -68,8 +76,11 @@ test.describe("06 dashboard", () => {
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
     await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
 
-    await expect.poll(async () => page.evaluate(() => document.body.scrollHeight)).toBe(await page.evaluate(() => window.innerHeight))
+    const viewportHeight = await page.evaluate(() => window.innerHeight)
+
+    await expect.poll(async () => page.locator("body").evaluate((element) => element.scrollHeight)).toBe(viewportHeight)
     await expect.poll(async () => page.locator("main").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
 
     const sidebarTopBefore = await page.getByRole("navigation", { name: "主导航" }).boundingBox()
@@ -89,6 +100,7 @@ test.describe("06 dashboard", () => {
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
     await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
 
     const sidebar = page.getByTestId("dashboard-sidebar")
     const expandedBox = await sidebar.boundingBox()
@@ -113,6 +125,7 @@ test.describe("06 dashboard", () => {
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
     await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
 
     await page.goto("/app")
 
@@ -144,6 +157,8 @@ test.describe("06 dashboard", () => {
 
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
     await page.getByRole("button", { name: /打开用户菜单/ }).click()
     await page.getByRole("menuitem", { name: "退出登录" }).click()
 

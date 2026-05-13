@@ -91,6 +91,14 @@ const getPositionCoords = (position: AnimationStart) => {
   }
 }
 
+const getDocumentIsDark = (fallback: boolean) => {
+  if (typeof document === "undefined") {
+    return fallback
+  }
+
+  return document.documentElement.classList.contains("dark")
+}
+
 const getTransformOrigin = (start: AnimationStart) => {
   switch (start) {
     case "top-left":
@@ -384,7 +392,7 @@ export const useThemeToggle = ({ blur = false, gifUrl = defaultGifUrl, start = "
   )
 
   const toggleTheme = useCallback(() => {
-    setAnimatedTheme(isDark ? "light" : "dark")
+    setAnimatedTheme(getDocumentIsDark(isDark) ? "light" : "dark")
   }, [isDark, setAnimatedTheme])
 
   return {
@@ -422,6 +430,7 @@ export const ThemeToggle = ({ blur = false, className, disabled, gifUrl = defaul
       )}
       disabled={disabled}
       onClick={toggleTheme}
+      suppressHydrationWarning
       type="button"
       whileTap={prefersReducedMotion ? undefined : { scale: 0.94 }}
       {...props}

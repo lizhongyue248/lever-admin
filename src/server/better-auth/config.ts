@@ -8,6 +8,7 @@ import { adminAc, userAc } from "better-auth/plugins/admin/access"
 import { sql } from "drizzle-orm"
 
 import { env } from "@/env"
+import { PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN, PLATFORM_ROLE_SUPPORT, PLATFORM_ROLE_USER } from "@/lib/const"
 import { db } from "@/server/db"
 import { user as userTable } from "@/server/db/schema"
 
@@ -95,20 +96,17 @@ export const auth = betterAuth({
   },
   plugins: [
     admin({
-      adminRoles: ["admin", "super_admin"],
-      defaultRole: "user",
+      adminRoles: [...PLATFORM_ADMIN_ROLES],
+      defaultRole: PLATFORM_ROLE_USER,
       roles: {
-        admin: adminAc,
-        support: userAc,
-        super_admin: adminAc,
-        user: userAc
+        [PLATFORM_ROLE_ADMIN]: adminAc,
+        [PLATFORM_ROLE_SUPPORT]: userAc,
+        [PLATFORM_ROLE_SUPER_ADMIN]: adminAc,
+        [PLATFORM_ROLE_USER]: userAc
       }
     }),
     organization({
       requireEmailVerificationOnInvitation: true,
-      teams: {
-        enabled: true
-      },
       sendInvitationEmail: async ({ email, invitation, organization }) => {
         console.info("[auth:organization-invitation]", {
           invitationId: invitation.id,

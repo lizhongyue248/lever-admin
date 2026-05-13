@@ -1,8 +1,9 @@
 # 00 认证页面设计说明
 
-本设计覆盖 `prd/01-05` 的公开认证页面：
+本设计覆盖公开认证页面：
 
 - `01-sign-in.md`：登录页
+- `01A-sign-in-2fa.md`：登录二次验证页
 - `02-sign-up.md`：注册页
 - `03-forgot-password.md`：忘记密码页
 - `04-reset-password.md`：重置密码页
@@ -13,6 +14,7 @@
 Pencil/pencli 已导出以下页面设计图：
 
 - 登录页：`prd/auth-designs/01-sign-in.png`
+- 登录二次验证页：`prd/auth-designs/01A-sign-in-2fa.png`
 - 注册页：`prd/auth-designs/02-sign-up.png`
 - 忘记密码页：`prd/auth-designs/03-forgot-password.png`
 - 重置密码页：`prd/auth-designs/04-reset-password.png`
@@ -21,6 +23,7 @@ Pencil/pencli 已导出以下页面设计图：
 暗色主题设计图：
 
 - 登录页：`prd/auth-designs-dark/01-sign-in.dark.png`
+- 登录二次验证页：`prd/auth-designs-dark/01A-sign-in-2fa.dark.png`
 - 注册页：`prd/auth-designs-dark/02-sign-up.dark.png`
 - 忘记密码页：`prd/auth-designs-dark/03-forgot-password.dark.png`
 - 重置密码页：`prd/auth-designs-dark/04-reset-password.dark.png`
@@ -28,8 +31,8 @@ Pencil/pencli 已导出以下页面设计图：
 
 移动端 Pencil 画板已补充在 `prd/auth-design.pen`：
 
-- 亮色：`Mobile 01 Sign In`、`Mobile 02 Sign Up`、`Mobile 03 Forgot Password`、`Mobile 04 Reset Password`、`Mobile 05 Verify Email`、`Mobile 05A Verify Email Success`、`Mobile 05B Verify Email Failed`
-- 暗色：`Mobile Dark 01 Sign In`、`Mobile Dark 02 Sign Up`、`Mobile Dark 03 Forgot Password`、`Mobile Dark 04 Reset Password`、`Mobile Dark 05 Verify Email`、`Mobile Dark 05A Verify Email Success`、`Mobile Dark 05B Verify Email Failed`
+- 亮色：`Mobile 01 Sign In`、`Mobile 01A Sign In 2FA`、`Mobile 02 Sign Up`、`Mobile 03 Forgot Password`、`Mobile 04 Reset Password`、`Mobile 05 Verify Email`、`Mobile 05A Verify Email Success`、`Mobile 05B Verify Email Failed`
+- 暗色：`Mobile Dark 01 Sign In`、`Mobile Dark 01A Sign In 2FA`、`Mobile Dark 02 Sign Up`、`Mobile Dark 03 Forgot Password`、`Mobile Dark 04 Reset Password`、`Mobile Dark 05 Verify Email`、`Mobile Dark 05A Verify Email Success`、`Mobile Dark 05B Verify Email Failed`
 - 全局动画主题切换组件：`Component - Global Animated Theme Toggle`
 
 ## 视觉方向
@@ -79,6 +82,7 @@ Pencil/pencli 已导出以下页面设计图：
 每个页面的左侧插画需要有不同主题：
 
 - 登录页：盾牌、会话节点、授权连接线，表达安全登录。
+- 登录二次验证页：认证器验证码、可信设备、安全挑战节点，表达登录过程中的二次确认。
 - 注册页：用户创建、资料卡片、账号节点，表达账号开通。
 - 忘记密码页：邮件、密钥、重置 token，表达找回入口。
 - 重置密码页：锁、重置环、密码字段，表达凭据更新。
@@ -116,6 +120,29 @@ Pencil/pencli 已导出以下页面设计图：
 - `error`：状态提示区展示中文错误。
 - `email_unverified`：提示用户进入邮箱验证流程。
 - `banned`：展示封禁提示，不暴露过多内部信息。
+
+### 01A 登录二次验证页
+
+设计图：`prd/auth-designs/01A-sign-in-2fa.png`
+
+表单结构：
+
+- 标题：二次验证
+- 描述：输入认证器验证码，完成本次登录。
+- 状态提示区：提示账号密码已通过，需要继续完成二次验证。
+- 6 位验证码输入区
+- 信任此设备 30 天选项
+- 主按钮：验证并进入应用
+- 底部入口：无法使用认证器？使用备用恢复码
+
+交互状态：
+
+- `idle`：默认展示 TOTP 验证码输入。
+- `submitting`：禁用输入和按钮，主按钮展示加载状态。
+- `error`：验证码错误、恢复码错误或请求失败时展示克制提示。
+- `expired`：临时 2FA cookie 缺失或过期时，展示返回登录按钮。
+- `backup_code`：切换为备用恢复码输入模式。
+- `success`：验证成功后进入 `redirectTo` 或 `/dashboard`。
 
 ### 02 注册页
 

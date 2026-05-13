@@ -1,5 +1,7 @@
 import { relations } from "drizzle-orm"
-import { boolean, index, integer, pgTableCreator, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, foreignKey, index, integer, pgTableCreator, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+
+import { ORGANIZATION_ROLE_MEMBER } from "@/lib/const"
 
 export const createSystemTable = pgTableCreator((name) => `system_${name}`)
 
@@ -96,6 +98,48 @@ export const organization = createSystemTable(
   (table) => [uniqueIndex("system_organization_slug_idx").on(table.slug)]
 )
 
+export const organizationDepartment = createSystemTable(
+  "organization_department",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id").notNull(),
+    parentDepartmentId: text("parent_department_id"),
+    name: text("name").notNull(),
+    path: text("path").notNull(),
+    depth: integer("depth").default(0).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    status: text("status").default("active").notNull(),
+    managerUserId: text("manager_user_id"),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.organizationId],
+      foreignColumns: [organization.id],
+      name: "org_department_org_fk"
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.parentDepartmentId],
+      foreignColumns: [table.id],
+      name: "org_department_parent_fk"
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.managerUserId],
+      foreignColumns: [user.id],
+      name: "org_department_manager_fk"
+    }).onDelete("set null"),
+    index("system_organization_department_org_idx").on(table.organizationId),
+    index("system_organization_department_parent_idx").on(table.parentDepartmentId),
+    index("system_organization_department_path_idx").on(table.path),
+    index("system_organization_department_status_idx").on(table.status),
+    uniqueIndex("system_organization_department_sibling_name_idx").on(table.organizationId, table.parentDepartmentId, table.name)
+  ]
+)
+
 export const member = createSystemTable(
   "member",
   {
@@ -106,13 +150,48 @@ export const member = createSystemTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    role: text("role").default("member").notNull(),
+    role: text("role").default(ORGANIZATION_ROLE_MEMBER).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull()
   },
   (table) => [
     index("system_member_organization_id_idx").on(table.organizationId),
     index("system_member_user_id_idx").on(table.userId),
     uniqueIndex("system_member_organization_user_idx").on(table.organizationId, table.userId)
+  ]
+)
+
+export const organizationDepartmentMember = createSystemTable(
+  "organization_department_member",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id").notNull(),
+    departmentId: text("department_id").notNull(),
+    memberId: text("member_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull()
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.organizationId],
+      foreignColumns: [organization.id],
+      name: "org_department_member_org_fk"
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.departmentId],
+      foreignColumns: [organizationDepartment.id],
+      name: "org_department_member_department_fk"
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.memberId],
+      foreignColumns: [member.id],
+      name: "org_department_member_member_fk"
+    }).onDelete("cascade"),
+    index("system_organization_department_member_org_idx").on(table.organizationId),
+    index("system_organization_department_member_department_idx").on(table.departmentId),
+    index("system_organization_department_member_member_idx").on(table.memberId),
+    uniqueIndex("system_organization_department_member_unique_idx").on(table.departmentId, table.memberId)
   ]
 )
 
@@ -130,13 +209,20 @@ export const invitation = createSystemTable(
     inviterId: text("inviter_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    departmentId: text("department_id"),
     teamId: text("team_id"),
     createdAt: timestamp("created_at").defaultNow().notNull()
   },
   (table) => [
+    foreignKey({
+      columns: [table.departmentId],
+      foreignColumns: [organizationDepartment.id],
+      name: "invitation_department_fk"
+    }).onDelete("set null"),
     index("system_invitation_organization_id_idx").on(table.organizationId),
     index("system_invitation_email_idx").on(table.email),
     index("system_invitation_status_idx").on(table.status),
+    index("system_invitation_department_id_idx").on(table.departmentId),
     index("system_invitation_team_id_idx").on(table.teamId)
   ]
 )
@@ -245,6 +331,7 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   memberships: many(member),
   invitations: many(invitation),
+  managedDepartments: many(organizationDepartment),
   teams: many(teamMember),
   twoFactors: many(twoFactor),
   passkeys: many(passkey)
@@ -265,12 +352,31 @@ export const accountRelations = relations(account, ({ one }) => ({
 }))
 
 export const organizationRelations = relations(organization, ({ many }) => ({
+  departments: many(organizationDepartment),
   members: many(member),
   invitations: many(invitation),
   teams: many(team)
 }))
 
-export const memberRelations = relations(member, ({ one }) => ({
+export const organizationDepartmentRelations = relations(organizationDepartment, ({ many, one }) => ({
+  organization: one(organization, {
+    fields: [organizationDepartment.organizationId],
+    references: [organization.id]
+  }),
+  manager: one(user, {
+    fields: [organizationDepartment.managerUserId],
+    references: [user.id]
+  }),
+  memberships: many(organizationDepartmentMember),
+  parentDepartment: one(organizationDepartment, {
+    fields: [organizationDepartment.parentDepartmentId],
+    references: [organizationDepartment.id],
+    relationName: "organizationDepartmentParent"
+  })
+}))
+
+export const memberRelations = relations(member, ({ many, one }) => ({
+  departmentMemberships: many(organizationDepartmentMember),
   organization: one(organization, {
     fields: [member.organizationId],
     references: [organization.id]
@@ -282,6 +388,10 @@ export const memberRelations = relations(member, ({ one }) => ({
 }))
 
 export const invitationRelations = relations(invitation, ({ one }) => ({
+  department: one(organizationDepartment, {
+    fields: [invitation.departmentId],
+    references: [organizationDepartment.id]
+  }),
   organization: one(organization, {
     fields: [invitation.organizationId],
     references: [organization.id]
@@ -289,6 +399,21 @@ export const invitationRelations = relations(invitation, ({ one }) => ({
   inviter: one(user, {
     fields: [invitation.inviterId],
     references: [user.id]
+  })
+}))
+
+export const organizationDepartmentMemberRelations = relations(organizationDepartmentMember, ({ one }) => ({
+  department: one(organizationDepartment, {
+    fields: [organizationDepartmentMember.departmentId],
+    references: [organizationDepartment.id]
+  }),
+  member: one(member, {
+    fields: [organizationDepartmentMember.memberId],
+    references: [member.id]
+  }),
+  organization: one(organization, {
+    fields: [organizationDepartmentMember.organizationId],
+    references: [organization.id]
   })
 }))
 

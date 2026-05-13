@@ -1,10 +1,9 @@
 "use client"
 
-import { Building2, KeyRound, LayoutDashboard, Settings, ShieldCheck, UsersRound } from "lucide-react"
+import { Building2, LayoutDashboard, type LucideIcon, Settings, ShieldCheck, UsersRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { DashboardUserMenu } from "./dashboard-user-menu"
 import type { DashboardShellData } from "./types"
@@ -15,37 +14,39 @@ type DashboardSidebarProps = {
   mobile?: boolean
 }
 
-const navGroups = [
-  {
-    items: [{ href: "/dashboard", icon: LayoutDashboard, label: "工作台" }],
-    label: "概览"
-  },
-  {
-    items: [
-      { href: "/dashboard/settings/profile", icon: Settings, label: "个人资料" },
-      { href: "/dashboard/settings/security", icon: ShieldCheck, label: "安全设置" },
-      { href: "/dashboard/settings/sessions", icon: UsersRound, label: "我的会话" }
-    ],
-    label: "账号设置"
-  },
-  {
-    items: [
-      { href: "/dashboard/orgs", icon: Building2, label: "组织管理" },
-      { href: "/dashboard/orgs/new", icon: Building2, label: "创建组织" }
-    ],
-    label: "组织"
-  },
-  {
-    items: [
-      { badge: "5", href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
-      { href: "/dashboard/admin/api-keys", icon: KeyRound, label: "API 密钥" }
-    ],
-    label: "管理"
-  }
-]
+type NavItem = {
+  href: string
+  icon: LucideIcon
+  label: string
+}
+
+const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: string }[] => {
+  const activeOrganization = data.organizations.find((item) => item.organizationId === data.activeOrganizationId) ?? data.organizations[0] ?? null
+
+  return [
+    {
+      items: [{ href: "/dashboard", icon: LayoutDashboard, label: "工作台" }],
+      label: "概览"
+    },
+    {
+      items: [
+        { href: "/dashboard/settings/profile", icon: Settings, label: "个人资料" },
+        { href: "/dashboard/settings/security", icon: ShieldCheck, label: "安全设置" },
+        { href: "/dashboard/settings/sessions", icon: UsersRound, label: "我的会话" },
+        activeOrganization ? { href: `/dashboard/orgs/${activeOrganization.organizationSlug}`, icon: Building2, label: "当前组织" } : null
+      ].filter((item): item is NavItem => item !== null),
+      label: "账号设置"
+    },
+    {
+      items: [{ href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" }],
+      label: "管理"
+    }
+  ]
+}
 
 export const DashboardSidebar = ({ collapsed = false, data, mobile = false }: DashboardSidebarProps) => {
   const pathname = usePathname()
+  const navGroups = getNavGroups(data)
 
   return (
     <aside
@@ -91,11 +92,6 @@ export const DashboardSidebar = ({ collapsed = false, data, mobile = false }: Da
                     <span className={cn("min-w-0 flex-1 truncate", collapsed && !mobile && "hidden")} data-testid={`dashboard-sidebar-label-${item.label}`}>
                       {item.label}
                     </span>
-                    {item.badge && (!collapsed || mobile) ? (
-                      <Badge className="h-5 px-1.5 text-[10px]" variant="secondary">
-                        {item.badge}
-                      </Badge>
-                    ) : null}
                   </Link>
                 )
               })}

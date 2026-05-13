@@ -38,7 +38,7 @@
 ## 通用工程约束
 
 - Create T3 App: Next.js App Router, TypeScript, tRPC, Prisma, Tailwind CSS
-- Better Auth: authentication, session, admin, organization, team, passkey, 2FA, API key plugins
+- Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
 

@@ -49,8 +49,8 @@ const getHeroConfig = (data: DashboardHomeData) => {
 const getActions = (data: DashboardHomeData): ActionItem[] => {
   if (data.view === "organization-admin") {
     return [
-      { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? "/dashboard/orgs/members", title: "未开启 2FA 成员" },
-      { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? "/dashboard/orgs/members", title: "过期或撤销邀请" },
+      { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? "/dashboard/orgs", title: "未开启 2FA 成员" },
+      { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? "/dashboard/orgs", title: "过期或撤销邀请" },
       { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? "/dashboard/settings/sessions", title: "异常会话待检查" },
       { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? "/dashboard/admin/api-keys", title: "即将过期 API Key" }
     ]
@@ -59,7 +59,7 @@ const getActions = (data: DashboardHomeData): ActionItem[] => {
   return [
     { count: data.actions[0]?.count ?? "1", href: data.actions[0]?.href ?? "/dashboard/settings/security", title: "开启 2FA" },
     { count: data.actions[1]?.count ?? "2", href: data.actions[1]?.href ?? "/dashboard/settings/security", title: "添加 Passkey" },
-    { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? "/dashboard/orgs", title: "处理组织邀请" },
+    { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? "/dashboard", title: "处理组织邀请" },
     { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? "/dashboard/settings/sessions", title: "检查长期会话" }
   ]
 }

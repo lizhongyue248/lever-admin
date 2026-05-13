@@ -23,6 +23,18 @@ const getEmailVerificationPendingTarget = (email: string) => {
   return `/verify-email?${params.toString()}`
 }
 
+const getTwoFactorTarget = (redirectTo: string) => {
+  const params = new URLSearchParams({
+    redirectTo
+  })
+
+  return `/sign-in/2fa?${params.toString()}`
+}
+
+const hasTwoFactorRedirect = (value: object | null | undefined): value is { twoFactorRedirect: boolean } => {
+  return Boolean(value && "twoFactorRedirect" in value && value.twoFactorRedirect)
+}
+
 export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
   const router = useRouter()
   const [errors, setErrors] = useState<FieldErrors<keyof SignInValues & string>>({})
@@ -47,7 +59,7 @@ export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
       setPending(true)
 
       try {
-        const { error } = await authClient.signIn.email({
+        const { data, error } = await authClient.signIn.email({
           callbackURL: redirectTo,
           email: parsed.data.email,
           password: parsed.data.password
@@ -61,6 +73,11 @@ export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
           }
 
           setMessage(getAuthErrorMessage(error, "登录失败，请检查邮箱和密码后重试。"))
+          return
+        }
+
+        if (hasTwoFactorRedirect(data)) {
+          router.replace(getTwoFactorTarget(redirectTo))
           return
         }
 

@@ -21,12 +21,14 @@
 - 点击忘记密码跳转 /forgot-password。
 - 点击注册跳转 /sign-up。
 - 登录成功后根据 redirectTo 返回原页面，否则进入 /dashboard。
+- 如果邮箱密码正确但账号已开启 2FA，跳转 `/sign-in/2fa` 完成二次验证。
 - 如果邮箱密码正确但邮箱尚未验证，自动发送验证邮件并跳转 `/verify-email?status=pending&email=...`。
 
 ## 接口与逻辑
 
 - `authClient.signIn.email`：调用 Better Auth 邮箱密码登录，成功后写入 session cookie。
   - 登录请求使用当前 `redirectTo` 作为 `callbackURL`，确保已验证账号登录成功后进入目标应用页。
+  - 当 Better Auth 返回 `twoFactorRedirect=true` 时，说明邮箱密码已通过但仍需二次验证；页面跳转 `/sign-in/2fa`。
   - 当 Better Auth 返回 `EMAIL_NOT_VERIFIED` 时，说明密码已通过但邮箱未验证；页面跳转邮箱验证等待页。
   - Better Auth 服务端配置 `emailVerification.sendOnSignIn=true` 时，该错误返回前会触发 `sendVerificationEmail`；邮件中的验证链接成功后回跳 `redirectTo`，默认进入 `/dashboard`。
 - `authClient.signIn.social`：发起 OAuth 登录，provider 可配置为 github/google。
@@ -43,7 +45,7 @@
 ## 通用工程约束
 
 - Create T3 App: Next.js App Router, TypeScript, tRPC, Prisma, Tailwind CSS
-- Better Auth: authentication, session, admin, organization, team, passkey, 2FA, API key plugins
+- Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
 
