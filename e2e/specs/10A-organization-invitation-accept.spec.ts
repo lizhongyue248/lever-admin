@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test"
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
 import { addOrganizationMemberByEmail, getInvitationStatusByEmail, getMemberByEmailAndOrganization, seedOrganizationWithDepartments } from "../helpers/db"
 
-test.describe("dashboard notifications and organization invitations", () => {
+test.describe("10A organization invitation accept", () => {
   test("invited user can see and accept an organization invitation from the Topbar notification menu", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed organization flow only needs one browser project")
 

@@ -39,10 +39,20 @@ e2e/
   specs/
     00-auth-pages-design.spec.ts
     01-sign-in.spec.ts
+    01A-sign-in-2fa.spec.ts
     02-sign-up.spec.ts
     03-forgot-password.spec.ts
     04-reset-password.spec.ts
     05-verify-email.spec.ts
+    06-dashboard.spec.ts
+    07-dashboard-settings-profile.spec.ts
+    08-dashboard-settings-security.spec.ts
+    09-dashboard-settings-sessions.spec.ts
+    10-dashboard-orgs-slug-settings.spec.ts
+    10A-organization-invitation-accept.spec.ts
+    12-dashboard-admin-users.spec.ts
+    13-dashboard-admin-users-id.spec.ts
+    15-dashboard-admin-orgs.spec.ts
 playwright.config.ts
 ```
 
@@ -116,10 +126,22 @@ Playwright 不使用内置 `webServer` 启动 Next.js，因为 `DATABASE_URL` �
 
 - `prd/00-auth-pages-design.md` -> `e2e/specs/00-auth-pages-design.spec.ts`
 - `prd/01-sign-in.md` -> `e2e/specs/01-sign-in.spec.ts`
+- `prd/01A-sign-in-2fa.md` -> `e2e/specs/01A-sign-in-2fa.spec.ts`
 - `prd/02-sign-up.md` -> `e2e/specs/02-sign-up.spec.ts`
 - `prd/03-forgot-password.md` -> `e2e/specs/03-forgot-password.spec.ts`
 - `prd/04-reset-password.md` -> `e2e/specs/04-reset-password.spec.ts`
 - `prd/05-verify-email.md` -> `e2e/specs/05-verify-email.spec.ts`
+- `prd/06-dashboard.md` -> `e2e/specs/06-dashboard.spec.ts`
+- `prd/07-dashboard-settings-profile.md` -> `e2e/specs/07-dashboard-settings-profile.spec.ts`
+- `prd/08-dashboard-settings-security.md` -> `e2e/specs/08-dashboard-settings-security.spec.ts`
+- `prd/09-dashboard-settings-sessions.md` -> `e2e/specs/09-dashboard-settings-sessions.spec.ts`
+- `prd/10-dashboard-orgs-slug-settings.md` -> `e2e/specs/10-dashboard-orgs-slug-settings.spec.ts`
+- `prd/10A-organization-invitation-accept.md` -> `e2e/specs/10A-organization-invitation-accept.spec.ts`
+- `prd/12-dashboard-admin-users.md` -> `e2e/specs/12-dashboard-admin-users.spec.ts`
+- `prd/13-dashboard-admin-users-id.md` -> `e2e/specs/13-dashboard-admin-users-id.spec.ts`
+- `prd/15-dashboard-admin-orgs.md` -> `e2e/specs/15-dashboard-admin-orgs.spec.ts`
+
+暂未实现或暂未覆盖的 PRD 不创建空 spec；补测试时必须使用同名编号文件，或把用例加入已有同名编号文件。
 
 ### `00-auth-pages-design.spec.ts`
 
