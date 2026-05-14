@@ -134,8 +134,14 @@ export const protectedProcedure = t.procedure.use(timingMiddleware).use(({ ctx, 
   })
 })
 
+const hasPlatformRole = (
+  user: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>["user"]
+): user is NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>["user"] & {
+  role: string | null | undefined
+} => "role" in user
+
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  const role = ctx.session.user.role
+  const role = hasPlatformRole(ctx.session.user) ? ctx.session.user.role : undefined
 
   if (!PLATFORM_ADMIN_ROLES.some((adminRole) => adminRole === role)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "需要平台管理员权限。" })

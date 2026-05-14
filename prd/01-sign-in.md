@@ -27,6 +27,7 @@
 ## 接口与逻辑
 
 - `authClient.signIn.email`：调用 Better Auth 邮箱密码登录，成功后写入 session cookie。
+  - 提交邮箱密码登录前，客户端执行 Google reCAPTCHA v3 `sign_in` action，并通过 `fetchOptions.headers["x-captcha-response"]` 传递 token。
   - 登录请求使用当前 `redirectTo` 作为 `callbackURL`，确保已验证账号登录成功后进入目标应用页。
   - 当 Better Auth 返回 `twoFactorRedirect=true` 时，说明邮箱密码已通过但仍需二次验证；页面跳转 `/sign-in/2fa`。
   - 当 Better Auth 返回 `EMAIL_NOT_VERIFIED` 时，说明密码已通过但邮箱未验证；页面跳转邮箱验证等待页。
@@ -38,6 +39,8 @@
 
 - 使用 Zod 校验邮箱格式和密码必填。
 - 登录表单用 client component，提交时调用 Better Auth client。
+- 服务端使用 Better Auth Captcha plugin 校验邮箱密码登录请求；生产环境必须配置 Google reCAPTCHA site key 和 secret key，测试环境跳过外部 captcha 校验。
+- reCAPTCHA 前端脚本默认从 `www.google.com` 加载；国内访问场景可将 `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST` 配置为 `www.recaptcha.net`。
 - App Router 页面读取 searchParams.redirectTo，登录成功后 router.replace。
 - 邮箱未验证不展示普通错误停留在登录页，而是进入邮箱验证等待页，并预填当前登录邮箱用于重新发送；用户完成邮箱验证后直接进入应用目标页。
 - 封禁用户错误来自 Admin plugin，应映射为清晰的中文提示。

@@ -6,6 +6,8 @@ export interface AuthErrorLike {
 }
 
 const knownErrorMessages: Record<string, string> = {
+  CAPTCHA_FAILED: "人机验证失败，请刷新后重试。",
+  CAPTCHA_MISSING_RESPONSE: "请先完成人机验证后再继续。",
   EMAIL_NOT_VERIFIED: "邮箱尚未验证，请先完成邮箱验证。",
   INVALID_EMAIL_OR_PASSWORD: "邮箱或密码不正确。",
   INVALID_TOKEN: "验证链接无效或已过期，请重新发送验证邮件。",

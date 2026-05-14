@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { AuthMessage } from "@/app/(auth)/_components/auth-message"
 import { FormField } from "@/app/(auth)/_components/form-field"
 import { type FieldErrors, type ForgotPasswordValues, forgotPasswordSchema, getZodFieldErrors } from "@/app/(auth)/_lib/auth-validation"
+import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { authClient } from "@/server/better-auth/client"
 
@@ -44,8 +45,10 @@ export const ForgotPasswordForm = () => {
       setPending(true)
 
       try {
+        const fetchOptions = await getRecaptchaFetchOptions("forgot_password")
         await authClient.requestPasswordReset({
           email: parsed.data.email,
+          fetchOptions,
           redirectTo: "/reset-password"
         })
       } catch {

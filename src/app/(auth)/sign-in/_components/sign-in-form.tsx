@@ -10,6 +10,7 @@ import { FormField } from "@/app/(auth)/_components/form-field"
 import { OAuthButtons } from "@/app/(auth)/_components/oauth-buttons"
 import { getAuthErrorMessage } from "@/app/(auth)/_lib/auth-errors"
 import { type FieldErrors, getZodFieldErrors, type SignInValues, signInSchema } from "@/app/(auth)/_lib/auth-validation"
+import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { authClient } from "@/server/better-auth/client"
@@ -59,10 +60,12 @@ export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
       setPending(true)
 
       try {
+        const fetchOptions = await getRecaptchaFetchOptions("sign_in")
         const { data, error } = await authClient.signIn.email({
           callbackURL: redirectTo,
           email: parsed.data.email,
-          password: parsed.data.password
+          password: parsed.data.password,
+          fetchOptions
         })
 
         if (error) {

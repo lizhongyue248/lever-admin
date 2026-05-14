@@ -24,6 +24,7 @@
 ## 接口与逻辑
 
 - `authClient.signUp.email`：创建 Better Auth user/account 记录，按配置触发验证邮件。
+  - 提交邮箱密码注册前，客户端执行 Google reCAPTCHA v3 `sign_up` action，并通过 `fetchOptions.headers["x-captcha-response"]` 传递 token。
   - 注册请求提交时传入 `callbackURL=/dashboard`，用于用户点击邮件验证链接后的成功回跳。
   - 注册接口成功返回后，页面跳转 `/verify-email?status=pending`，提示用户前往邮箱点击验证链接。
 - `authClient.signIn.social`：OAuth 首次登录时创建用户，后续登录复用账号。
@@ -32,6 +33,8 @@
 ## 实现要点
 
 - 密码和确认密码必须一致。
+- 服务端使用 Better Auth Captcha plugin 校验邮箱密码注册请求；生产环境必须配置 Google reCAPTCHA site key 和 secret key，测试环境跳过外部 captcha 校验。
+- reCAPTCHA 前端脚本默认从 `www.google.com` 加载；国内访问场景可将 `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST` 配置为 `www.recaptcha.net`。
 - 如果 requireEmailVerification 为 true，注册后跳转 /verify-email?status=pending。
 - 邮箱验证链接成功验证后直接进入 /dashboard，不继续显示等待验证状态。
 - 避免暴露邮箱是否已注册的过多细节，错误提示保持克制。

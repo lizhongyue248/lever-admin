@@ -14,6 +14,8 @@ export const env = createEnv({
     BETTER_AUTH_GOOGLE_CLIENT_ID: z.string().optional(),
     BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string().optional(),
     DATABASE_URL: z.string().url(),
+    GOOGLE_RECAPTCHA_MIN_SCORE: z.coerce.number().min(0).max(1).optional(),
+    GOOGLE_RECAPTCHA_SECRET_KEY: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development")
   },
 
@@ -23,7 +25,8 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST: z.enum(["www.google.com", "www.recaptcha.net"]).optional(),
+    NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY: z.string().optional()
   },
 
   /**
@@ -38,6 +41,10 @@ export const env = createEnv({
     BETTER_AUTH_GOOGLE_CLIENT_ID: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID,
     BETTER_AUTH_GOOGLE_CLIENT_SECRET: process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
+    GOOGLE_RECAPTCHA_MIN_SCORE: process.env.GOOGLE_RECAPTCHA_MIN_SCORE,
+    GOOGLE_RECAPTCHA_SECRET_KEY: process.env.GOOGLE_RECAPTCHA_SECRET_KEY,
+    NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST: process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST,
+    NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY: process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY,
     NODE_ENV: process.env.NODE_ENV
   },
   /**

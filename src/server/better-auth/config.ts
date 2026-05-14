@@ -3,7 +3,7 @@ import { passkey } from "@better-auth/passkey"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { APIError, createAuthMiddleware } from "better-auth/api"
-import { admin, organization, twoFactor } from "better-auth/plugins"
+import { admin, captcha, organization, twoFactor } from "better-auth/plugins"
 import { adminAc, userAc } from "better-auth/plugins/admin/access"
 import { sql } from "drizzle-orm"
 
@@ -20,6 +20,17 @@ const developmentTrustedOrigins =
     : [defaultAuthBaseUrl, "http://127.0.0.1:4000", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
 const trustedOrigins = Array.from(new Set([authBaseUrl, ...developmentTrustedOrigins]))
 const duplicateSignUpEmailMessage = "该邮箱已注册，请直接登录。"
+const captchaMinScore = env.GOOGLE_RECAPTCHA_MIN_SCORE ?? 0.5
+const captchaPlugins =
+  env.NODE_ENV === "test" || !env.GOOGLE_RECAPTCHA_SECRET_KEY
+    ? []
+    : [
+        captcha({
+          provider: "google-recaptcha",
+          secretKey: env.GOOGLE_RECAPTCHA_SECRET_KEY,
+          minScore: captchaMinScore
+        })
+      ]
 
 const findUserIdByEmail = async (email: string) => {
   const normalizedEmail = email.trim().toLowerCase()
@@ -95,6 +106,7 @@ export const auth = betterAuth({
     // }
   },
   plugins: [
+    ...captchaPlugins,
     admin({
       adminRoles: [...PLATFORM_ADMIN_ROLES],
       defaultRole: PLATFORM_ROLE_USER,

@@ -11,6 +11,7 @@ import { OAuthButtons } from "@/app/(auth)/_components/oauth-buttons"
 import { getAuthErrorMessage } from "@/app/(auth)/_lib/auth-errors"
 import { defaultAuthRedirect } from "@/app/(auth)/_lib/auth-redirect"
 import { type FieldErrors, getZodFieldErrors, type SignUpValues, signUpSchema } from "@/app/(auth)/_lib/auth-validation"
+import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { authClient } from "@/server/better-auth/client"
@@ -43,11 +44,13 @@ export const SignUpForm = () => {
       setPending(true)
 
       try {
+        const fetchOptions = await getRecaptchaFetchOptions("sign_up")
         const { error } = await authClient.signUp.email({
           callbackURL: defaultAuthRedirect,
           email: parsed.data.email,
           name: parsed.data.name,
-          password: parsed.data.password
+          password: parsed.data.password,
+          fetchOptions
         })
 
         if (error) {

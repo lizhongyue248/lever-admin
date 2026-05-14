@@ -23,6 +23,7 @@
 ## 接口与逻辑
 
 - `authClient.requestPasswordReset`：提交邮箱并请求 Better Auth 生成重置 token。
+  - 提交重置请求前，客户端执行 Google reCAPTCHA v3 `forgot_password` action，并通过 `fetchOptions.headers["x-captcha-response"]` 传递 token。
   - 请求体使用 `redirectTo=/reset-password`，用户打开 Better Auth 生成的重置链接后会被回跳到 `/reset-password?token=...`。
 - `emailAndPassword.sendResetPassword`：Better Auth 服务端邮件发送函数。
   - 当前开发阶段使用 `console.info("[auth:reset-password]", { to, url })` 输出重置链接到服务端控制台。
@@ -33,6 +34,8 @@
 - 提交后无论邮箱是否存在，都显示“如果该邮箱存在，我们已发送重置链接”。
 - 按钮提交期间禁用，防止重复请求。
 - 当前版本不暴露邮箱是否存在；即使接口异常，前端也展示统一成功文案，真实失败由服务端日志排查。
+- 服务端使用 Better Auth Captcha plugin 校验密码重置请求；生产环境必须配置 Google reCAPTCHA site key 和 secret key，测试环境跳过外部 captcha 校验。
+- reCAPTCHA 前端脚本默认从 `www.google.com` 加载；国内访问场景可将 `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST` 配置为 `www.recaptcha.net`。
 - 可在服务端增加 rate limit，防止滥用。
 
 ## 通用工程约束
