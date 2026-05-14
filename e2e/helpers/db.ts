@@ -102,6 +102,75 @@ export const createUserSessionFixture = async ({ email, userAgent = "E2E Chrome"
   }
 }
 
+export const createApiKeyFixture = async ({
+  configId = "user",
+  enabled = true,
+  expiresAt,
+  name,
+  referenceId
+}: {
+  configId?: "user" | "organization"
+  enabled?: boolean
+  expiresAt?: Date
+  name: string
+  referenceId: string
+}) => {
+  const sql = createE2eSql()
+  const id = `api-key-${randomUUID()}`
+  const prefix = "lev_live_test"
+
+  try {
+    await sql`
+      insert into "system_apikey" ("id", "config_id", "name", "start", "reference_id", "prefix", "key", "enabled", "expires_at", "permissions", "created_at", "updated_at")
+      values (${id}, ${configId}, ${name}, ${prefix}, ${referenceId}, ${prefix}, ${`hash-${id}`}, ${enabled}, ${expiresAt ?? null}, ${JSON.stringify({})}, now(), now())
+    `
+
+    return { id, name }
+  } finally {
+    await sql.end()
+  }
+}
+
+export const createApiKeyUsageLogFixture = async ({
+  apiKeyId,
+  configId = "user",
+  createdAt = new Date(),
+  failureReason,
+  ipCountry = "CN",
+  method = "GET",
+  path = "/v1/me",
+  referenceId,
+  statusCode = 200,
+  success = true,
+  userAgentSummary = "E2E client"
+}: {
+  apiKeyId: string
+  configId?: "user" | "organization"
+  createdAt?: Date
+  failureReason?: string
+  ipCountry?: string
+  method?: string
+  path?: string
+  referenceId: string
+  statusCode?: number
+  success?: boolean
+  userAgentSummary?: string
+}) => {
+  const sql = createE2eSql()
+  const id = `api-key-log-${randomUUID()}`
+
+  try {
+    await sql`
+      insert into "system_api_key_usage_log" ("id", "api_key_id", "config_id", "reference_id", "key_prefix", "method", "path", "status_code", "success", "failure_reason", "request_id", "ip_hash", "ip_country", "user_agent_hash", "user_agent_summary", "duration_ms", "created_at")
+      values (${id}, ${apiKeyId}, ${configId}, ${referenceId}, 'lev_live_test', ${method}, ${path}, ${statusCode}, ${success}, ${failureReason ?? null}, ${`req-${randomUUID()}`}, 'ip-hash-e2e', ${ipCountry}, 'ua-hash-e2e', ${userAgentSummary}, 42, ${createdAt})
+    `
+
+    return { id }
+  } finally {
+    await sql.end()
+  }
+}
+
 export const seedOrganizationWithDepartments = async ({ departmentName, rootName, rootSlug }: { departmentName: string; rootName: string; rootSlug: string }) => {
   const sql = createE2eSql()
   const rootId = `org-${rootSlug}`

@@ -139,9 +139,11 @@ Playwright 不使用内置 `webServer` 启动 Next.js，因为 `DATABASE_URL` �
 - `prd/10A-organization-invitation-accept.md` -> `e2e/specs/10A-organization-invitation-accept.spec.ts`
 - `prd/12-dashboard-admin-users.md` -> `e2e/specs/12-dashboard-admin-users.spec.ts`
 - `prd/13-dashboard-admin-users-id.md` -> `e2e/specs/13-dashboard-admin-users-id.spec.ts`
+- `prd/14-dashboard-admin-api-keys.md` -> `e2e/specs/14-dashboard-admin-api-keys.spec.ts`
 - `prd/15-dashboard-admin-orgs.md` -> `e2e/specs/15-dashboard-admin-orgs.spec.ts`
+- `prd/16-dashboard-settings-api-keys.md` -> `e2e/specs/16-dashboard-settings-api-keys.spec.ts`
 
-暂未实现或暂未覆盖的 PRD 不创建空 spec；补测试时必须使用同名编号文件，或把用例加入已有同名编号文件。
+其中 `14-dashboard-admin-api-keys.spec.ts` 和 `16-dashboard-settings-api-keys.spec.ts` 当前如页面尚未实现，可以暂不创建空 spec；补测试时必须使用同名编号文件，或把用例加入已有同名编号文件。暂未实现或暂未覆盖的其他 PRD 同样不创建空 spec。
 
 ### `00-auth-pages-design.spec.ts`
 

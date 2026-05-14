@@ -23,8 +23,8 @@
   - 中部为分组导航，参考 shadcn `Sidebar / SidebarGroup / SidebarMenu` 的信息密度和交互方式。
   - 导航分组建议：
     - 概览：工作台。
-    - 账号设置：个人资料、安全设置、我的会话；当当前用户是活跃组织 owner/admin 时，在该分组内追加当前组织入口。
-    - 管理：仅展示已实现的平台组织管理入口；后台概览、用户管理、API 密钥等未完成功能不进入 Sidebar。
+    - 账号设置：个人资料、安全设置、我的会话、API Keys；当当前用户是活跃组织 owner/admin 时，在该分组内追加当前组织入口。
+    - 管理：仅展示已实现的平台治理入口；后台概览、用户管理、平台组织管理、平台 API Key 管理按对应 PRD 完成后进入 Sidebar。
   - 当前导航项使用 `primary/10` 背景、`primary` 文本和左侧小色条高亮。
   - 暗黑主题下 Sidebar 使用与 Topbar 一致的中性黑色/炭灰底，不使用带蓝感的侧边栏底色；选中态使用 `sidebar-accent` 的中性底色，只保留 `primary` 左侧色条和重点文字。
   - 不单独展示「组织」分组；普通用户不展示当前组织入口。
@@ -83,7 +83,7 @@
   - 图表区域展示个人登录与会话趋势、认证方式使用占比、个人 API Key 使用状态。
   - 列表区域展示最近登录记录、待处理邀请、最近账号安全事件。
   - 待处理邀请在通知面板中展示；列表区域如展示最近身份事件，只展示邀请摘要和状态，不重复承载接受/拒绝主操作。
-  - 快捷入口包含个人资料、安全设置、我的会话、待处理邀请和创建组织引导；不提供独立「我的组织」页面入口。
+  - 快捷入口包含个人资料、安全设置、我的会话、个人 API Keys、待处理邀请和创建组织引导；个人 API Keys 跳转 `16-dashboard-settings-api-keys.md` 定义的 `/dashboard/settings/api-keys`。
   - 创建组织引导打开创建组织弹窗，不跳转独立创建组织页面。
   - 个人工作台不展示视角切换按钮，因为非组织管理员没有可切换的组织管理视角。
 - 组织管理员工作台 Main：
@@ -164,6 +164,7 @@
 
 - `/dashboard` 路由段必须使用 `src/app/dashboard/layout.tsx` 作为统一 DashboardLayout，Sidebar、Topbar、左下角用户菜单、主题切换和移动端 Sidebar 抽屉都在 layout 层实现；`/dashboard/page.tsx` 只实现工作台首页 Main 内容。
 - 07-15 的 `/dashboard/**` 页面默认继承同一个 DashboardLayout，只描述和实现自己的 Main 内容区域。
+  - `16-dashboard-settings-api-keys.md` 同样继承 DashboardLayout，并在账号设置分组中追加个人 API Keys 入口。
 - 06 首版代码结构：
   - `src/app/dashboard/layout.tsx`：服务端读取 session 和 `dashboard.getShell`，未登录重定向 `/sign-in?redirectTo=%2Fdashboard`。
   - `src/app/dashboard/page.tsx`：服务端读取 `dashboard.getHome`，只渲染首页 Main 内容。
@@ -192,6 +193,7 @@
 - 组织邀请通知与 `/invite/[id]` 使用同一套服务端接受/拒绝逻辑；通知面板是快捷入口，不另建独立邀请处理模型。
 - 邀请通知只展示当前登录用户邮箱对应的 pending 邀请；过期、已取消、已接受、已拒绝的邀请不进入待处理通知列表，但可在邀请接受页展示对应终态。
 - 通知面板中的普通通知可标记已读；待处理邀请不能仅标记已读来替代业务处理，必须接受、拒绝、过期或取消后才离开待处理集合。
+- 个人 API Key 自助创建与管理由 `16-dashboard-settings-api-keys.md` 承载；平台级 API Key 统一治理由 `14-dashboard-admin-api-keys.md` 承载，工作台首页只展示摘要和跳转。
 - `apiKey` 插件按当前安装版本使用默认数据库存储；`enableSessionForAPIKeys` 仅属于单个 API Key 配置项且带生产安全风险，06 首版不启用 API Key 模拟 session 能力。
 - `src/server/db/schema.ts` 维护 Better Auth 插件表：`organization`、`member`、`invitation`、`twoFactor`、`passkey`、`apikey`，实际数据库表名继续使用 `system_*` 前缀；公司内部部门层级使用产品扩展表维护。
 - Dashboard 路由段提供通用错误展示组件；权限不足、未找到资源、服务端聚合失败等 tRPC 异常必须把后端错误信息展示给用户，不能只显示“请稍后重试”。
@@ -201,7 +203,7 @@
 - Create T3 App: Next.js App Router, TypeScript, tRPC, Drizzle ORM, Tailwind CSS
 - Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
-- shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
+- shadcn/ui + @tanstack/react-form + Zod: forms, tables, dialogs, validation
 
 ## 验收标准
 

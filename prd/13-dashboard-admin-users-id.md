@@ -16,6 +16,7 @@
   - 顶部用户信息卡展示头像、名称、邮箱、角色、状态。
   - 操作区展示设置角色、重置密码、封禁、解封、模拟登录、删除。
   - Tabs 展示会话、组织、安全、API Keys。
+  - API Keys Tab 只展示该用户 API Key 元数据、状态和风险信息，不展示明文 key，也不提供替该用户创建 API Key 的入口。
   - 高危操作集中使用确认弹窗，不放入全局壳层。
 - 呈现方式：
   - 直接访问 `/dashboard/admin/users/[id]` 时展示完整用户详情页。
@@ -34,6 +35,7 @@
 - 模拟登录。
 - 查看并撤销会话。
 - 查看用户所属组织。
+- 查看该用户 API Key 元数据，并可跳转平台 API Key 管理页进行统一治理。
 - 从抽屉模式打开完整详情页。
 - 从抽屉模式关闭并返回原用户列表状态。
 
@@ -47,6 +49,7 @@
 - `admin.user.listSessions`：列出该用户所有 session。
 - `admin.user.revokeSession`：撤销指定 session。
 - `admin.user.revokeAllSessions`：撤销该用户全部 session。
+- `admin.user.listApiKeys`：列出该用户 `configId="user"` 的 API Key 元数据，仅返回 masked key、状态、创建时间、过期时间、最后使用时间和风险摘要；第一版不展示或使用 API Key 权限范围。
 
 ## 实现要点
 
@@ -54,6 +57,7 @@
 - 用户详情内容应拆分为可复用详情容器，供完整详情页和列表右侧抽屉共同使用。
 - 抽屉模式宽度建议为 640-760px；Tabs 区域在抽屉内纵向滚动，高危确认弹窗覆盖在抽屉之上。
 - 抽屉模式使用 shadcn/ui `Sheet` 承载，避免自定义 drawer 基础交互。
+- API Keys Tab 与 `14-dashboard-admin-api-keys.md` 保持同一治理口径：平台管理员可以查看和处理风险元数据，但 API Key 明文只允许在 `16-dashboard-settings-api-keys.md` 的个人创建成功结果中一次性展示。
 - 详情链接必须可复制和直接访问；刷新抽屉态链接时可恢复为完整详情页或重新打开抽屉，但不得丢失用户上下文。
 - 默认禁止模拟登录 admin/super_admin，除非 super_admin 明确授权。
 - 封禁后立即撤销全部会话。

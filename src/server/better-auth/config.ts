@@ -127,10 +127,12 @@ export const auth = betterAuth({
     apiKey([
       {
         configId: "user",
+        enableMetadata: true,
         references: "user"
       },
       {
         configId: "organization",
+        enableMetadata: true,
         references: "organization"
       }
     ])

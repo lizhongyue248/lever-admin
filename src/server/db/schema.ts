@@ -326,6 +326,53 @@ export const apikey = createSystemTable(
   (table) => [index("system_apikey_config_id_idx").on(table.configId), index("system_apikey_reference_id_idx").on(table.referenceId), index("system_apikey_key_idx").on(table.key)]
 )
 
+export const apiKeyUsageLog = createSystemTable(
+  "api_key_usage_log",
+  {
+    id: text("id").primaryKey(),
+    apiKeyId: text("api_key_id"),
+    configId: text("config_id").notNull(),
+    referenceId: text("reference_id").notNull(),
+    keyPrefix: text("key_prefix"),
+    method: text("method").notNull(),
+    path: text("path").notNull(),
+    routeName: text("route_name"),
+    statusCode: integer("status_code").notNull(),
+    success: boolean("success").notNull(),
+    errorCode: text("error_code"),
+    failureReason: text("failure_reason"),
+    requestId: text("request_id"),
+    ipHash: text("ip_hash"),
+    ipCountry: text("ip_country"),
+    ipRegion: text("ip_region"),
+    userAgentHash: text("user_agent_hash"),
+    userAgentSummary: text("user_agent_summary"),
+    durationMs: integer("duration_ms"),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => [
+    index("system_api_key_usage_log_api_key_created_at_idx").on(table.apiKeyId, table.createdAt),
+    index("system_api_key_usage_log_config_reference_created_at_idx").on(table.configId, table.referenceId, table.createdAt),
+    index("system_api_key_usage_log_created_at_idx").on(table.createdAt),
+    foreignKey({
+      columns: [table.apiKeyId],
+      foreignColumns: [apikey.id],
+      name: "api_key_usage_log_api_key_fk"
+    }).onDelete("set null")
+  ]
+)
+
+export const apiKeyRelations = relations(apikey, ({ many }) => ({
+  usageLogs: many(apiKeyUsageLog)
+}))
+
+export const apiKeyUsageLogRelations = relations(apiKeyUsageLog, ({ one }) => ({
+  apiKey: one(apikey, {
+    fields: [apiKeyUsageLog.apiKeyId],
+    references: [apikey.id]
+  })
+}))
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),

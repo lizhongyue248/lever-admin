@@ -1,5 +1,7 @@
+import { adminApiKeyRouter } from "@/server/api/routers/admin-api-key"
 import { adminOrgRouter } from "@/server/api/routers/admin-org"
 import { adminUserRouter } from "@/server/api/routers/admin-user"
+import { apiKeyRouter } from "@/server/api/routers/api-key"
 import { dashboardRouter } from "@/server/api/routers/dashboard"
 import { notificationRouter } from "@/server/api/routers/notification"
 import { orgRouter } from "@/server/api/routers/org"
@@ -14,8 +16,10 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc"
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
+  adminApiKey: adminApiKeyRouter,
   adminOrg: adminOrgRouter,
   adminUser: adminUserRouter,
+  apiKey: apiKeyRouter,
   dashboard: dashboardRouter,
   notification: notificationRouter,
   org: orgRouter,

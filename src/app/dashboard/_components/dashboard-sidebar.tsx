@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, LayoutDashboard, type LucideIcon, Settings, ShieldCheck, UsersRound } from "lucide-react"
+import { Building2, KeyRound, LayoutDashboard, type LucideIcon, Settings, ShieldCheck, UsersRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -33,6 +33,7 @@ const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: stri
         { href: "/dashboard/settings/profile", icon: Settings, label: "个人资料" },
         { href: "/dashboard/settings/security", icon: ShieldCheck, label: "安全设置" },
         { href: "/dashboard/settings/sessions", icon: UsersRound, label: "我的会话" },
+        { href: "/dashboard/settings/api-keys", icon: KeyRound, label: "API Keys" },
         activeOrganization ? { href: `/dashboard/orgs/${activeOrganization.organizationSlug}`, icon: Building2, label: "当前组织" } : null
       ].filter((item): item is NavItem => item !== null),
       label: "账号设置"
@@ -40,7 +41,8 @@ const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: stri
     {
       items: [
         { href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
-        { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" }
+        { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" },
+        { href: "/dashboard/admin/api-keys", icon: KeyRound, label: "平台 API Key" }
       ],
       label: "管理"
     }
