@@ -40,6 +40,11 @@ test.describe("15 dashboard admin orgs", () => {
     await expect(page.getByText("Engineering Department E2E")).toBeHidden()
     await expect(page.getByTestId("admin-org-card-root-org-e2e").getByText("部门")).toBeVisible()
     await expect(page.getByTestId("admin-org-card-root-org-e2e").getByText("1")).toBeVisible()
+    await expect(page.getByRole("button", { name: "首页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "上一页" })).toBeVisible()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "下一页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "末页" })).toBeVisible()
 
     await page.getByLabel("搜索组织").fill("root-org-e2e")
 

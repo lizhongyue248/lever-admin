@@ -99,14 +99,42 @@ test.describe("19 dashboard admin request logs", () => {
     await expect(page.locator('[data-testid^="request-log-row-"]')).toHaveCount(25)
     await expect(page.getByText("显示 25 / 25")).toBeVisible()
     await expect(page.getByRole("button", { name: "每页条数：50 条" })).toBeVisible()
+    const fullPageScroll = page.getByTestId("data-table-scroll")
+    await expect(fullPageScroll).toBeVisible()
+    const fullPageScrollMetrics = await fullPageScroll.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight
+    }))
+    expect(fullPageScrollMetrics.scrollHeight).toBeGreaterThan(fullPageScrollMetrics.clientHeight)
+    expect(fullPageScrollMetrics.clientHeight).toBeLessThanOrEqual(580)
+    await expect(page.getByRole("button", { name: "首页" })).toBeDisabled()
+    await expect(page.getByRole("button", { name: "上一页" })).toBeDisabled()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("1")
+    await expect(page.getByText("/ 1")).toBeVisible()
 
-    const listScroll = page.getByTestId("request-log-list-scroll")
+    await page.getByRole("button", { name: "每页条数：50 条" }).click()
+    await page.getByRole("menuitem", { name: "每页 10 条" }).click()
+    await expect(page.getByText("显示 10 / 25")).toBeVisible()
+    await expect(page.getByText("/ 3")).toBeVisible()
+
+    await page.getByRole("button", { name: "末页" }).click()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("3")
+    await expect(page.locator('[data-testid^="request-log-row-"]')).toHaveCount(5)
+
+    await page.getByRole("spinbutton", { name: "当前页" }).fill("2")
+    await page.getByRole("spinbutton", { name: "当前页" }).press("Enter")
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("2")
+    await expect(page.locator('[data-testid^="request-log-row-"]')).toHaveCount(10)
+
+    await page.getByRole("button", { name: "首页" }).click()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("1")
+
+    const listScroll = page.getByTestId("data-table-scroll")
     await expect(listScroll).toBeVisible()
     const scrollMetrics = await listScroll.evaluate((element) => ({
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight
     }))
-    expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight)
     expect(scrollMetrics.clientHeight).toBeLessThanOrEqual(580)
 
     const tableViewport = page.getByTestId("request-log-table-viewport")

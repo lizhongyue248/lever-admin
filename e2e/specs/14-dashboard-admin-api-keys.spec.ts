@@ -54,6 +54,12 @@ test.describe("14 dashboard admin api keys", () => {
     await expect(page.getByText("启用中").first()).toBeVisible()
     await expect(page.getByText("24 小时调用").first()).toBeVisible()
     await expect(page.getByRole("columnheader", { name: "权限范围" })).toHaveCount(0)
+    await expect(page.getByTestId("data-table-scroll")).toBeVisible()
+    await expect(page.getByRole("button", { name: "首页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "上一页" })).toBeVisible()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "下一页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "末页" })).toBeVisible()
 
     await page.getByLabel("搜索平台 API Key").fill("Nora")
     await expect(page.getByTestId(`admin-api-key-row-${userKey.id}`)).toBeVisible()

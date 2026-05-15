@@ -1,15 +1,15 @@
 "use client"
 
-import { AlertTriangle, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FileText, ShieldAlert, Timer } from "lucide-react"
+import { AlertTriangle, Copy, Download, ExternalLink, FileText, ShieldAlert, Timer } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { DataPagination } from "@/components/data-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, type RouterOutputs } from "@/trpc/react"
@@ -174,7 +174,20 @@ export const RequestLogsContent = ({
 
           {logs.error ? <ErrorState /> : data.items.length === 0 ? <EmptyState /> : <RequestLogsTable isDesktop={isDesktop} items={data.items} onOpen={openSheet} />}
 
-          <Pagination data={data} isFetching={logs.isFetching} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} />
+          <DataPagination
+            disabled={logs.isFetching}
+            itemCount={data.items.length}
+            onPageChange={setPage}
+            onPageSizeChange={(nextPageSize) => {
+              setPageSize(nextPageSize as PageSize)
+              setPage(1)
+            }}
+            page={data.page}
+            pageCount={data.pageCount}
+            pageSize={pageSize}
+            pageSizeOptions={pageSizeOptions}
+            total={data.total}
+          />
         </CardContent>
       </Card>
 
@@ -294,73 +307,6 @@ const DetailSection = ({ rows, title }: { rows: Array<[string, string]>; title: 
       ))}
     </div>
   </section>
-)
-
-const Pagination = ({
-  data,
-  isFetching,
-  pageSize,
-  setPage,
-  setPageSize
-}: {
-  data: RequestLogList
-  isFetching: boolean
-  pageSize: PageSize
-  setPage: (update: (current: number) => number) => void
-  setPageSize: (pageSize: PageSize) => void
-}) => (
-  <div className="flex items-center justify-between text-muted-foreground">
-    <span>
-      显示 {data.items.length} / {data.total}
-    </span>
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button aria-label={`每页条数：${pageSize} 条`} className="text-foreground" disabled={isFetching} type="button" variant="outline">
-            每页 {pageSize} 条
-            <ChevronDown className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-36">
-          {pageSizeOptions.map((option) => (
-            <DropdownMenuItem
-              key={option}
-              onSelect={() => {
-                setPageSize(option)
-                setPage(() => 1)
-              }}
-            >
-              <span className="flex w-5 items-center">{option === pageSize ? <Check className="size-4" /> : null}</span>
-              每页 {option} 条
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Button
-        aria-label="上一页"
-        disabled={isFetching || data.page <= 1}
-        onClick={() => setPage((current) => Math.max(1, current - 1))}
-        size="icon-sm"
-        type="button"
-        variant="outline"
-      >
-        <ChevronLeft className="size-4" />
-      </Button>
-      <span>
-        {data.page} / {data.pageCount}
-      </span>
-      <Button
-        aria-label="下一页"
-        disabled={isFetching || data.page >= data.pageCount}
-        onClick={() => setPage((current) => Math.min(data.pageCount, current + 1))}
-        size="icon-sm"
-        type="button"
-        variant="outline"
-      >
-        <ChevronRight className="size-4" />
-      </Button>
-    </div>
-  </div>
 )
 
 const EmptyState = () => (

@@ -1,10 +1,13 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, ExternalLink, MoreHorizontal, Search } from "lucide-react"
+import type { ColumnDef } from "@tanstack/react-table"
+import { ExternalLink, MoreHorizontal, Search } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
+import { DataPagination } from "@/components/data-pagination"
+import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -156,28 +159,15 @@ export const AdminUsersContent = ({
             <AdminUsersTable items={data.items} onOpen={openDrawer} />
           )}
 
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>
-              显示 {data.items.length} / {data.total}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button disabled={users.isFetching || data.page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} size="icon-sm" type="button" variant="outline">
-                <ChevronLeft className="size-4" />
-              </Button>
-              <span>
-                {data.page} / {data.pageCount}
-              </span>
-              <Button
-                disabled={users.isFetching || data.page >= data.pageCount}
-                onClick={() => setPage((current) => Math.min(data.pageCount, current + 1))}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </div>
+          <DataPagination
+            disabled={users.isFetching}
+            itemCount={data.items.length}
+            onPageChange={setPage}
+            page={data.page}
+            pageCount={data.pageCount}
+            pageSize={20}
+            total={data.total}
+          />
         </CardContent>
       </Card>
 
@@ -264,59 +254,79 @@ const AdminUserDetailSheetSkeleton = () => (
   </div>
 )
 
-const AdminUsersTable = ({ items, onOpen }: { items: UserRow[]; onOpen: (userId: string) => void }) => (
-  <>
-    <div className="hidden overflow-hidden rounded-lg border lg:block">
-      <table className="w-full text-left">
-        <thead className="bg-muted/50 text-muted-foreground text-xs">
-          <tr>
-            <th className="px-4 py-3">用户</th>
-            <th className="px-4 py-3">角色</th>
-            <th className="px-4 py-3">状态</th>
-            <th className="px-4 py-3">邮箱验证</th>
-            <th className="px-4 py-3">创建时间</th>
-            <th className="px-4 py-3 text-right">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr className="cursor-pointer border-t hover:bg-muted/40" data-testid={`admin-user-row-${item.id}`} key={item.id} onClick={() => onOpen(item.id)}>
-              <td className="px-4 py-3">
-                <div className="font-medium">{item.name}</div>
+const AdminUsersTable = ({ items, onOpen }: { items: UserRow[]; onOpen: (userId: string) => void }) => {
+  const columns = useMemo<Array<ColumnDef<UserRow>>>(
+    () => [
+      {
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.name}</div>
+            <div className="text-muted-foreground text-xs">{row.original.email}</div>
+          </div>
+        ),
+        header: "用户",
+        size: 260
+      },
+      {
+        cell: ({ row }) => roleLabel(row.original.role),
+        header: "角色",
+        size: 120
+      },
+      {
+        cell: ({ row }) => <Badge variant={row.original.status === "banned" ? "destructive" : "secondary"}>{row.original.status === "banned" ? "已封禁" : "正常"}</Badge>,
+        header: "状态",
+        size: 120
+      },
+      {
+        cell: ({ row }) => (row.original.emailVerified ? "已验证" : "未验证"),
+        header: "邮箱验证",
+        size: 120
+      },
+      {
+        cell: ({ row }) => formatDate(row.original.createdAt),
+        header: "创建时间",
+        size: 140
+      },
+      {
+        cell: ({ row }) => <AdminUserRowActions user={row.original} />,
+        header: "操作",
+        size: 100
+      }
+    ],
+    []
+  )
+
+  return (
+    <>
+      <div className="hidden lg:block">
+        <DataTable
+          columns={columns}
+          data={items}
+          getRowId={(row) => row.id}
+          minWidthClassName="min-w-[860px]"
+          onRowClick={(row) => onOpen(row.id)}
+          rowTestId={(row) => `admin-user-row-${row.id}`}
+        />
+      </div>
+      <div className="grid gap-3 lg:hidden">
+        {items.map((item) => (
+          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-user-card-${item.id}`} href={`/dashboard/admin/users/${item.id}`} key={item.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-semibold">{item.name}</div>
                 <div className="text-muted-foreground text-xs">{item.email}</div>
-              </td>
-              <td className="px-4 py-3">{roleLabel(item.role)}</td>
-              <td className="px-4 py-3">
-                <Badge variant={item.status === "banned" ? "destructive" : "secondary"}>{item.status === "banned" ? "已封禁" : "正常"}</Badge>
-              </td>
-              <td className="px-4 py-3">{item.emailVerified ? "已验证" : "未验证"}</td>
-              <td className="px-4 py-3">{formatDate(item.createdAt)}</td>
-              <td className="px-4 py-3 text-right">
-                <AdminUserRowActions user={item} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <div className="grid gap-3 lg:hidden">
-      {items.map((item) => (
-        <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-user-card-${item.id}`} href={`/dashboard/admin/users/${item.id}`} key={item.id}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="font-semibold">{item.name}</div>
-              <div className="text-muted-foreground text-xs">{item.email}</div>
+              </div>
+              <Badge variant={item.status === "banned" ? "destructive" : "secondary"}>{item.status === "banned" ? "已封禁" : "正常"}</Badge>
             </div>
-            <Badge variant={item.status === "banned" ? "destructive" : "secondary"}>{item.status === "banned" ? "已封禁" : "正常"}</Badge>
-          </div>
-          <div className="mt-3 text-muted-foreground text-xs">
-            {roleLabel(item.role)} · {item.emailVerified ? "已验证" : "未验证"}
-          </div>
-        </Link>
-      ))}
-    </div>
-  </>
-)
+            <div className="mt-3 text-muted-foreground text-xs">
+              {roleLabel(item.role)} · {item.emailVerified ? "已验证" : "未验证"}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </>
+  )
+}
 
 const AdminUserRowActions = ({ user }: { user: UserRow }) => {
   const [activeAction, setActiveAction] = useState<RowAction>(null)
@@ -325,6 +335,9 @@ const AdminUserRowActions = ({ user }: { user: UserRow }) => {
     <div
       className="flex justify-end"
       onClick={(event) => {
+        event.stopPropagation()
+      }}
+      onPointerDown={(event) => {
         event.stopPropagation()
       }}
     >

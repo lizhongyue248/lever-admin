@@ -28,9 +28,11 @@ test.describe("09 dashboard settings sessions", () => {
     await expect(page.getByTestId("current-session-marker")).toHaveCount(0)
     await expect(page.getByTestId("session-device-system-icon").filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByTestId("session-device-browser-icon").filter({ visible: true }).first()).toBeVisible()
+    await expect(page.getByRole("button", { name: "首页" })).toBeDisabled()
     await expect(page.getByRole("button", { name: "上一页" })).toBeDisabled()
     await expect(page.getByRole("button", { name: "下一页" })).toBeDisabled()
-    await expect(page.getByText("第 1 / 1 页", { exact: true })).toBeVisible()
+    await expect(page.getByRole("button", { name: "末页" })).toBeDisabled()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("1")
     await expect(page.getByTestId("dashboard-sidebar-label-我的会话")).toBeVisible()
 
     const summaryCard = page.getByText("会话概览", { exact: true }).locator("xpath=ancestor::div[contains(@class, 'rounded-lg')][1]")
@@ -110,9 +112,11 @@ test.describe("09 dashboard settings sessions", () => {
     await expect(page.getByTestId("current-session-marker-mobile")).toHaveCount(0)
     await expect(page.getByTestId("session-device-system-icon").filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByTestId("session-device-browser-icon").filter({ visible: true }).first()).toBeVisible()
+    await expect(page.getByRole("button", { name: "首页" })).toBeDisabled()
     await expect(page.getByRole("button", { name: "上一页" })).toBeDisabled()
     await expect(page.getByRole("button", { name: "下一页" })).toBeDisabled()
-    await expect(page.getByText("1 / 1", { exact: true })).toBeVisible()
+    await expect(page.getByRole("button", { name: "末页" })).toBeDisabled()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("1")
   })
 
   test("revokes another active session", async ({ browser, page }, testInfo) => {

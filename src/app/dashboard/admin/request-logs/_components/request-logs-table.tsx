@@ -1,10 +1,10 @@
 "use client"
 
-import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import type { ColumnDef } from "@tanstack/react-table"
 import { useMemo } from "react"
 
+import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { RouterOutputs } from "@/trpc/react"
 
 import { type SourceFilter, sourceLabels } from "./request-log-labels"
@@ -109,12 +109,6 @@ export const RequestLogsTable = ({ isDesktop, items, onOpen }: { isDesktop: bool
     ],
     []
   )
-  const table = useReactTable({
-    columns,
-    data: items,
-    getCoreRowModel: getCoreRowModel()
-  })
-
   if (!isDesktop) {
     return (
       <div className="grid max-h-[600px] gap-3 overflow-y-auto pr-1" data-testid="request-log-list-scroll">
@@ -126,34 +120,17 @@ export const RequestLogsTable = ({ isDesktop, items, onOpen }: { isDesktop: bool
   }
 
   return (
-    <div className="rounded-lg border" data-testid="request-log-table-viewport">
-      <div className="max-h-[600px] overflow-auto [scrollbar-gutter:stable]" data-testid="request-log-list-scroll">
-        <table className="w-full min-w-[1190px] caption-bottom text-sm">
-          <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80" data-testid="request-log-table-header">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead className="whitespace-nowrap" key={header.id} style={{ minWidth: header.getSize(), width: header.getSize() }}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow className="cursor-pointer" data-testid={`request-log-row-${row.original.id}`} key={row.id} onClick={() => onOpen(row.original.id)}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} style={{ minWidth: cell.column.getSize(), width: cell.column.getSize() }}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </table>
-      </div>
-    </div>
+    <DataTable
+      columns={columns}
+      data={items}
+      getRowId={(row) => row.id}
+      headerTestId="request-log-table-header"
+      maxHeightClassName="max-h-[580px]"
+      minWidthClassName="min-w-[1190px]"
+      onRowClick={(row) => onOpen(row.id)}
+      rowTestId={(row) => `request-log-row-${row.id}`}
+      viewportTestId="request-log-table-viewport"
+    />
   )
 }
 

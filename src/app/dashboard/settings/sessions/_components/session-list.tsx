@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 
+import { DataPagination } from "@/components/data-pagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -27,21 +28,6 @@ const formatDate = (date: Date) =>
     month: "2-digit"
   }).format(date)
 
-const Pagination = ({ currentPage, onNext, onPrevious, pageCount }: { currentPage: number; onNext: () => void; onPrevious: () => void; pageCount: number }) => (
-  <div className="flex items-center justify-between gap-3 pt-4">
-    <Button disabled={currentPage <= 1} onClick={onPrevious} size="sm" type="button" variant="outline">
-      上一页
-    </Button>
-    <span className="font-medium text-muted-foreground text-xs">
-      <span className="hidden lg:inline">{`第 ${currentPage} / ${pageCount} 页`}</span>
-      <span className="lg:hidden">{`${currentPage} / ${pageCount}`}</span>
-    </span>
-    <Button disabled={currentPage >= pageCount} onClick={onNext} size="sm" type="button" variant="outline">
-      下一页
-    </Button>
-  </div>
-)
-
 export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }: SessionListProps) => {
   const [currentPage, setCurrentPage] = useState(1)
   const pageCount = Math.max(1, Math.ceil(sessions.length / PAGE_SIZE))
@@ -50,8 +36,6 @@ export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }:
 
     return sessions.slice(start, start + PAGE_SIZE)
   }, [currentPage, sessions])
-  const previousPage = () => setCurrentPage((value) => Math.max(1, value - 1))
-  const nextPage = () => setCurrentPage((value) => Math.min(pageCount, value + 1))
 
   useEffect(() => {
     setCurrentPage((value) => Math.min(value, pageCount))
@@ -143,7 +127,15 @@ export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }:
           </>
         )}
 
-        <Pagination currentPage={currentPage} onNext={nextPage} onPrevious={previousPage} pageCount={pageCount} />
+        <DataPagination
+          className="pt-4"
+          itemCount={visibleSessions.length}
+          onPageChange={setCurrentPage}
+          page={currentPage}
+          pageCount={pageCount}
+          pageSize={PAGE_SIZE}
+          total={sessions.length}
+        />
       </CardContent>
     </Card>
   )

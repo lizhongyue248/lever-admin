@@ -1,10 +1,13 @@
 "use client"
 
+import type { ColumnDef } from "@tanstack/react-table"
 import { Loader2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { DataPagination } from "@/components/data-pagination"
+import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +15,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ORGANIZATION_ROLE_ADMIN, ORGANIZATION_ROLE_MEMBER, ORGANIZATION_ROLE_OWNER, type OrganizationRole } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { formatDate } from "../_lib/org-format"
@@ -37,9 +39,10 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [departmentId, setDepartmentId] = useState("none")
+  const [page, setPage] = useState(1)
   const [role, setRole] = useState<OrganizationRole>(ORGANIZATION_ROLE_MEMBER)
-  const invitationListInput = { page: 1, pageSize: 10, search: "", slug, status: "all" as const }
-  const invitations = api.org.invitation.list.useQuery(invitationListInput, { initialData })
+  const invitationListInput = { page, pageSize: 10, search: "", slug, status: "all" as const }
+  const invitations = api.org.invitation.list.useQuery(invitationListInput, { initialData: page === 1 ? initialData : undefined, placeholderData: (previousData) => previousData })
   const departments = api.org.department.list.useQuery({ slug })
   const invite = api.org.invitation.invite.useMutation({
     onError: (error) => toast.error(error.message || "邀请成员失败。"),
@@ -59,6 +62,23 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
       router.refresh()
     }
   })
+  const invitationColumns: Array<ColumnDef<InvitationData["items"][number]>> = [
+    { cell: ({ row }) => <span className="font-medium">{row.original.email}</span>, header: "邮箱", size: 220 },
+    { cell: ({ row }) => row.original.role, header: "角色", size: 110 },
+    { cell: ({ row }) => row.original.departmentName ?? "未指定", header: "目标部门", size: 140 },
+    { cell: ({ row }) => row.original.inviterName || row.original.inviterEmail, header: "邀请人", size: 160 },
+    { cell: ({ row }) => formatDate(row.original.expiresAt), header: "过期时间", size: 140 },
+    {
+      cell: ({ row }) => {
+        const statusMeta = getInvitationStatusMeta(row.original.status)
+
+        return <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+      },
+      header: "状态",
+      size: 110
+    }
+  ]
+  const invitationData = invitations.data ?? initialData
 
   return (
     <div className="space-y-5">
@@ -92,40 +112,11 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
 
       <Card className="rounded-lg shadow-sm">
         <CardContent className="p-5">
-          <div className="hidden max-h-[560px] overflow-auto rounded-lg border md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>邮箱</TableHead>
-                  <TableHead>角色</TableHead>
-                  <TableHead>目标部门</TableHead>
-                  <TableHead>邀请人</TableHead>
-                  <TableHead>过期时间</TableHead>
-                  <TableHead>状态</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invitations.data.items.map((item) => {
-                  const statusMeta = getInvitationStatusMeta(item.status)
-
-                  return (
-                    <TableRow data-invitation-id={item.id} key={item.id}>
-                      <TableCell className="font-medium">{item.email}</TableCell>
-                      <TableCell>{item.role}</TableCell>
-                      <TableCell>{item.departmentName ?? "未指定"}</TableCell>
-                      <TableCell>{item.inviterName || item.inviterEmail}</TableCell>
-                      <TableCell>{formatDate(item.expiresAt)}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+          <div className="hidden md:block">
+            <DataTable columns={invitationColumns} data={invitationData.items} getRowId={(row) => row.id} maxHeightClassName="max-h-[560px]" minWidthClassName="min-w-[920px]" />
           </div>
           <div className="space-y-3 md:hidden">
-            {invitations.data.items.map((item) => {
+            {invitationData.items.map((item) => {
               const statusMeta = getInvitationStatusMeta(item.status)
 
               return (
@@ -144,18 +135,17 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
               )
             })}
           </div>
-          {invitations.data.items.length === 0 ? <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">暂无邀请。</div> : null}
-          <div className="mt-4 flex items-center justify-center gap-3 text-muted-foreground">
-            <Button disabled size="icon-sm" type="button" variant="outline">
-              ‹
-            </Button>
-            <span>
-              {invitations.data.page} / {invitations.data.pageCount}
-            </span>
-            <Button disabled size="icon-sm" type="button" variant="outline">
-              ›
-            </Button>
-          </div>
+          {invitationData.items.length === 0 ? <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">暂无邀请。</div> : null}
+          <DataPagination
+            className="mt-4"
+            disabled={invitations.isFetching}
+            itemCount={invitationData.items.length}
+            onPageChange={setPage}
+            page={invitationData.page}
+            pageCount={invitationData.pageCount}
+            pageSize={10}
+            total={invitationData.items.length}
+          />
         </CardContent>
       </Card>
 

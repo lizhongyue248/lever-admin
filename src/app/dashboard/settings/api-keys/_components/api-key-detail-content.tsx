@@ -1,15 +1,16 @@
 "use client"
 
+import type { ColumnDef } from "@tanstack/react-table"
 import { Activity, BarChart3, Fingerprint, Gauge, KeyRound, type LucideIcon, MoreHorizontal, ShieldCheck } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts"
 
+import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { DeleteApiKeyDialog, DisableApiKeyDialog, EnableApiKeyDialog } from "./api-key-dialogs"
@@ -286,35 +287,32 @@ const DistributionBar = ({ count, label, total }: { count: number; label: string
   )
 }
 
-const UsageLogTable = ({ items }: { items: LogItem[] }) => (
-  <div className="overflow-hidden rounded-lg border">
-    <Table>
-      <TableHeader>
-        <TableRow className="bg-muted/50">
-          <TableHead>时间</TableHead>
-          <TableHead>请求</TableHead>
-          <TableHead>结果</TableHead>
-          <TableHead>IP</TableHead>
-          <TableHead>User-Agent</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((log) => (
-          <TableRow key={log.id}>
-            <TableCell>{formatDateTime(log.createdAt)}</TableCell>
-            <TableCell>
-              <div className="font-medium">{log.method ?? "GET"}</div>
-              <div className="max-w-[220px] truncate text-muted-foreground text-xs">{log.routeName ?? log.path ?? "-"}</div>
-            </TableCell>
-            <TableCell>
-              <div>{log.success ? "成功" : "失败"}</div>
-              <div className="text-muted-foreground text-xs">{log.statusCode ?? log.errorCode ?? log.failureReason ?? "-"}</div>
-            </TableCell>
-            <TableCell>{log.ipCountry ?? "隐藏"}</TableCell>
-            <TableCell className="max-w-[200px] truncate">{log.userAgentSummary ?? "隐藏"}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </div>
-)
+const UsageLogTable = ({ items }: { items: LogItem[] }) => {
+  const columns: Array<ColumnDef<LogItem>> = [
+    { cell: ({ row }) => formatDateTime(row.original.createdAt), header: "时间", size: 150 },
+    {
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.method ?? "GET"}</div>
+          <div className="max-w-[220px] truncate text-muted-foreground text-xs">{row.original.routeName ?? row.original.path ?? "-"}</div>
+        </div>
+      ),
+      header: "请求",
+      size: 260
+    },
+    {
+      cell: ({ row }) => (
+        <div>
+          <div>{row.original.success ? "成功" : "失败"}</div>
+          <div className="text-muted-foreground text-xs">{row.original.statusCode ?? row.original.errorCode ?? row.original.failureReason ?? "-"}</div>
+        </div>
+      ),
+      header: "结果",
+      size: 130
+    },
+    { cell: ({ row }) => row.original.ipCountry ?? "隐藏", header: "IP", size: 140 },
+    { cell: ({ row }) => <span className="block max-w-[200px] truncate">{row.original.userAgentSummary ?? "隐藏"}</span>, header: "User-Agent", size: 220 }
+  ]
+
+  return <DataTable columns={columns} data={items} getRowId={(row) => row.id} maxHeightClassName="max-h-[420px]" minWidthClassName="min-w-[900px]" />
+}

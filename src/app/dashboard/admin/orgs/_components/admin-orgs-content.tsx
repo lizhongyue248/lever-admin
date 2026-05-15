@@ -4,6 +4,7 @@ import { Building2, Search, Users } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
+import { DataPagination } from "@/components/data-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -130,23 +131,15 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
       </div>
 
       {data.items.length === 0 ? <Card className="rounded-lg border-dashed p-8 text-center text-muted-foreground text-sm">暂无组织。</Card> : null}
-      <div className="flex items-center justify-center gap-3 text-muted-foreground">
-        <Button disabled={organizations.isFetching || data.page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} size="icon-sm" type="button" variant="outline">
-          ‹
-        </Button>
-        <span>
-          {data.page} / {data.pageCount}
-        </span>
-        <Button
-          disabled={organizations.isFetching || data.page >= data.pageCount}
-          onClick={() => setPage((current) => Math.min(data.pageCount, current + 1))}
-          size="icon-sm"
-          type="button"
-          variant="outline"
-        >
-          ›
-        </Button>
-      </div>
+      <DataPagination
+        disabled={organizations.isFetching}
+        itemCount={data.items.length}
+        onPageChange={setPage}
+        page={data.page}
+        pageCount={data.pageCount}
+        pageSize={12}
+        total={data.total}
+      />
     </div>
   )
 }

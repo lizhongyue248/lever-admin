@@ -25,6 +25,12 @@ test.describe("12 dashboard admin users", () => {
     await expect(page.getByRole("navigation", { name: "主导航" }).getByRole("link", { name: "用户管理" })).toHaveAttribute("href", "/dashboard/admin/users")
     await page.getByLabel("搜索用户").fill("Maya")
     await expect(page.getByTestId(`admin-user-row-${target.id}`)).toBeVisible()
+    await expect(page.getByTestId("data-table-scroll")).toBeVisible()
+    await expect(page.getByRole("button", { name: "首页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "上一页" })).toBeVisible()
+    await expect(page.getByRole("spinbutton", { name: "当前页" })).toHaveValue("1")
+    await expect(page.getByRole("button", { name: "下一页" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "末页" })).toBeVisible()
 
     await page.getByTestId(`admin-user-row-${target.id}`).getByRole("button", { name: "更多用户操作" }).click()
     await expect(page.getByRole("menuitem", { name: "设置角色" })).toBeVisible()

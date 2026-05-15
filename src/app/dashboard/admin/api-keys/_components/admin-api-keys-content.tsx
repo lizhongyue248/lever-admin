@@ -1,17 +1,19 @@
 "use client"
 
-import { Activity, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Eye, KeyRound, MoreHorizontal, Search, ShieldCheck, Timer, Trash2 } from "lucide-react"
+import type { ColumnDef } from "@tanstack/react-table"
+import { Activity, AlertTriangle, ChevronDown, ExternalLink, Eye, KeyRound, MoreHorizontal, Search, ShieldCheck, Timer, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
+import { DataPagination } from "@/components/data-pagination"
+import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 import { AdminApiKeyDetailContent, AdminApiKeyRiskBadge, AdminApiKeyStatusBadge } from "./admin-api-key-detail-content"
 import { DeleteAdminApiKeyDialog, DisableAdminApiKeyDialog, EnableAdminApiKeyDialog } from "./admin-api-key-dialogs"
@@ -101,10 +103,13 @@ export const AdminApiKeysContent = ({
   const data = keys.data ?? initialKeys
   const overviewData = overview.data ?? initialOverview
 
-  const openSheet = (id: string) => {
-    setSheetKeyId(id)
-    router.replace(`/dashboard/admin/api-keys?keyId=${encodeURIComponent(id)}`, { scroll: false })
-  }
+  const openSheet = useCallback(
+    (id: string) => {
+      setSheetKeyId(id)
+      router.replace(`/dashboard/admin/api-keys?keyId=${encodeURIComponent(id)}`, { scroll: false })
+    },
+    [router]
+  )
 
   const closeSheet = () => {
     setSheetKeyId(null)
@@ -167,36 +172,15 @@ export const AdminApiKeysContent = ({
             <AdminApiKeysTable items={data.items} onOpen={openSheet} />
           )}
 
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>
-              显示 {data.items.length} / {data.total}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                aria-label="上一页"
-                disabled={keys.isFetching || data.page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <span>
-                {data.page} / {data.pageCount}
-              </span>
-              <Button
-                aria-label="下一页"
-                disabled={keys.isFetching || data.page >= data.pageCount}
-                onClick={() => setPage((current) => Math.min(data.pageCount, current + 1))}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </div>
+          <DataPagination
+            disabled={keys.isFetching}
+            itemCount={data.items.length}
+            onPageChange={setPage}
+            page={data.page}
+            pageCount={data.pageCount}
+            pageSize={20}
+            total={data.total}
+          />
         </CardContent>
       </Card>
 
@@ -263,76 +247,92 @@ const StatCard = ({ icon: Icon, label, value }: { icon: typeof KeyRound; label: 
   </div>
 )
 
-const AdminApiKeysTable = ({ items, onOpen }: { items: AdminApiKeyItem[]; onOpen: (id: string) => void }) => (
-  <>
-    <div className="hidden overflow-hidden rounded-lg border lg:block">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="px-4">名称</TableHead>
-            <TableHead>所属主体</TableHead>
-            <TableHead>过期时间</TableHead>
-            <TableHead>最后使用</TableHead>
-            <TableHead>状态</TableHead>
-            <TableHead className="text-right">操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow className="cursor-pointer" data-testid={`admin-api-key-row-${item.id}`} key={item.id} onClick={() => onOpen(item.id)}>
-              <TableCell className="px-4">
-                <div className="font-medium">{item.name}</div>
-                <div className="text-muted-foreground text-xs">{item.maskedKey}</div>
-              </TableCell>
-              <TableCell>
-                <div className="font-medium">{item.owner.label}</div>
-                <div className="text-muted-foreground text-xs">{ownerTypeLabel(item.owner.type)}</div>
-              </TableCell>
-              <TableCell>{formatExpiresAt(item.expiresAt)}</TableCell>
-              <TableCell>{formatDate(item.lastRequest)}</TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  <AdminApiKeyStatusBadge status={item.status} />
-                  <AdminApiKeyRiskBadge risk={item.risk} />
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                <AdminApiKeyRowActions apiKey={item} onOpen={() => onOpen(item.id)} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-    <div className="grid gap-3 lg:hidden">
-      {items.map((item) => (
-        <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-api-key-card-${item.id}`} href={`/dashboard/admin/api-keys/${item.id}`} key={item.id}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="truncate font-semibold">{item.name}</div>
-              <div className="mt-1 font-mono text-muted-foreground text-xs">{item.maskedKey}</div>
+const AdminApiKeysTable = ({ items, onOpen }: { items: AdminApiKeyItem[]; onOpen: (id: string) => void }) => {
+  const columns = useMemo<Array<ColumnDef<AdminApiKeyItem>>>(
+    () => [
+      {
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.name}</div>
+            <div className="text-muted-foreground text-xs">{row.original.maskedKey}</div>
+          </div>
+        ),
+        header: "名称",
+        size: 240
+      },
+      {
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.owner.label}</div>
+            <div className="text-muted-foreground text-xs">{ownerTypeLabel(row.original.owner.type)}</div>
+          </div>
+        ),
+        header: "所属主体",
+        size: 180
+      },
+      { cell: ({ row }) => formatExpiresAt(row.original.expiresAt), header: "过期时间", size: 130 },
+      { cell: ({ row }) => formatDate(row.original.lastRequest), header: "最后使用", size: 130 },
+      {
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            <AdminApiKeyStatusBadge status={row.original.status} />
+            <AdminApiKeyRiskBadge risk={row.original.risk} />
+          </div>
+        ),
+        header: "状态",
+        size: 180
+      },
+      {
+        cell: ({ row }) => <AdminApiKeyRowActions apiKey={row.original} onOpen={() => onOpen(row.original.id)} />,
+        header: "操作",
+        size: 110
+      }
+    ],
+    [onOpen]
+  )
+
+  return (
+    <>
+      <div className="hidden lg:block">
+        <DataTable
+          columns={columns}
+          data={items}
+          getRowId={(row) => row.id}
+          minWidthClassName="min-w-[970px]"
+          onRowClick={(row) => onOpen(row.id)}
+          rowTestId={(row) => `admin-api-key-row-${row.id}`}
+        />
+      </div>
+      <div className="grid gap-3 lg:hidden">
+        {items.map((item) => (
+          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-api-key-card-${item.id}`} href={`/dashboard/admin/api-keys/${item.id}`} key={item.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate font-semibold">{item.name}</div>
+                <div className="mt-1 font-mono text-muted-foreground text-xs">{item.maskedKey}</div>
+              </div>
+              <AdminApiKeyStatusBadge status={item.status} />
             </div>
-            <AdminApiKeyStatusBadge status={item.status} />
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <AdminApiKeyRiskBadge risk={item.risk} />
-            <span className="text-muted-foreground text-xs">
-              {ownerTypeLabel(item.owner.type)}：{item.owner.label}
-            </span>
-            <span className="text-muted-foreground text-xs">最后使用：{formatDate(item.lastRequest)}</span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  </>
-)
+            <div className="mt-3 flex flex-wrap gap-2">
+              <AdminApiKeyRiskBadge risk={item.risk} />
+              <span className="text-muted-foreground text-xs">
+                {ownerTypeLabel(item.owner.type)}：{item.owner.label}
+              </span>
+              <span className="text-muted-foreground text-xs">最后使用：{formatDate(item.lastRequest)}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </>
+  )
+}
 
 const AdminApiKeyRowActions = ({ apiKey, onOpen }: { apiKey: AdminApiKeyItem; onOpen: () => void }) => {
   const [activeAction, setActiveAction] = useState<RowAction>(null)
   const canMutate = apiKey.canMutate !== false
 
   return (
-    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+    <div className="flex justify-end" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
       <Button aria-label="查看平台 API Key 详情" onClick={onOpen} size="icon-sm" title="查看平台 API Key 详情" type="button" variant="ghost">
         <Eye className="size-4" />
       </Button>

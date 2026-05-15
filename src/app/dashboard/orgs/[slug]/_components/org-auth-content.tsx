@@ -1,60 +1,59 @@
 "use client"
 
+import type { ColumnDef } from "@tanstack/react-table"
 import { MonitorSmartphone } from "lucide-react"
+import { useState } from "react"
 
+import { DataPagination } from "@/components/data-pagination"
+import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { formatRelativeTime } from "../_lib/org-format"
 
 type AuthData = RouterOutputs["org"]["session"]["list"]
 
 export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; slug: string }) => {
-  const sessions = api.org.session.list.useQuery({ deviceType: "all", page: 1, pageSize: 10, riskStatus: "all", search: "", slug }, { initialData })
+  const [page, setPage] = useState(1)
+  const sessions = api.org.session.list.useQuery(
+    { deviceType: "all", page, pageSize: 10, riskStatus: "all", search: "", slug },
+    { initialData: page === 1 ? initialData : undefined, placeholderData: (previousData) => previousData }
+  )
+  const columns: Array<ColumnDef<AuthData["items"][number]>> = [
+    {
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.name}</div>
+          <div className="text-muted-foreground text-xs">{row.original.email}</div>
+        </div>
+      ),
+      header: "成员",
+      size: 220
+    },
+    {
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <MonitorSmartphone className="size-4 text-muted-foreground" />
+          <span>{`${row.original.deviceLabel} · ${row.original.browserLabel}`}</span>
+        </div>
+      ),
+      header: "设备",
+      size: 220
+    },
+    { cell: ({ row }) => row.original.ipAddress ?? "未知位置", header: "位置", size: 160 },
+    { cell: ({ row }) => formatRelativeTime(row.original.lastActiveAt), header: "最后活跃", size: 140 },
+    { cell: () => <Badge variant="secondary">正常</Badge>, header: "风险", size: 100 }
+  ]
+  const sessionData = sessions.data ?? initialData
 
   return (
     <Card className="rounded-lg shadow-sm">
       <CardContent className="p-5">
-        <div className="hidden max-h-[620px] overflow-auto rounded-lg border md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>成员</TableHead>
-                <TableHead>设备</TableHead>
-                <TableHead>位置</TableHead>
-                <TableHead>最后活跃</TableHead>
-                <TableHead>风险</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sessions.data.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-muted-foreground text-xs">{item.email}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <MonitorSmartphone className="size-4 text-muted-foreground" />
-                      <span>
-                        {item.deviceLabel} · {item.browserLabel}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.ipAddress ?? "未知位置"}</TableCell>
-                  <TableCell>{formatRelativeTime(item.lastActiveAt)}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">正常</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="hidden md:block">
+          <DataTable columns={columns} data={sessionData.items} getRowId={(row) => row.id} maxHeightClassName="max-h-[620px]" minWidthClassName="min-w-[840px]" />
         </div>
         <div className="space-y-3 md:hidden">
-          {sessions.data.items.map((item) => (
+          {sessionData.items.map((item) => (
             <div className="rounded-lg border p-4" key={item.id}>
               <div className="font-medium">{item.name}</div>
               <div className="text-muted-foreground text-xs">{item.email}</div>
@@ -68,18 +67,17 @@ export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; s
             </div>
           ))}
         </div>
-        {sessions.data.items.length === 0 ? <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">暂无成员登录记录。</div> : null}
-        <div className="mt-4 flex items-center justify-center gap-3 text-muted-foreground">
-          <Button disabled size="icon-sm" type="button" variant="outline">
-            ‹
-          </Button>
-          <span>
-            {sessions.data.page} / {sessions.data.pageCount}
-          </span>
-          <Button disabled size="icon-sm" type="button" variant="outline">
-            ›
-          </Button>
-        </div>
+        {sessionData.items.length === 0 ? <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">暂无成员登录记录。</div> : null}
+        <DataPagination
+          className="mt-4"
+          disabled={sessions.isFetching}
+          itemCount={sessionData.items.length}
+          onPageChange={setPage}
+          page={sessionData.page}
+          pageCount={sessionData.pageCount}
+          pageSize={10}
+          total={sessionData.items.length}
+        />
       </CardContent>
     </Card>
   )

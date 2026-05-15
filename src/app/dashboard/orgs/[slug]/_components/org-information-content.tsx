@@ -1,16 +1,18 @@
 "use client"
 
+import type { ColumnDef } from "@tanstack/react-table"
 import { FolderInput, Loader2, UserMinus, UserPlus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { DataPagination } from "@/components/data-pagination"
+import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { formatDate, formatRelativeTime } from "../_lib/org-format"
@@ -50,6 +52,7 @@ export const OrgInformationContent = ({
   const [assignMember, setAssignMember] = useState<MemberItem | null>(null)
   const [assignDepartmentId, setAssignDepartmentId] = useState("")
   const [removeMember, setRemoveMember] = useState<MemberItem | null>(null)
+  const [page, setPage] = useState(1)
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [addUserEmail, setAddUserEmail] = useState("")
   const [addUserName, setAddUserName] = useState("")
@@ -61,10 +64,11 @@ export const OrgInformationContent = ({
   const selectedNode = selectedTree.nodes.find((node) => node.id === selectedNodeId) ?? selectedTree.nodes[0] ?? null
   const departmentOptions = selectedTree.nodes.filter((node) => node.type === "department")
   const members = api.org.department.member.list.useQuery(
-    { departmentId: selectedNodeId ?? undefined, page: 1, pageSize: 10, search: "", securityStatus: "all", slug },
+    { departmentId: selectedNodeId ?? undefined, page, pageSize: 10, search: "", securityStatus: "all", slug },
     {
       enabled: Boolean(selectedNodeId),
-      initialData: selectedNodeId === (tree.selectedNodeId ?? tree.nodes[0]?.id) ? initialMembers : undefined
+      initialData: page === 1 && selectedNodeId === (tree.selectedNodeId ?? tree.nodes[0]?.id) ? initialMembers : undefined,
+      placeholderData: (previousData) => previousData
     }
   )
   const refreshOrganizationData = async () => {
@@ -143,6 +147,28 @@ export const OrgInformationContent = ({
     setAssignMember(item)
     setAssignDepartmentId(departmentOptions[0]?.id ?? "")
   }
+  const memberColumns: Array<ColumnDef<MemberItem>> = [
+    {
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.name}</div>
+          <div className="text-muted-foreground text-xs">{row.original.email}</div>
+        </div>
+      ),
+      header: "成员",
+      size: 220
+    },
+    { cell: ({ row }) => <Badge variant="secondary">{row.original.role}</Badge>, header: "角色", size: 100 },
+    { cell: ({ row }) => row.original.departmentNames, header: "所属部门", size: 160 },
+    { cell: ({ row }) => formatDate(row.original.joinedAt), header: "加入时间", size: 130 },
+    { cell: ({ row }) => formatRelativeTime(row.original.lastLoginAt), header: "最后登录", size: 130 },
+    { cell: () => "正常", header: "安全状态", size: 110 },
+    {
+      cell: ({ row }) => <MemberRowActions canManage={canManage} item={row.original} onAssign={openAssignDialog} onRemove={setRemoveMember} />,
+      header: "操作",
+      size: 110
+    }
+  ]
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
@@ -181,65 +207,14 @@ export const OrgInformationContent = ({
               </div>
             ) : memberData.items.length > 0 ? (
               <>
-                <div className="hidden max-h-[520px] overflow-auto rounded-lg border md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>成员</TableHead>
-                        <TableHead>角色</TableHead>
-                        <TableHead>所属部门</TableHead>
-                        <TableHead>加入时间</TableHead>
-                        <TableHead>最后登录</TableHead>
-                        <TableHead>安全状态</TableHead>
-                        <TableHead className="text-right">操作</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {memberData.items.map((item) => (
-                        <TableRow key={item.memberId}>
-                          <TableCell>
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-muted-foreground text-xs">{item.email}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{item.role}</Badge>
-                          </TableCell>
-                          <TableCell>{item.departmentNames}</TableCell>
-                          <TableCell>{formatDate(item.joinedAt)}</TableCell>
-                          <TableCell>{formatRelativeTime(item.lastLoginAt)}</TableCell>
-                          <TableCell>正常</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              {canManage && item.departmentNames === "未分配" ? (
-                                <Button
-                                  aria-label={`分配 ${item.name} 到部门`}
-                                  onClick={() => openAssignDialog(item)}
-                                  size="icon-sm"
-                                  title="分配部门"
-                                  type="button"
-                                  variant="outline"
-                                >
-                                  <FolderInput className="size-3.5" />
-                                </Button>
-                              ) : null}
-                              {canManage ? (
-                                <Button
-                                  aria-label={`从组织移除 ${item.name}`}
-                                  onClick={() => setRemoveMember(item)}
-                                  size="icon-sm"
-                                  title="移除成员"
-                                  type="button"
-                                  variant="destructive"
-                                >
-                                  <UserMinus className="size-3.5" />
-                                </Button>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="hidden md:block">
+                  <DataTable
+                    columns={memberColumns}
+                    data={memberData.items}
+                    getRowId={(row) => row.memberId}
+                    maxHeightClassName="max-h-[520px]"
+                    minWidthClassName="min-w-[960px]"
+                  />
                 </div>
                 <div className="space-y-3 md:hidden">
                   {memberData.items.map((item) => (
@@ -272,17 +247,16 @@ export const OrgInformationContent = ({
             ) : (
               <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">该组织节点暂无成员。</div>
             )}
-            <div className="mt-4 flex items-center justify-center gap-3 text-muted-foreground">
-              <Button disabled size="icon-sm" type="button" variant="outline">
-                ‹
-              </Button>
-              <span>
-                {memberData.page} / {memberData.pageCount}
-              </span>
-              <Button disabled size="icon-sm" type="button" variant="outline">
-                ›
-              </Button>
-            </div>
+            <DataPagination
+              className="mt-4"
+              disabled={members.isFetching}
+              itemCount={memberData.items.length}
+              onPageChange={setPage}
+              page={memberData.page}
+              pageCount={memberData.pageCount}
+              pageSize={10}
+              total={memberData.items.length}
+            />
           </CardContent>
         </Card>
       ) : (
@@ -516,3 +490,28 @@ export const OrgInformationContent = ({
     </div>
   )
 }
+
+const MemberRowActions = ({
+  canManage,
+  item,
+  onAssign,
+  onRemove
+}: {
+  canManage: boolean
+  item: MemberItem
+  onAssign: (item: MemberItem) => void
+  onRemove: (item: MemberItem) => void
+}) => (
+  <div className="flex justify-end gap-2">
+    {canManage && item.departmentNames === "未分配" ? (
+      <Button aria-label={`分配 ${item.name} 到部门`} onClick={() => onAssign(item)} size="icon-sm" title="分配部门" type="button" variant="outline">
+        <FolderInput className="size-3.5" />
+      </Button>
+    ) : null}
+    {canManage ? (
+      <Button aria-label={`从组织移除 ${item.name}`} onClick={() => onRemove(item)} size="icon-sm" title="移除成员" type="button" variant="destructive">
+        <UserMinus className="size-3.5" />
+      </Button>
+    ) : null}
+  </div>
+)

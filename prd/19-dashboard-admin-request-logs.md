@@ -63,7 +63,8 @@
   - 桌面日志表格使用 TanStack Table 管理列定义和行模型，避免手写表头/表体结构漂移。
   - 日志表格 / 移动端日志列表设置最大高度，超出后在表格或列表区域内部滚动，避免每页 20 或 50 条数据时撑长整个页面；分页区始终保留在列表卡片底部。
   - 桌面表格使用单一滚动视口承载纵向和横向滚动；表头固定在滚动视口顶部，横向滚动条保留在表格视口底部且不被分页区遮挡。
-  - 分页区展示当前页数量、总数、上一页、下一页，并提供每页条数下拉选项：10、20、50；默认每页 10 条，最大每页 50 条。
+  - 分页区使用共享 `DataPagination`，展示当前页数量、总数、首页、上一页、下一页、末页和页码输入框，并提供每页条数下拉选项：10、20、50；默认每页 10 条，最大每页 50 条。
+  - 分页操作区的首页、上一页、下一页、末页均为图标按钮且提供可访问名称；用户可在页码数字输入框输入目标页，按 Enter 后跳转，越界页码按有效范围纠正。
   - 点击行或详情按钮打开右侧 Sheet 查看请求详情。
   - 移动端使用响应式日志卡片列表，点击进入完整详情页或底部 Sheet；不压缩复杂表格。
 
@@ -259,7 +260,8 @@
 - 新增 Drizzle schema `requestLog`，表名为 `system_request_log`。
 - 新增页面路径 `src/app/dashboard/admin/request-logs/page.tsx`。
 - 页面客户端组件放在 `src/app/dashboard/admin/request-logs/_components/`。
-- 桌面表格实现必须基于 `@tanstack/react-table` 的 `useReactTable`、`getCoreRowModel` 和 `flexRender`。
+- 桌面表格使用 `src/components/data-table.tsx` 的共享 `DataTable`，内部必须基于 `@tanstack/react-table` 的 `useReactTable`、`getCoreRowModel` 和 `flexRender`。
+- 分页控件使用 `src/components/data-pagination.tsx` 的共享 `DataPagination`；每页条数下拉支持 10、20、50，切换每页条数后回到第一页。
 - Sidebar 管理分组新增「请求日志」入口。
 - `proxy.ts` 只负责 requestId 和必要上下文传递，不在 proxy 中直接执行数据库写入。
 - tRPC middleware 可记录 procedure 层请求，但必须避免把敏感 input 原文写入日志。
