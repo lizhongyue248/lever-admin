@@ -18,13 +18,15 @@
 
 - 统一服务目录：`src/server/service/email/`。
 - 统一发送入口：`sendEmail({ to, subject, html, text })`。
-- Provider 通过环境变量 `EMAIL_PROVIDER` 切换，支持：
+- Provider 配置由平台设置服务解析：优先读取数据库 `system_platform_setting`，数据库为空时回退环境变量。
+- 环境变量仍用于本地开发、E2E 和首次部署兜底；后台设置页保存后以数据库配置为准。
+- Provider 支持：
   - `console`：开发默认值，仅输出收件人、标题和关键链接，不发送真实邮件。
   - `resend`：使用 Resend API 发送生产或预发邮件。
   - `smtp`：使用 SMTP 发送生产或企业私有邮箱服务邮件。
 - 所有 provider 共享同一套模板输出，不允许在 provider 中拼接业务内容。
 - 发送失败必须记录服务端日志；认证流程前端仍展示当前流程约定的安全文案，避免泄露账号存在性。
-- 生产环境不允许使用 `EMAIL_PROVIDER=console`；如果生产环境误配置为 console，服务端必须拒绝发送，避免动作链接进入日志但邮件未真实送达。
+- 生产环境不允许使用最终解析后的 `console` provider；如果数据库或环境变量最终解析为 console，服务端必须拒绝发送，避免动作链接进入日志但邮件未真实送达。
 - 第一版使用同步发送并让调用方感知 provider 配置错误；组织邀请的数据库写入事务只包裹邀请状态更新和插入，邮件发送在事务提交后触发，避免外部 provider 调用长时间占用数据库事务。
 - 后续如需要完全非阻塞发送，应引入 outbox/队列、平台 `waitUntil` 或可观测的后台发送策略，并记录发送状态与失败重试。
 
@@ -57,6 +59,8 @@
 
 ## 环境变量
 
+环境变量是邮件配置表为空时的兜底来源。第一版仍保留这些变量，方便本地开发、E2E 和首次部署；平台设置页保存配置后，运行时以数据库配置为准。
+
 ```env
 EMAIL_PROVIDER="console"
 EMAIL_FROM="Lever Admin <no-reply@example.com>"
@@ -80,8 +84,8 @@ SMTP_SECURE="false"
 ## 验收标准
 
 - 三类邮件都通过 `src/server/service/email` 发送，不在 Better Auth 配置中直接调用 provider SDK。
-- `EMAIL_PROVIDER=console` 时，本地开发可看到收件人、标题和动作链接。
-- `EMAIL_PROVIDER=resend` 和 `EMAIL_PROVIDER=smtp` 使用相同模板内容，仅发送通道不同。
+- 数据库配置为空且 `EMAIL_PROVIDER=console` 时，本地开发可看到收件人、标题和动作链接。
+- 数据库配置或环境变量解析为 `resend`、`smtp` 时，使用相同模板内容，仅发送通道不同。
 - 每个模板都有 HTML 和纯文本版本。
 - 邮箱验证、密码重置和组织邀请邮件在视觉上保持统一，并与 `prd/email-template-design.pen` 一致。
 - 邮件发送失败可在服务端日志中定位，但不会在忘记密码等敏感流程中暴露账号存在性。

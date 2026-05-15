@@ -294,6 +294,17 @@ export const passkey = createSystemTable(
   (table) => [index("system_passkey_user_id_idx").on(table.userId), index("system_passkey_credential_id_idx").on(table.credentialID)]
 )
 
+export const platformSetting = createSystemTable("platform_setting", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull()
+})
+
 export const apikey = createSystemTable(
   "apikey",
   {

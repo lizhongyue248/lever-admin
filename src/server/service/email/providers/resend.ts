@@ -2,25 +2,15 @@ import "server-only"
 
 import { Resend } from "resend"
 
-import { env } from "@/env"
-
 import type { EmailProvider } from "../types"
-
-let resendClient: Resend | undefined
-
-const getResendClient = (): Resend => {
-  if (!env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is required when EMAIL_PROVIDER is resend.")
-  }
-
-  resendClient ??= new Resend(env.RESEND_API_KEY)
-
-  return resendClient
-}
 
 export const resendEmailProvider: EmailProvider = {
   send: async (input) => {
-    const { data, error } = await getResendClient().emails.send({
+    if (!input.config.resendApiKey) {
+      throw new Error("Resend API Key is required when email provider is resend.")
+    }
+
+    const { data, error } = await new Resend(input.config.resendApiKey).emails.send({
       from: input.from,
       html: input.html,
       subject: input.subject,

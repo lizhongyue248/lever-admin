@@ -6,31 +6,31 @@ import { env } from "@/env"
 
 import type { EmailProvider } from "../types"
 
-type SmtpTransporter = ReturnType<typeof nodemailer.createTransport>
-
-let smtpTransporter: SmtpTransporter | undefined
-
-const getSmtpTransporter = (): SmtpTransporter => {
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD) {
-    throw new Error("SMTP_HOST, SMTP_USER, and SMTP_PASSWORD are required when EMAIL_PROVIDER is smtp.")
-  }
-
-  smtpTransporter ??= nodemailer.createTransport({
-    auth: {
-      pass: env.SMTP_PASSWORD,
-      user: env.SMTP_USER
-    },
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_SECURE
-  })
-
-  return smtpTransporter
-}
-
 export const smtpEmailProvider: EmailProvider = {
   send: async (input) => {
-    const result = await getSmtpTransporter().sendMail({
+    const smtp = input.config.smtp
+
+    if (!smtp?.host || !smtp.user || !smtp.password) {
+      throw new Error("SMTP host, user, and password are required when email provider is smtp.")
+    }
+
+    const transporter =
+      env.NODE_ENV === "test"
+        ? nodemailer.createTransport({
+            buffer: true,
+            streamTransport: true
+          })
+        : nodemailer.createTransport({
+            auth: {
+              pass: smtp.password,
+              user: smtp.user
+            },
+            host: smtp.host,
+            port: smtp.port,
+            secure: smtp.secure
+          })
+
+    const result = await transporter.sendMail({
       from: input.from,
       html: input.html,
       subject: input.subject,

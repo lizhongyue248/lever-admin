@@ -1,6 +1,8 @@
 import "server-only"
 
 import { env } from "@/env"
+import { db } from "@/server/db"
+import { getEffectiveEmailProviderConfig } from "@/server/service/platform-settings"
 
 import type { EmailProvider, EmailProviderName, SendEmailInput, SendEmailResult } from "./types"
 
@@ -16,21 +18,27 @@ const getProvider = async (providerName: EmailProviderName): Promise<EmailProvid
 }
 
 export const sendEmail = async (input: SendEmailInput): Promise<SendEmailResult> => {
-  if (env.NODE_ENV === "production" && env.EMAIL_PROVIDER === "console") {
-    throw new Error("EMAIL_PROVIDER=console is not allowed in production.")
+  const config = await getEffectiveEmailProviderConfig(db)
+
+  if (env.NODE_ENV === "production" && config.provider === "console") {
+    throw new Error("Console email provider is not allowed in production.")
   }
 
-  const provider = await getProvider(env.EMAIL_PROVIDER)
+  const provider = await getProvider(config.provider)
 
   try {
     return await provider.send({
       ...input,
-      from: env.EMAIL_FROM
+      config: {
+        resendApiKey: config.resendApiKey,
+        smtp: config.smtp
+      },
+      from: config.from
     })
   } catch (error) {
     console.error("[email:send-failed]", {
       errorName: error instanceof Error ? error.name : "UnknownEmailError",
-      provider: env.EMAIL_PROVIDER
+      provider: config.provider
     })
 
     throw error

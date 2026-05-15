@@ -7,7 +7,19 @@ export type SendEmailInput = {
   to: string
 }
 
+export type EmailProviderRuntimeConfig = {
+  resendApiKey?: string
+  smtp?: {
+    host?: string
+    password?: string
+    port: number
+    secure: boolean
+    user?: string
+  }
+}
+
 export type SendEmailProviderInput = SendEmailInput & {
+  config: EmailProviderRuntimeConfig
   from: string
 }
 

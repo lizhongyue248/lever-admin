@@ -365,3 +365,42 @@ export const getInvitationStatusByEmail = async ({ email, organizationId }: { em
     await sql.end()
   }
 }
+
+export const upsertPlatformSetting = async ({ key, value }: { key: string; value: string }) => {
+  const sql = createE2eSql()
+
+  try {
+    await sql`
+      insert into "system_platform_setting" ("key", "value", "created_at", "updated_at")
+      values (${key}, ${value}, now(), now())
+      on conflict ("key") do update set "value" = excluded."value", "updated_at" = now()
+    `
+  } finally {
+    await sql.end()
+  }
+}
+
+export const getPlatformSettingValue = async (key: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ value: string }[]>`
+      select "value" from "system_platform_setting" where "key" = ${key} limit 1
+    `
+
+    return rows[0]?.value ?? null
+  } finally {
+    await sql.end()
+  }
+}
+
+export const deletePlatformSettings = async () => {
+  const sql = createE2eSql()
+  const keys = ["email.provider", "email.from", "email.resend.apiKey", "email.smtp.host", "email.smtp.port", "email.smtp.user", "email.smtp.password", "email.smtp.secure"]
+
+  try {
+    await sql`delete from "system_platform_setting" where "key" in ${sql(keys)}`
+  } finally {
+    await sql.end()
+  }
+}
