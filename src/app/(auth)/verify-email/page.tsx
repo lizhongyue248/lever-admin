@@ -26,7 +26,7 @@ const VerifyEmailPage = async ({ searchParams }: VerifyEmailPageProps) => {
   return (
     <AuthLayout backHref="/sign-in" className="lg:max-w-[480px]" page="verify-email">
       <AuthCard description="处理验证链接、待验证提醒和重新发送。" title="邮箱验证">
-        <VerifyEmailState error={error} initialEmail={session?.user.email ?? email ?? ""} status={status} token={token} />
+        <VerifyEmailState error={error} initialEmail={session?.user.email ?? email ?? ""} lockEmail={Boolean(session?.user.email ?? email)} status={status} token={token} />
       </AuthCard>
     </AuthLayout>
   )

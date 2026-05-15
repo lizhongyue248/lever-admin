@@ -49,7 +49,19 @@ const getInitialMessage = ({ error, status }: { error?: string; status?: string 
   return ""
 }
 
-export const VerifyEmailState = ({ error, initialEmail, status, token }: { error?: string; initialEmail: string; status?: string; token?: string }) => {
+export const VerifyEmailState = ({
+  error,
+  initialEmail,
+  lockEmail,
+  status,
+  token
+}: {
+  error?: string
+  initialEmail: string
+  lockEmail: boolean
+  status?: string
+  token?: string
+}) => {
   const router = useRouter()
   const [state, setState] = useState<VerifyState>(() => getInitialState({ error, status, token }))
   const [errors, setErrors] = useState<FieldErrors<keyof VerifyEmailValues & string>>({})
@@ -182,7 +194,7 @@ export const VerifyEmailState = ({ error, initialEmail, status, token }: { error
               {(field) => (
                 <FormField
                   autoComplete="email"
-                  disabled={pending || cooldown > 0 || state === "verifying"}
+                  disabled={lockEmail || pending || cooldown > 0 || state === "verifying"}
                   error={errors.email}
                   id={field.name}
                   inputMode="email"

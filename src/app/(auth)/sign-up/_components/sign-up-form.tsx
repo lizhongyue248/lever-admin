@@ -16,6 +16,15 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { authClient } from "@/server/better-auth/client"
 
+const getEmailVerificationPendingTarget = (email: string) => {
+  const params = new URLSearchParams({
+    email,
+    status: "pending"
+  })
+
+  return `/verify-email?${params.toString()}`
+}
+
 const emailVerificationPendingTarget = "/verify-email?status=pending"
 
 export const SignUpForm = () => {
@@ -58,7 +67,7 @@ export const SignUpForm = () => {
           return
         }
 
-        router.replace(emailVerificationPendingTarget)
+        router.replace(getEmailVerificationPendingTarget(parsed.data.email))
         router.refresh()
       } catch {
         setMessage("注册服务暂时不可用，请稍后重试。")

@@ -34,6 +34,17 @@ test.describe("05 verify email", () => {
     await expect(page.getByText("请输入有效的邮箱地址。")).toBeVisible()
   })
 
+  test("locks the pending email when redirected from sign in", async ({ page }) => {
+    const email = "pending-user@example.com"
+
+    await page.goto(`/verify-email?status=pending&email=${encodeURIComponent(email)}`)
+
+    const emailField = page.getByLabel("邮箱")
+    await expect(emailField).toHaveValue(email)
+    await expect(emailField).toBeDisabled()
+  })
+
+  // This also exercises the Better Auth sendVerificationEmail callback through the console email provider in E2E.
   test("resends verification email and starts cooldown", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
 
@@ -44,7 +55,8 @@ test.describe("05 verify email", () => {
       name: "Verify Resend E2E"
     })
 
-    await page.getByLabel("邮箱").fill(email)
+    await expect(page.getByLabel("邮箱")).toHaveValue(email)
+    await expect(page.getByLabel("邮箱")).toBeDisabled()
     await page.getByRole("button", { name: "重新发送验证邮件" }).click()
 
     await expect(page.getByText("验证邮件已发送，请检查收件箱。")).toBeVisible()

@@ -11,6 +11,9 @@ type E2eEnvironment = NodeJS.ProcessEnv & {
   E2E_BASE_URL: string
   E2E_NEXT_DIST_DIR: string
   E2E_PORT: string
+  EMAIL_PROVIDER: "console"
+  GOOGLE_RECAPTCHA_SECRET_KEY: string
+  NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY: string
   NODE_ENV: "test"
 }
 
@@ -100,6 +103,9 @@ const globalSetup = async (_config: FullConfig) => {
     E2E_BASE_URL: baseURL,
     E2E_NEXT_DIST_DIR: ".next-e2e",
     E2E_PORT: String(port),
+    EMAIL_PROVIDER: "console",
+    GOOGLE_RECAPTCHA_SECRET_KEY: "",
+    NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY: "",
     NODE_ENV: "test"
   }
 
@@ -107,6 +113,9 @@ const globalSetup = async (_config: FullConfig) => {
   process.env.DATABASE_URL = env.DATABASE_URL
   process.env.E2E_BASE_URL = env.E2E_BASE_URL
   process.env.E2E_PORT = env.E2E_PORT
+  process.env.EMAIL_PROVIDER = env.EMAIL_PROVIDER
+  process.env.GOOGLE_RECAPTCHA_SECRET_KEY = env.GOOGLE_RECAPTCHA_SECRET_KEY
+  process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY = env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY
 
   await runCommand("pnpm", ["db:push"], env)
 

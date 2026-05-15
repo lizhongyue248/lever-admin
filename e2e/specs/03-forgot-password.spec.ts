@@ -24,6 +24,7 @@ test.describe("03 forgot password", () => {
     await expect(page.getByText("请输入有效的邮箱地址。")).toBeVisible()
   })
 
+  // This also exercises the Better Auth sendResetPassword callback through the console email provider in E2E.
   test("accepts reset requests for an existing email without exposing account details", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
 

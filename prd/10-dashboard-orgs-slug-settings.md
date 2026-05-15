@@ -73,7 +73,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
   - 发送邀请成功后必须关闭弹窗、清空邮箱输入、展示成功 toast，并刷新邀请列表表格。
   - 发送邀请必须使用 Better Auth organization invitation 能力或与其语义完全一致的服务端封装，不允许仅手动插入 `system_invitation` 而绕过过期时间、权限校验和邀请邮件回调。
   - 邀请创建成功后必须生成 `expiresAt`，默认遵循 Better Auth organization plugin 的邀请过期配置。
-  - 邀请创建成功后必须触发邀请通知；第一版开发环境可记录邀请 URL 到日志，生产环境接入邮件服务后通过邮件发送接受链接。
+  - 邀请创建成功后必须触发邀请通知；邀请邮件通过 `src/server/service/email` 统一发送服务发送，开发环境可使用 `EMAIL_PROVIDER=console` 输出邀请 URL，生产环境使用 Resend 或 SMTP provider 发送接受链接。
   - 邀请链接指向 `10A-organization-invitation-accept.md` 定义的邀请接受页。
   - 被邀请用户会在 Dashboard Topbar 右侧通知图标中看到待处理邀请数量；打开通知面板后可直接接受或拒绝邀请。
   - 邀请通知项展示组织名称、默认部门（可选）、邀请角色、邀请人和过期时间；默认部门只作为加入后的内部归属展示。

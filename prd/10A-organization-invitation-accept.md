@@ -51,6 +51,12 @@
 - `org.invitation.getMine` 或 Better Auth `organization/get-invitation`：读取指定 invitation id 的详情，服务端校验当前登录用户邮箱必须等于邀请邮箱，并返回默认部门信息（如有）。
 - `org.invitation.accept` 或 Better Auth `organization/accept-invitation`：接受邀请，创建成员关系，更新邀请状态为 `accepted`，并将组织设为 active organization；如果邀请指定默认部门，则额外创建部门成员归属。
 - `org.invitation.reject` 或 Better Auth `organization/reject-invitation`：拒绝邀请，更新邀请状态为 `rejected`。
+- Better Auth `organization.sendInvitationEmail`：组织邀请邮件发送函数。
+  - 调用 `src/server/service/email` 中统一邮件发送服务，不直接在 Better Auth 配置中拼接邮件或调用第三方 SDK。
+  - 组织邀请邮件模板独立放在 `src/server/service/email/templates/organization-invitation.ts`，模板返回 `subject`、`html` 和 `text`。
+  - 模板输入至少包含邀请邮箱、组织名称、邀请人姓名/邮箱、角色、接受链接和过期时间；存在默认部门时在邮件信息区展示默认部门，但主语仍然是组织（公司）。
+  - 邮件服务通过 `EMAIL_PROVIDER` 在 `console`、`resend`、`smtp` 之间切换；开发默认可使用 console provider 输出收件人、标题和邀请链接。
+  - Resend 和 SMTP provider 共享同一套模板输入输出，不影响 Better Auth organization 调用方。
 - `notification.list`：读取当前登录用户通知列表，组织邀请通知从当前用户邮箱对应的 pending invitation 聚合生成；返回字段包含 notification id、type、status、invitation id、组织名称、组织 slug、默认部门名称（可选）、邀请角色、邀请人、过期时间和状态。
 - `notification.invitation.accept` / `notification.invitation.reject`：通知面板使用的快捷处理接口，内部复用本页的接受/拒绝校验与状态更新逻辑。
 - 接受成功后跳转 `/dashboard/orgs/[slug]`；如果无法解析 slug，则跳转 `/dashboard`。
@@ -64,8 +70,10 @@
 - 接受邀请后需要刷新 dashboard shell 数据，使 Sidebar 的「当前组织」和用户菜单组织列表立即包含新组织。
 - 接受邀请后用户加入的是组织（公司）；默认部门只是公司内部归属，不改变 activeOrganizationId。
 - 通知面板和 `/invite/[id]` 不能各自实现两套状态机；接受、拒绝、过期、邮箱校验、部门归属写入必须使用同一个服务端 helper 或同一组 Better Auth 封装。
+- `/invite/[id]` 的接受/拒绝按钮在客户端完成挂载前保持禁用，避免 SSR 页面水合前的点击被浏览器丢失。
 - 接受成功后通知面板应立即移除该邀请；拒绝成功后也应移除该邀请，并可展示轻量 toast。
-- 邮件链接第一版可以在开发环境通过日志输出；生产接入邮件服务后使用同一路由。
+- 邮件链接开发环境可以通过统一 email service 的 console provider 输出；生产环境必须使用 Resend 或 SMTP provider 发送，接受链接仍指向同一路由。
+- 邮件模板视觉以 `prd/email-template-design.pen` 为准，与邮箱验证和密码重置模板保持统一品牌、按钮、页脚和安全提示样式。
 - 不在邀请链接中暴露 session token 或其他敏感信息。
 
 ## 通用工程约束

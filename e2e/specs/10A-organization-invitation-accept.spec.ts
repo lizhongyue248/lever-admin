@@ -25,6 +25,7 @@ test.describe("10A organization invitation accept", () => {
     await page.getByRole("dialog", { name: "邀请成员" }).getByLabel("邮箱").fill(invitedEmail)
     await page.getByRole("button", { name: "发送邀请" }).click()
     await expect(page.getByRole("row").filter({ hasText: invitedEmail }).getByText("待接受")).toBeVisible()
+    await expect.poll(() => getInvitationStatusByEmail({ email: invitedEmail, organizationId: rootId })).toBe("pending")
 
     await page.context().clearCookies()
     await page.goto("/sign-in")

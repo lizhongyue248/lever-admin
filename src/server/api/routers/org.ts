@@ -2,10 +2,13 @@ import { TRPCError } from "@trpc/server"
 import { and, asc, count, desc, eq, gt, ilike, inArray, isNull, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 
+import { env } from "@/env"
 import { ORGANIZATION_ADMIN_ROLES, ORGANIZATION_ROLES, PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { invitation, member, organization, organizationDepartment, organizationDepartmentMember, session, user } from "@/server/db/schema"
+import { renderOrganizationInvitationEmail, sendEmail } from "@/server/service/email"
 
+const defaultAppBaseUrl = "http://localhost:4000"
 const roleInput = z.enum(ORGANIZATION_ROLES)
 const slugInput = z.object({ slug: z.string().min(1) })
 const pageInput = z.object({
@@ -775,41 +778,61 @@ export const orgRouter = createTRPCRouter({
         const { org } = await requireOrgAdmin(ctx, input.slug)
         const departmentId = input.departmentId ?? input.nodeId
         const targetDepartmentId = departmentId && departmentId !== org.id ? departmentId : null
+        let targetDepartment: { id: string; name: string } | null = null
 
         if (targetDepartmentId) {
-          const [targetDepartment] = await ctx.db
-            .select({ id: organizationDepartment.id })
+          const [department] = await ctx.db
+            .select({ id: organizationDepartment.id, name: organizationDepartment.name })
             .from(organizationDepartment)
             .where(and(eq(organizationDepartment.id, targetDepartmentId), eq(organizationDepartment.organizationId, org.id)))
             .limit(1)
 
-          if (!targetDepartment) {
+          if (!department) {
             throw new TRPCError({ code: "NOT_FOUND", message: "目标部门不存在。" })
           }
+
+          targetDepartment = department
         }
 
         const normalizedEmail = input.email.trim().toLowerCase()
-        await ctx.db
-          .update(invitation)
-          .set({ status: "canceled" })
-          .where(and(eq(invitation.organizationId, org.id), eq(invitation.email, normalizedEmail), eq(invitation.status, "pending")))
-
         const id = crypto.randomUUID()
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48)
-        await ctx.db.insert(invitation).values({
-          departmentId: targetDepartmentId,
+
+        const [inviter] = await ctx.db.select({ email: user.email, name: user.name }).from(user).where(eq(user.id, ctx.session.user.id)).limit(1)
+
+        await ctx.db.transaction(async (tx) => {
+          await tx
+            .update(invitation)
+            .set({ status: "canceled" })
+            .where(and(eq(invitation.organizationId, org.id), eq(invitation.email, normalizedEmail), eq(invitation.status, "pending")))
+
+          await tx.insert(invitation).values({
+            departmentId: targetDepartmentId,
+            email: normalizedEmail,
+            expiresAt,
+            id,
+            inviterId: ctx.session.user.id,
+            organizationId: org.id,
+            role: input.role,
+            status: "pending"
+          })
+        })
+
+        const invitationUrl = new URL(`/invite/${id}`, env.BETTER_AUTH_URL ?? defaultAppBaseUrl).toString()
+        const renderedEmail = renderOrganizationInvitationEmail({
+          departmentName: targetDepartment?.name ?? null,
           email: normalizedEmail,
           expiresAt,
-          id,
-          inviterId: ctx.session.user.id,
-          organizationId: org.id,
+          inviterEmail: inviter?.email ?? "unknown-inviter@localhost",
+          inviterName: inviter?.name ?? null,
+          organizationName: org.name,
           role: input.role,
-          status: "pending"
+          url: invitationUrl
         })
-        console.info("[org:invitation]", {
-          invitationId: id,
-          to: normalizedEmail,
-          url: `/invite/${id}`
+
+        await sendEmail({
+          ...renderedEmail,
+          to: normalizedEmail
         })
 
         return { id, invited: true }

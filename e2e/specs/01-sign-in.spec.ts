@@ -77,6 +77,8 @@ test.describe("01 sign in", () => {
 
     await expect(page).toHaveURL(/\/verify-email\?email=.*&status=pending/)
     await expect(page.getByText("等待验证")).toBeVisible()
+    await expect(page.getByLabel("邮箱")).toHaveValue(email)
+    await expect(page.getByLabel("邮箱")).toBeDisabled()
   })
 
   test("secondary links navigate to forgot password and sign up", async ({ page }) => {

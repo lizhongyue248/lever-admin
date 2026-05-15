@@ -11,6 +11,7 @@ import { env } from "@/env"
 import { PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN, PLATFORM_ROLE_SUPPORT, PLATFORM_ROLE_USER } from "@/lib/const"
 import { db } from "@/server/db"
 import { user as userTable } from "@/server/db/schema"
+import { renderOrganizationInvitationEmail, renderResetPasswordEmail, renderVerifyEmail, sendEmail } from "@/server/service/email"
 
 const defaultAuthBaseUrl = "http://localhost:4000"
 const authBaseUrl = env.BETTER_AUTH_URL ?? defaultAuthBaseUrl
@@ -58,8 +59,16 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      // Development placeholder: replace with a real email provider before production.
-      console.info("[auth:reset-password]", { to: user.email, url })
+      const email = renderResetPasswordEmail({
+        email: user.email,
+        name: user.name,
+        url
+      })
+
+      await sendEmail({
+        ...email,
+        to: user.email
+      })
     }
   },
   emailVerification: {
@@ -67,8 +76,16 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     sendOnSignIn: true,
     sendVerificationEmail: async ({ user, url }) => {
-      // Development placeholder: replace with a real email provider before production.
-      console.info("[auth:verify-email]", { to: user.email, url })
+      const email = renderVerifyEmail({
+        email: user.email,
+        name: user.name,
+        url
+      })
+
+      await sendEmail({
+        ...email,
+        to: user.email
+      })
     }
   },
   hooks: {
@@ -119,10 +136,19 @@ export const auth = betterAuth({
     }),
     organization({
       requireEmailVerificationOnInvitation: true,
-      sendInvitationEmail: async ({ email, invitation, organization }) => {
-        console.info("[auth:organization-invitation]", {
-          invitationId: invitation.id,
-          organization: organization.name,
+      sendInvitationEmail: async ({ email, invitation, inviter, organization, role }) => {
+        const renderedEmail = renderOrganizationInvitationEmail({
+          email,
+          expiresAt: invitation.expiresAt ?? null,
+          inviterEmail: inviter.user.email,
+          inviterName: inviter.user.name,
+          organizationName: organization.name,
+          role,
+          url: `${authBaseUrl}/invite/${invitation.id}`
+        })
+
+        await sendEmail({
+          ...renderedEmail,
           to: email
         })
       }

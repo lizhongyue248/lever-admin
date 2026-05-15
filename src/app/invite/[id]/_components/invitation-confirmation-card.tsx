@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +23,14 @@ const formatInvitationDateTime = (date: Date | null) => {
 export const InvitationConfirmationCard = ({ invitation }: { invitation: InvitationDetail }) => {
   const router = useRouter()
   const utils = api.useUtils()
-  const disabled = invitation.effectiveStatus !== "pending"
+  const [hydrated, setHydrated] = useState(false)
+  const isProcessable = invitation.effectiveStatus === "pending"
+  const actionsDisabled = !hydrated || !isProcessable
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
   const accept = api.notification.invitation.accept.useMutation({
     onSuccess: async (result) => {
       toast.success("已接受组织邀请。")
@@ -55,7 +63,7 @@ export const InvitationConfirmationCard = ({ invitation }: { invitation: Invitat
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle>组织邀请</CardTitle>
-          <Badge variant={disabled ? "secondary" : "default"}>{disabled ? "不可处理" : "待处理"}</Badge>
+          <Badge variant={isProcessable ? "default" : "secondary"}>{isProcessable ? "待处理" : "不可处理"}</Badge>
         </div>
         <CardDescription>{invitation.organizationName} 邀请你加入公司。</CardDescription>
       </CardHeader>
@@ -68,13 +76,13 @@ export const InvitationConfirmationCard = ({ invitation }: { invitation: Invitat
         <InfoRow label="过期时间" value={formatInvitationDateTime(invitation.expiresAt)} />
       </CardContent>
       <CardFooter className="flex flex-col gap-2 sm:flex-row">
-        <Button className="w-full" disabled={disabled || accept.isPending || reject.isPending} onClick={() => accept.mutate({ invitationId: invitation.id })} type="button">
+        <Button className="w-full" disabled={actionsDisabled || accept.isPending || reject.isPending} onClick={() => accept.mutate({ invitationId: invitation.id })} type="button">
           {accept.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           接受邀请
         </Button>
         <Button
           className="w-full"
-          disabled={disabled || accept.isPending || reject.isPending}
+          disabled={actionsDisabled || accept.isPending || reject.isPending}
           onClick={() => reject.mutate({ invitationId: invitation.id })}
           type="button"
           variant="outline"

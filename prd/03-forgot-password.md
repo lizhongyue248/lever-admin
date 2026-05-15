@@ -26,8 +26,10 @@
   - 提交重置请求前，客户端执行 Google reCAPTCHA v3 `forgot_password` action，并通过 `fetchOptions.headers["x-captcha-response"]` 传递 token。
   - 请求体使用 `redirectTo=/reset-password`，用户打开 Better Auth 生成的重置链接后会被回跳到 `/reset-password?token=...`。
 - `emailAndPassword.sendResetPassword`：Better Auth 服务端邮件发送函数。
-  - 当前开发阶段使用 `console.info("[auth:reset-password]", { to, url })` 输出重置链接到服务端控制台。
-  - 后续接入真实邮件服务时，将该函数替换为 Resend/SMTP/邮件推送服务调用。
+  - 调用 `src/server/service/email` 中统一邮件发送服务，不直接在 Better Auth 配置中拼接邮件或调用第三方 SDK。
+  - 重置密码邮件模板独立放在 `src/server/service/email/templates/reset-password.ts`，模板返回 `subject`、`html` 和 `text`。
+  - 邮件服务通过 `EMAIL_PROVIDER` 在 `console`、`resend`、`smtp` 之间切换；开发默认可使用 console provider 输出收件人、标题和重置链接。
+  - Resend 和 SMTP provider 共享同一套模板输入输出，不影响 Better Auth 调用方。
 
 ## 实现要点
 
@@ -36,6 +38,7 @@
 - 当前版本不暴露邮箱是否存在；即使接口异常，前端也展示统一成功文案，真实失败由服务端日志排查。
 - 服务端使用 Better Auth Captcha plugin 校验密码重置请求；生产环境必须配置 Google reCAPTCHA site key 和 secret key，测试环境跳过外部 captcha 校验。
 - reCAPTCHA 前端脚本默认从 `www.google.com` 加载；国内访问场景可将 `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST` 配置为 `www.recaptcha.net`。
+- 邮件模板视觉以 `prd/email-template-design.pen` 为准，与邮箱验证和组织邀请模板保持统一品牌、按钮、页脚和安全提示样式。
 - 可在服务端增加 rate limit，防止滥用。
 
 ## 通用工程约束

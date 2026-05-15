@@ -61,6 +61,9 @@ test.describe("02 sign up", () => {
       name: "Sign Up E2E"
     })
 
+    await expect(page.getByLabel("邮箱")).toHaveValue(email)
+    await expect(page.getByLabel("邮箱")).toBeDisabled()
+
     const user = await getUserByEmail(email)
     expect(user).toMatchObject({
       email,

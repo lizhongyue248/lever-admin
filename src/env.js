@@ -14,9 +14,31 @@ export const env = createEnv({
     BETTER_AUTH_GOOGLE_CLIENT_ID: z.string().optional(),
     BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string().optional(),
     DATABASE_URL: z.string().url(),
+    EMAIL_FROM: z.string().default("Lever Admin <no-reply@example.com>"),
+    EMAIL_PROVIDER: z.enum(["console", "resend", "smtp"]).default("console"),
     GOOGLE_RECAPTCHA_MIN_SCORE: z.coerce.number().min(0).max(1).optional(),
     GOOGLE_RECAPTCHA_SECRET_KEY: z.string().optional(),
-    NODE_ENV: z.enum(["development", "test", "production"]).default("development")
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    RESEND_API_KEY: process.env.EMAIL_PROVIDER === "resend" ? z.string().min(1) : z.string().optional(),
+    SMTP_HOST: process.env.EMAIL_PROVIDER === "smtp" ? z.string().min(1) : z.string().optional(),
+    SMTP_PASSWORD: process.env.EMAIL_PROVIDER === "smtp" ? z.string().min(1) : z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_SECURE: z.preprocess((value) => {
+      if (value === undefined) {
+        return false
+      }
+
+      if (value === "true") {
+        return true
+      }
+
+      if (value === "false") {
+        return false
+      }
+
+      return value
+    }, z.boolean()),
+    SMTP_USER: process.env.EMAIL_PROVIDER === "smtp" ? z.string().min(1) : z.string().optional()
   },
 
   /**
@@ -41,11 +63,19 @@ export const env = createEnv({
     BETTER_AUTH_GOOGLE_CLIENT_ID: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID,
     BETTER_AUTH_GOOGLE_CLIENT_SECRET: process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
+    EMAIL_FROM: process.env.EMAIL_FROM,
+    EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
     GOOGLE_RECAPTCHA_MIN_SCORE: process.env.GOOGLE_RECAPTCHA_MIN_SCORE,
     GOOGLE_RECAPTCHA_SECRET_KEY: process.env.GOOGLE_RECAPTCHA_SECRET_KEY,
     NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST: process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST,
     NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY: process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY,
-    NODE_ENV: process.env.NODE_ENV
+    NODE_ENV: process.env.NODE_ENV,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_SECURE: process.env.SMTP_SECURE,
+    SMTP_USER: process.env.SMTP_USER
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
