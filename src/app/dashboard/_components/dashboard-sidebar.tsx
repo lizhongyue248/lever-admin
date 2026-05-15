@@ -4,6 +4,7 @@ import { Building2, KeyRound, LayoutDashboard, type LucideIcon, ScrollText, Sett
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+import { ORGANIZATION_ADMIN_ROLES, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
 import { cn } from "@/lib/utils"
 import { DashboardUserMenu } from "./dashboard-user-menu"
 import type { DashboardShellData } from "./types"
@@ -20,8 +21,23 @@ type NavItem = {
   label: string
 }
 
+const canManageOrganization = (role: string | null | undefined) => ORGANIZATION_ADMIN_ROLES.some((adminRole) => adminRole === role)
+
 const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: string }[] => {
   const activeOrganization = data.organizations.find((item) => item.organizationId === data.activeOrganizationId) ?? data.organizations[0] ?? null
+  const canShowCurrentOrganization = canManageOrganization(activeOrganization?.role)
+  const platformRole = data.user.role
+  const isPlatformAdmin = platformRole === PLATFORM_ROLE_ADMIN || platformRole === PLATFORM_ROLE_SUPER_ADMIN
+  const isPlatformSuperAdmin = platformRole === PLATFORM_ROLE_SUPER_ADMIN
+  const adminItems: NavItem[] = isPlatformAdmin
+    ? [
+        { href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
+        { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" },
+        { href: "/dashboard/admin/api-keys", icon: KeyRound, label: "平台 API Key" },
+        isPlatformSuperAdmin ? { href: "/dashboard/admin/request-logs", icon: ScrollText, label: "请求日志" } : null,
+        isPlatformSuperAdmin ? { href: "/dashboard/admin/settings", icon: SlidersHorizontal, label: "平台设置" } : null
+      ].filter((item): item is NavItem => item !== null)
+    : []
 
   return [
     {
@@ -34,21 +50,15 @@ const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: stri
         { href: "/dashboard/settings/security", icon: ShieldCheck, label: "安全设置" },
         { href: "/dashboard/settings/sessions", icon: UsersRound, label: "我的会话" },
         { href: "/dashboard/settings/api-keys", icon: KeyRound, label: "API Keys" },
-        activeOrganization ? { href: `/dashboard/orgs/${activeOrganization.organizationSlug}`, icon: Building2, label: "当前组织" } : null
+        activeOrganization && canShowCurrentOrganization ? { href: `/dashboard/orgs/${activeOrganization.organizationSlug}`, icon: Building2, label: "当前组织" } : null
       ].filter((item): item is NavItem => item !== null),
       label: "账号设置"
     },
     {
-      items: [
-        { href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
-        { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" },
-        { href: "/dashboard/admin/api-keys", icon: KeyRound, label: "平台 API Key" },
-        { href: "/dashboard/admin/request-logs", icon: ScrollText, label: "请求日志" },
-        { href: "/dashboard/admin/settings", icon: SlidersHorizontal, label: "平台设置" }
-      ],
+      items: adminItems,
       label: "管理"
     }
-  ]
+  ].filter((group) => group.items.length > 0)
 }
 
 export const DashboardSidebar = ({ collapsed = false, data, mobile = false }: DashboardSidebarProps) => {

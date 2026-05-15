@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gt, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 
-import { ORGANIZATION_ADMIN_ROLES } from "@/lib/const"
+import { ORGANIZATION_ADMIN_ROLES, PLATFORM_ROLE_USER } from "@/lib/const"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { account, apikey, invitation, member, organization, passkey, session, team, twoFactor, user } from "@/server/db/schema"
 
@@ -15,6 +15,7 @@ const countRows = async (query: Promise<{ value: number }[]>) => {
 const isOrganizationAdminRole = (role: string | null | undefined) => ORGANIZATION_ADMIN_ROLES.some((adminRole) => adminRole === role)
 
 const getActiveSessionOrganizationId = (activeSession: typeof session.$inferSelect) => activeSession.activeOrganizationId ?? null
+const getPlatformRole = (role: string | null | undefined) => role ?? PLATFORM_ROLE_USER
 
 export const dashboardRouter = createTRPCRouter({
   getShell: protectedProcedure.query(async ({ ctx }) => {
@@ -53,7 +54,8 @@ export const dashboardRouter = createTRPCRouter({
         emailVerified: ctx.session.user.emailVerified,
         id: ctx.session.user.id,
         image: ctx.session.user.image,
-        name: ctx.session.user.name
+        name: ctx.session.user.name,
+        role: getPlatformRole("role" in ctx.session.user && typeof ctx.session.user.role === "string" ? ctx.session.user.role : null)
       }
     }
   }),

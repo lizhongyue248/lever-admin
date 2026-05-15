@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
+import { addOrganizationMemberByEmail, seedOrganizationWithDepartments, setUserRole } from "../helpers/db"
 
 const waitForDashboardReady = async (page: Page) => {
   await expect(page.getByRole("banner")).toBeVisible()
@@ -41,6 +42,93 @@ test.describe("06 dashboard", () => {
     await expect(page.getByText("最近身份事件")).toBeVisible()
     await expect(page.getByText("登录与会话趋势")).toHaveCount(0)
     await expect(page.getByText("认证方式覆盖")).toHaveCount(0)
+  })
+
+  test("filters sidebar navigation by platform and organization roles", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "Role-based sidebar only needs one browser project")
+
+    const normalEmail = await createVerifiedUser(page, "dashboard-sidebar-normal")
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: normalEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
+
+    const normalNav = page.getByRole("navigation", { name: "主导航" })
+    await expect(normalNav.getByRole("link", { name: "当前组织" })).toHaveCount(0)
+    await expect(normalNav.getByRole("link", { name: "用户管理" })).toHaveCount(0)
+    await expect(normalNav.getByRole("link", { name: "平台设置" })).toHaveCount(0)
+
+    await page.context().clearCookies()
+    const memberEmail = await createVerifiedUser(page, "dashboard-sidebar-member")
+    const memberOrg = await seedOrganizationWithDepartments({
+      departmentName: "成员部门",
+      rootName: "Member Org",
+      rootSlug: `member-org-${Date.now()}`
+    })
+    await addOrganizationMemberByEmail({ email: memberEmail, organizationId: memberOrg.rootId, role: "member" })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: memberEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
+
+    const memberNav = page.getByRole("navigation", { name: "主导航" })
+    await expect(memberNav.getByRole("link", { name: "当前组织" })).toHaveCount(0)
+    await expect(memberNav.getByRole("link", { name: "用户管理" })).toHaveCount(0)
+
+    await page.context().clearCookies()
+    const ownerEmail = await createVerifiedUser(page, "dashboard-sidebar-owner")
+    const ownerOrg = await seedOrganizationWithDepartments({
+      departmentName: "管理部门",
+      rootName: "Owner Org",
+      rootSlug: `owner-org-${Date.now()}`
+    })
+    await addOrganizationMemberByEmail({ email: ownerEmail, organizationId: ownerOrg.rootId, role: "owner" })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: ownerEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
+
+    const ownerNav = page.getByRole("navigation", { name: "主导航" })
+    await expect(ownerNav.getByRole("link", { name: "当前组织" })).toHaveAttribute("href", `/dashboard/orgs/${ownerOrg.rootId.replace(/^org-/, "")}`)
+    await expect(ownerNav.getByRole("link", { name: "用户管理" })).toHaveCount(0)
+  })
+
+  test("limits platform management sidebar items by admin level", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "Role-based sidebar only needs one browser project")
+
+    const adminEmail = await createVerifiedUser(page, "dashboard-sidebar-admin")
+    await setUserRole(adminEmail, "admin")
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: adminEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
+
+    const adminNav = page.getByRole("navigation", { name: "主导航" })
+    await expect(adminNav.getByRole("link", { name: "用户管理" })).toBeVisible()
+    await expect(adminNav.getByRole("link", { name: "平台组织" })).toBeVisible()
+    await expect(adminNav.getByRole("link", { name: "平台 API Key" })).toBeVisible()
+    await expect(adminNav.getByRole("link", { name: "请求日志" })).toHaveCount(0)
+    await expect(adminNav.getByRole("link", { name: "平台设置" })).toHaveCount(0)
+
+    await page.context().clearCookies()
+    const superAdminEmail = await createVerifiedUser(page, "dashboard-sidebar-super-admin")
+    await setUserRole(superAdminEmail, "super_admin")
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: superAdminEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await waitForDashboardReady(page)
+
+    const superAdminNav = page.getByRole("navigation", { name: "主导航" })
+    await expect(superAdminNav.getByRole("link", { name: "用户管理" })).toBeVisible()
+    await expect(superAdminNav.getByRole("link", { name: "平台组织" })).toBeVisible()
+    await expect(superAdminNav.getByRole("link", { name: "平台 API Key" })).toBeVisible()
+    await expect(superAdminNav.getByRole("link", { name: "请求日志" })).toBeVisible()
+    await expect(superAdminNav.getByRole("link", { name: "平台设置" })).toBeVisible()
   })
 
   test("toggles the dashboard theme from the topbar", async ({ page }, testInfo) => {
