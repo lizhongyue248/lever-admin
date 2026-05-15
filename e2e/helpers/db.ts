@@ -171,6 +171,127 @@ export const createApiKeyUsageLogFixture = async ({
   }
 }
 
+export const createRequestLogFixture = async ({
+  createdAt = new Date(),
+  durationMs = 148,
+  ipAddress = "203.0.113.42",
+  method = "POST",
+  path = "/api/trpc/admin.user.ban",
+  requestBodyStatus = "redacted",
+  requestBodySummary = JSON.stringify(
+    {
+      password: "[REDACTED]",
+      reason: "policy_violation",
+      token: "[REDACTED]",
+      userId: "usr_93k"
+    },
+    null,
+    2
+  ),
+  requestId = `req-${randomUUID()}`,
+  riskLevel = "high",
+  riskReasons = JSON.stringify(["高危路由失败", "角色不足"]),
+  routeName = "admin.user.ban",
+  source = "trpc",
+  statusCode = 403,
+  success = false,
+  userAgentRaw = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
+  userAgentSummary = "Chrome / Windows",
+  userEmail,
+  userId,
+  userName = "Verified E2E",
+  userRole = "admin"
+}: {
+  createdAt?: Date
+  durationMs?: number
+  ipAddress?: string
+  method?: string
+  path?: string
+  requestBodyStatus?: string
+  requestBodySummary?: string
+  requestId?: string
+  riskLevel?: string
+  riskReasons?: string
+  routeName?: string
+  source?: string
+  statusCode?: number
+  success?: boolean
+  userAgentRaw?: string
+  userAgentSummary?: string
+  userEmail: string
+  userId: string
+  userName?: string
+  userRole?: string
+}) => {
+  const sql = createE2eSql()
+  const id = `request-log-${randomUUID()}`
+
+  try {
+    await sql`
+      insert into "system_request_log" (
+        "id",
+        "request_id",
+        "source",
+        "method",
+        "path",
+        "route_name",
+        "status_code",
+        "success",
+        "failure_reason",
+        "duration_ms",
+        "user_id",
+        "user_email",
+        "user_name",
+        "user_role",
+        "request_body_summary",
+        "request_body_status",
+        "ip_hash",
+        "ip_address",
+        "ip_country",
+        "ip_region",
+        "user_agent_hash",
+        "user_agent_raw",
+        "user_agent_summary",
+        "risk_level",
+        "risk_reasons",
+        "created_at"
+      )
+      values (
+        ${id},
+        ${requestId},
+        ${source},
+        ${method},
+        ${path},
+        ${routeName},
+        ${statusCode},
+        ${success},
+        ${success ? null : "forbidden"},
+        ${durationMs},
+        ${userId},
+        ${userEmail},
+        ${userName},
+        ${userRole},
+        ${requestBodySummary},
+        ${requestBodyStatus},
+        'ip-hash-e2e',
+        ${ipAddress},
+        'US',
+        'California',
+        'ua-hash-e2e',
+        ${userAgentRaw},
+        ${userAgentSummary},
+        ${riskLevel},
+        ${riskReasons},
+        ${createdAt}
+      )
+    `
+
+    return { id, requestId }
+  } finally {
+    await sql.end()
+  }
+}
+
 export const seedOrganizationWithDepartments = async ({ departmentName, rootName, rootSlug }: { departmentName: string; rootName: string; rootSlug: string }) => {
   const sql = createE2eSql()
   const rootId = `org-${rootSlug}`

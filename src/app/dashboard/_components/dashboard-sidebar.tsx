@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, KeyRound, LayoutDashboard, type LucideIcon, Settings, ShieldCheck, SlidersHorizontal, UsersRound } from "lucide-react"
+import { Building2, KeyRound, LayoutDashboard, type LucideIcon, ScrollText, Settings, ShieldCheck, SlidersHorizontal, UsersRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -43,6 +43,7 @@ const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: stri
         { href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
         { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" },
         { href: "/dashboard/admin/api-keys", icon: KeyRound, label: "平台 API Key" },
+        { href: "/dashboard/admin/request-logs", icon: ScrollText, label: "请求日志" },
         { href: "/dashboard/admin/settings", icon: SlidersHorizontal, label: "平台设置" }
       ],
       label: "管理"

@@ -1,6 +1,7 @@
 import { adminApiKeyRouter } from "@/server/api/routers/admin-api-key"
 import { adminOrgRouter } from "@/server/api/routers/admin-org"
 import { adminPlatformSettingRouter } from "@/server/api/routers/admin-platform-setting"
+import { adminRequestLogRouter } from "@/server/api/routers/admin-request-log"
 import { adminUserRouter } from "@/server/api/routers/admin-user"
 import { apiKeyRouter } from "@/server/api/routers/api-key"
 import { dashboardRouter } from "@/server/api/routers/dashboard"
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
   adminApiKey: adminApiKeyRouter,
   adminOrg: adminOrgRouter,
   adminPlatformSetting: adminPlatformSettingRouter,
+  adminRequestLog: adminRequestLogRouter,
   adminUser: adminUserRouter,
   apiKey: apiKeyRouter,
   dashboard: dashboardRouter,

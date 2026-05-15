@@ -373,6 +373,54 @@ export const apiKeyUsageLog = createSystemTable(
   ]
 )
 
+export const requestLog = createSystemTable(
+  "request_log",
+  {
+    id: text("id").primaryKey(),
+    requestId: text("request_id").notNull(),
+    source: text("source").notNull(),
+    method: text("method").notNull(),
+    path: text("path").notNull(),
+    routeName: text("route_name"),
+    statusCode: integer("status_code"),
+    success: boolean("success").notNull(),
+    errorCode: text("error_code"),
+    failureReason: text("failure_reason"),
+    durationMs: integer("duration_ms"),
+    userId: text("user_id"),
+    userEmail: text("user_email"),
+    userName: text("user_name"),
+    userRole: text("user_role"),
+    organizationId: text("organization_id"),
+    organizationName: text("organization_name"),
+    sessionId: text("session_id"),
+    impersonatedBy: text("impersonated_by"),
+    apiKeyId: text("api_key_id"),
+    requestQuerySummary: text("request_query_summary"),
+    requestBodySummary: text("request_body_summary"),
+    requestBodyStatus: text("request_body_status").default("not_collected").notNull(),
+    ipHash: text("ip_hash"),
+    ipAddress: text("ip_address"),
+    ipCountry: text("ip_country"),
+    ipRegion: text("ip_region"),
+    userAgentHash: text("user_agent_hash"),
+    userAgentRaw: text("user_agent_raw"),
+    userAgentSummary: text("user_agent_summary"),
+    riskLevel: text("risk_level").default("low").notNull(),
+    riskReasons: text("risk_reasons"),
+    metadata: text("metadata"),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => [
+    index("system_request_log_created_at_idx").on(table.createdAt),
+    index("system_request_log_user_created_at_idx").on(table.userId, table.createdAt),
+    uniqueIndex("system_request_log_request_id_idx").on(table.requestId),
+    index("system_request_log_path_created_at_idx").on(table.path, table.createdAt),
+    index("system_request_log_success_created_at_idx").on(table.success, table.createdAt),
+    index("system_request_log_risk_created_at_idx").on(table.riskLevel, table.createdAt)
+  ]
+)
+
 export const apiKeyRelations = relations(apikey, ({ many }) => ({
   usageLogs: many(apiKeyUsageLog)
 }))
