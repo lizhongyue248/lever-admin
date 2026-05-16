@@ -622,7 +622,25 @@ export const getPlatformSettingValue = async (key: string) => {
 
 export const deletePlatformSettings = async () => {
   const sql = createE2eSql()
-  const keys = ["email.provider", "email.from", "email.resend.apiKey", "email.smtp.host", "email.smtp.port", "email.smtp.user", "email.smtp.password", "email.smtp.secure"]
+  const keys = [
+    "email.provider",
+    "email.from",
+    "email.resend.apiKey",
+    "email.smtp.host",
+    "email.smtp.port",
+    "email.smtp.user",
+    "email.smtp.password",
+    "email.smtp.secure",
+    "storage.provider",
+    "storage.local.path",
+    "storage.publicBaseUrl",
+    "storage.s3.endpoint",
+    "storage.s3.region",
+    "storage.s3.bucket",
+    "storage.s3.accessKeyId",
+    "storage.s3.secretAccessKey",
+    "storage.s3.forcePathStyle"
+  ]
 
   try {
     await sql`delete from "system_platform_setting" where "key" in ${sql(keys)}`

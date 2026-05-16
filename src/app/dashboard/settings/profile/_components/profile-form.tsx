@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ROUTE_API_UPLOAD_AVATAR } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 
 type ProfileUser = RouterOutputs["profile"]["get"]["user"]
@@ -21,6 +22,11 @@ type ProfileFormProps = {
 }
 
 type FieldErrors = Partial<Record<"image" | "name", string>>
+
+type UploadAvatarPayload = {
+  message?: string
+  url?: string
+}
 
 const profileFormSchema = z.object({
   image: z
@@ -49,6 +55,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
   const [image, setImage] = useState(user.image ?? "")
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   const createdAt = useMemo(() => formatDateTime(user.createdAt), [user.createdAt])
   const mutation = api.profile.update.useMutation({
@@ -65,7 +72,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     }
   })
 
-  const isPending = mutation.isPending
+  const isPending = mutation.isPending || isUploadingAvatar
 
   const handleReset = () => {
     setName(user.name)
@@ -91,6 +98,48 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     setErrors({})
     setFormError(null)
     mutation.mutate(parsed.data)
+  }
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const formData = new FormData()
+    formData.append("file", file)
+    setIsUploadingAvatar(true)
+
+    try {
+      const response = await fetch(ROUTE_API_UPLOAD_AVATAR, {
+        body: formData,
+        method: "POST"
+      })
+      const payload = (await response.json()) as UploadAvatarPayload
+
+      if (!response.ok || !payload.url) {
+        toast.error(payload.message ?? "头像上传失败。")
+        return
+      }
+
+      const avatarUrl = payload.url.startsWith("/") ? `${window.location.origin}${payload.url}` : payload.url
+
+      setImage(avatarUrl)
+      setErrors((currentErrors) => {
+        const nextErrors = { ...currentErrors }
+        delete nextErrors.image
+
+        return nextErrors
+      })
+      setFormError(null)
+      toast.success("头像已上传。")
+    } catch {
+      toast.error("头像上传失败。")
+    } finally {
+      setIsUploadingAvatar(false)
+      event.target.value = ""
+    }
   }
 
   return (
@@ -127,9 +176,15 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
             </div>
 
             <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="profile-avatar-upload">上传头像</Label>
+              <Input accept="image/png,image/jpeg,image/webp,image/svg+xml" disabled={isPending} id="profile-avatar-upload" onChange={handleAvatarUpload} type="file" />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="profile-image">头像 URL</Label>
               <Input
                 aria-invalid={Boolean(errors.image)}
+                disabled={isUploadingAvatar}
                 id="profile-image"
                 onChange={(event) => setImage(event.target.value)}
                 placeholder="https://example.com/avatar.png"

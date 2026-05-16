@@ -114,4 +114,37 @@ test.describe("18 dashboard admin platform settings", () => {
 
     await expect(page.getByText("请输入有效的测试收件人邮箱。")).toBeVisible()
   })
+
+  test("shows default storage settings and saves local provider", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed admin flow only needs one browser project")
+
+    await deletePlatformSettings()
+    await signInAsRole(page, "dashboard-admin-storage-local", "super_admin")
+
+    await page.goto("/dashboard/admin/settings")
+
+    await expect(page.getByRole("main").getByText("文件存储")).toBeVisible()
+    await expect(page.getByLabel("本地上传路径")).toHaveValue("./uploads")
+    await page.getByLabel("本地上传路径").fill("./uploads")
+    await page.getByRole("button", { name: "保存文件存储配置" }).click()
+
+    await expect(toastWithText(page, "文件存储配置已保存。")).toBeVisible()
+    await expect.poll(() => getPlatformSettingValue("storage.provider")).toBe("local")
+    await expect.poll(() => getPlatformSettingValue("storage.local.path")).toBe("./uploads")
+  })
+
+  test("runs storage upload test with saved local provider", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed admin flow only needs one browser project")
+
+    await deletePlatformSettings()
+    await upsertPlatformSetting({ key: "storage.provider", value: "local" })
+    await upsertPlatformSetting({ key: "storage.local.path", value: "./uploads" })
+    await signInAsRole(page, "dashboard-admin-storage-test", "super_admin")
+
+    await page.goto("/dashboard/admin/settings")
+    await page.getByRole("button", { name: "执行上传测试" }).click()
+
+    await expect(toastWithText(page, "上传测试已通过 local 完成。")).toBeVisible()
+    await expect(page.getByText("最近上传测试成功")).toBeVisible()
+  })
 })

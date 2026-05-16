@@ -21,7 +21,10 @@
 ## 用户动作
 
 - 修改名称。
-- 修改头像 URL；文件上传后置，不在第一版实现。
+- 修改头像：
+  - 支持上传头像文件，上传走 `18-dashboard-admin-platform-settings.md` 中定义的统一文件存储配置。
+  - 上传成功后把返回 URL 写入 `system_user.image`。
+  - 保留头像 URL 输入作为可选高级方式，便于使用外部公开图片。
 - 查看邮箱和用户 ID。
 - 保存资料。
 
@@ -29,6 +32,7 @@
 
 - `profile.get`：tRPC 读取当前 session user 和扩展 profile。
 - `profile.update`：校验当前用户身份后更新 name/image 等字段。
+- `profile.uploadAvatar` 或受控上传接口：校验当前用户身份后上传头像文件，只允许图片 MIME 类型，成功后返回 URL 或对象引用，再由资料保存流程写入 `system_user.image`。
 - 本页通过服务端 tRPC procedure 更新 Better Auth 的 `system_user` 基础字段，不开放 email、role 等敏感字段修改。
 
 ## 实现要点
@@ -64,6 +68,7 @@
 ## 公共组件使用
 
 - 本页不使用共享 `DataTable` 或 `DataPagination`，因为个人资料第一版只有单个资料表单和统计摘要。
+- 本页头像上传使用平台文件存储配置，相关 provider、路径、S3 凭据和上传测试由 `18-dashboard-admin-platform-settings.md` 统一管理。
 - 如后续增加登录记录、组织列表或资料变更审计列表，应优先使用 `98-common-components.md` 中定义的共享表格和分页组件。
 
 ## 验收标准

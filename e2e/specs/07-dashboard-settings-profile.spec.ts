@@ -53,6 +53,34 @@ test.describe("07 dashboard settings profile", () => {
     await expect(page.getByLabel("头像 URL")).toHaveValue("https://example.com/avatar.png")
   })
 
+  test("uploads an avatar and saves the returned avatar url", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
+
+    const email = await createVerifiedUser(page, "profile-avatar-upload")
+    const avatarBuffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="red"/></svg>')
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.goto("/dashboard/settings/profile")
+
+    await page.getByLabel("上传头像").setInputFiles({
+      buffer: avatarBuffer,
+      mimeType: "image/svg+xml",
+      name: "avatar.svg"
+    })
+
+    await expect(page.getByText("头像已上传。")).toBeVisible()
+    await page.getByRole("button", { name: "保存资料" }).click()
+
+    await expect(page.getByText("个人资料已更新。")).toBeVisible()
+    await expect(page.getByLabel("头像 URL")).toHaveValue(/\/avatars\//)
+
+    await page.reload()
+
+    await expect(page.getByLabel("头像 URL")).toHaveValue(/\/avatars\//)
+  })
+
   test("validates profile name length", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
 

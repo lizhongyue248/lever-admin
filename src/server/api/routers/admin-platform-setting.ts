@@ -3,7 +3,17 @@ import { TRPCError } from "@trpc/server"
 import { EMAIL_PROVIDER_RESEND, EMAIL_PROVIDER_SMTP, PLATFORM_ROLE_SUPER_ADMIN, type PlatformEmailProviderName } from "@/lib/const"
 import { adminProcedure, createTRPCRouter } from "@/server/api/trpc"
 import { sendEmail } from "@/server/service/email"
-import { getEmailSettings, testEmailSchema, updateEmailSettings, updateEmailSettingsSchema } from "@/server/service/platform-settings"
+import {
+  getEmailSettings,
+  getStorageSettings,
+  testEmailSchema,
+  testStorageUploadSchema,
+  updateEmailSettings,
+  updateEmailSettingsSchema,
+  updateStorageSettings,
+  updateStorageSettingsSchema
+} from "@/server/service/platform-settings"
+import { testStorageUpload } from "@/server/service/storage"
 
 const assertSuperAdmin = (role: string | null | undefined) => {
   if (role !== PLATFORM_ROLE_SUPER_ADMIN) {
@@ -30,6 +40,12 @@ export const adminPlatformSettingRouter = createTRPCRouter({
     assertSuperAdmin(ctx.session.user.role)
 
     return getEmailSettings(ctx.db)
+  }),
+
+  getStorageSettings: adminProcedure.query(async ({ ctx }) => {
+    assertSuperAdmin(ctx.session.user.role)
+
+    return getStorageSettings(ctx.db)
   }),
 
   sendTestEmail: adminProcedure.input(testEmailSchema).mutation(async ({ ctx, input }) => {
@@ -62,5 +78,28 @@ export const adminPlatformSettingRouter = createTRPCRouter({
     assertSuperAdmin(ctx.session.user.role)
 
     return updateEmailSettings(ctx.db, input, ctx.session.user.id)
+  }),
+
+  updateStorageSettings: adminProcedure.input(updateStorageSettingsSchema).mutation(async ({ ctx, input }) => {
+    assertSuperAdmin(ctx.session.user.role)
+
+    return updateStorageSettings(ctx.db, input, ctx.session.user.id)
+  }),
+
+  testStorageUpload: adminProcedure.input(testStorageUploadSchema).mutation(async ({ ctx }) => {
+    assertSuperAdmin(ctx.session.user.role)
+
+    try {
+      const result = await testStorageUpload()
+
+      return {
+        key: result.key,
+        provider: result.provider,
+        success: true,
+        url: result.url
+      }
+    } catch {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "上传测试失败，请检查文件存储配置。" })
+    }
   })
 })

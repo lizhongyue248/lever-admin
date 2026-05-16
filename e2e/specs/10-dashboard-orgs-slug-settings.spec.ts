@@ -51,6 +51,42 @@ test.describe("10 dashboard orgs slug settings", () => {
     await expect(page.getByRole("img", { name: expectedDescription })).toBeVisible()
   })
 
+  test("uploads an organization logo and saves the returned logo url", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed organization flow only needs one browser project")
+
+    const email = await createVerifiedUser(page, "dashboard-org-logo-upload")
+    const slug = `org-logo-upload-${Date.now()}`
+    const logoBuffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="green"/></svg>')
+    const { rootId } = await seedOrganizationWithDepartments({
+      departmentName: "Logo Upload Department E2E",
+      rootName: "Logo Upload Org E2E",
+      rootSlug: slug
+    })
+
+    await addOrganizationMemberByEmail({ email, organizationId: rootId, role: "owner" })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email })
+    await expect(page).toHaveURL(/\/dashboard$/)
+
+    await page.goto(`/dashboard/orgs/${slug}/setting`)
+    await page.getByLabel("上传 Logo").setInputFiles({
+      buffer: logoBuffer,
+      mimeType: "image/svg+xml",
+      name: "organization-logo.svg"
+    })
+
+    await expect(page.getByText("Logo 已上传。")).toBeVisible()
+    await page.getByRole("button", { name: "保存" }).click()
+
+    await expect(page.getByText("组织信息已保存。")).toBeVisible()
+    await expect(page.getByLabel("Logo URL")).toHaveValue(/\/organization-logos\//)
+
+    await page.reload()
+
+    await expect(page.getByLabel("Logo URL")).toHaveValue(/\/organization-logos\//)
+  })
+
   test("creates a department from the organization architecture tab", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed organization flow only needs one browser project")
 

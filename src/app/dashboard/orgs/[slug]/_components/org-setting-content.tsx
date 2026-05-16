@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import type { ChangeEvent } from "react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ROUTE_DASHBOARD } from "@/lib/const"
+import { ROUTE_API_UPLOAD_ORG_LOGO, ROUTE_DASHBOARD } from "@/lib/const"
 import type { RouterOutputs } from "@/trpc/react"
 import { api } from "@/trpc/react"
 import { formatDate } from "../_lib/org-format"
@@ -27,6 +28,10 @@ const orgSettingsSchema = z.object({
 
 type OrgData = RouterOutputs["org"]["getBySlug"]
 type DangerAction = "delete" | "disable"
+type UploadOrgLogoPayload = {
+  message?: string
+  url?: string
+}
 
 export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string }) => {
   const router = useRouter()
@@ -35,6 +40,7 @@ export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string 
   const [logo, setLogo] = useState(data.organization.logo ?? "")
   const [confirmSlug, setConfirmSlug] = useState("")
   const [dangerAction, setDangerAction] = useState<DangerAction | null>(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const update = api.org.update.useMutation({
     onError: (error) => toast.error(error.message || "保存组织信息失败。"),
     onSuccess: (result) => {
@@ -58,6 +64,40 @@ export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string 
     setLogo(data.organization.logo ?? "")
   }
 
+  const uploadLogo = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("slug", slug)
+    setIsUploadingLogo(true)
+
+    try {
+      const response = await fetch(ROUTE_API_UPLOAD_ORG_LOGO, {
+        body: formData,
+        method: "POST"
+      })
+      const payload = (await response.json()) as UploadOrgLogoPayload
+
+      if (!response.ok || !payload.url) {
+        toast.error(payload.message ?? "Logo 上传失败。")
+        return
+      }
+
+      setLogo(payload.url.startsWith("/") ? `${window.location.origin}${payload.url}` : payload.url)
+      toast.success("Logo 已上传。")
+    } catch {
+      toast.error("Logo 上传失败。")
+    } finally {
+      setIsUploadingLogo(false)
+      event.target.value = ""
+    }
+  }
+
   const save = () => {
     const parsed = orgSettingsSchema.safeParse({ logo, name, slug: targetSlug })
 
@@ -69,6 +109,7 @@ export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string 
     update.mutate({ logo: parsed.data.logo, name: parsed.data.name, slug, targetSlug: parsed.data.slug })
   }
 
+  const isFormPending = update.isPending || isUploadingLogo
   const dangerRows = [
     { action: "disable" as const, button: "停用", description: "暂停成员继续进入该组织，保留成员和历史记录。", title: "停用组织" },
     { action: "delete" as const, button: "删除", description: "删除会影响部门、成员、邀请和会话，需要输入 slug 确认。", title: "删除组织" }
@@ -84,15 +125,19 @@ export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="org-name">组织名称</Label>
-              <Input id="org-name" onChange={(event) => setName(event.target.value)} value={name} />
+              <Input disabled={isFormPending} id="org-name" onChange={(event) => setName(event.target.value)} value={name} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-slug">Slug</Label>
-              <Input id="org-slug" onChange={(event) => setTargetSlug(event.target.value)} value={targetSlug} />
+              <Input disabled={isFormPending} id="org-slug" onChange={(event) => setTargetSlug(event.target.value)} value={targetSlug} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-logo">Logo URL</Label>
-              <Input id="org-logo" onChange={(event) => setLogo(event.target.value)} placeholder="https://example.com/logo.png" value={logo} />
+              <Input disabled={isFormPending} id="org-logo" onChange={(event) => setLogo(event.target.value)} placeholder="https://example.com/logo.png" value={logo} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-logo-upload">上传 Logo</Label>
+              <Input accept="image/png,image/jpeg,image/webp,image/svg+xml" disabled={isFormPending} id="org-logo-upload" onChange={uploadLogo} type="file" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-id">组织 ID</Label>
@@ -108,10 +153,10 @@ export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string 
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button disabled={update.isPending} onClick={reset} type="button" variant="outline">
+            <Button disabled={isFormPending} onClick={reset} type="button" variant="outline">
               重置
             </Button>
-            <Button disabled={update.isPending} onClick={save} type="button">
+            <Button disabled={isFormPending} onClick={save} type="button">
               {update.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
               保存
             </Button>

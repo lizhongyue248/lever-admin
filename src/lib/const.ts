@@ -187,6 +187,46 @@ export const EMAIL_SETTING_KEYS = [
 ] as const
 export const EMAIL_SETTING_SENSITIVE_KEYS = [EMAIL_SETTING_KEY_RESEND_API_KEY, EMAIL_SETTING_KEY_SMTP_PASSWORD] as const
 
+export const STORAGE_PROVIDER_LOCAL = "local"
+export const STORAGE_PROVIDER_S3 = "s3"
+export const STORAGE_PROVIDERS = [STORAGE_PROVIDER_LOCAL, STORAGE_PROVIDER_S3] as const
+export type PlatformStorageProviderName = (typeof STORAGE_PROVIDERS)[number]
+
+export const STORAGE_SETTING_KEY_PROVIDER = "storage.provider"
+export const STORAGE_SETTING_KEY_LOCAL_PATH = "storage.local.path"
+export const STORAGE_SETTING_KEY_PUBLIC_BASE_URL = "storage.publicBaseUrl"
+export const STORAGE_SETTING_KEY_S3_ENDPOINT = "storage.s3.endpoint"
+export const STORAGE_SETTING_KEY_S3_REGION = "storage.s3.region"
+export const STORAGE_SETTING_KEY_S3_BUCKET = "storage.s3.bucket"
+export const STORAGE_SETTING_KEY_S3_ACCESS_KEY_ID = "storage.s3.accessKeyId"
+export const STORAGE_SETTING_KEY_S3_SECRET_ACCESS_KEY = "storage.s3.secretAccessKey"
+export const STORAGE_SETTING_KEY_S3_FORCE_PATH_STYLE = "storage.s3.forcePathStyle"
+export const STORAGE_SETTING_KEYS = [
+  STORAGE_SETTING_KEY_PROVIDER,
+  STORAGE_SETTING_KEY_LOCAL_PATH,
+  STORAGE_SETTING_KEY_PUBLIC_BASE_URL,
+  STORAGE_SETTING_KEY_S3_ENDPOINT,
+  STORAGE_SETTING_KEY_S3_REGION,
+  STORAGE_SETTING_KEY_S3_BUCKET,
+  STORAGE_SETTING_KEY_S3_ACCESS_KEY_ID,
+  STORAGE_SETTING_KEY_S3_SECRET_ACCESS_KEY,
+  STORAGE_SETTING_KEY_S3_FORCE_PATH_STYLE
+] as const
+export const STORAGE_SETTING_SENSITIVE_KEYS = [STORAGE_SETTING_KEY_S3_ACCESS_KEY_ID, STORAGE_SETTING_KEY_S3_SECRET_ACCESS_KEY] as const
+
+export const DEFAULT_LOCAL_UPLOAD_PATH = "./uploads"
+export const UPLOAD_MAX_IMAGE_BYTES = 2 * 1024 * 1024
+export const UPLOAD_MAX_MULTIPART_BYTES = UPLOAD_MAX_IMAGE_BYTES + 512 * 1024
+export const UPLOAD_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const
+export type UploadImageMimeType = (typeof UPLOAD_IMAGE_MIME_TYPES)[number]
+export const UPLOAD_PURPOSE_AVATAR = "avatars"
+export const UPLOAD_PURPOSE_ORG_LOGO = "organization-logos"
+export const UPLOAD_PURPOSE_PLATFORM_TEST = "platform-settings"
+export const UPLOAD_PURPOSES = [UPLOAD_PURPOSE_AVATAR, UPLOAD_PURPOSE_ORG_LOGO, UPLOAD_PURPOSE_PLATFORM_TEST] as const
+export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number]
+export const ROUTE_API_UPLOAD_AVATAR = "/api/uploads/avatar"
+export const ROUTE_API_UPLOAD_ORG_LOGO = "/api/uploads/org-logo"
+
 export const OAUTH_PROVIDER_GITHUB = "github"
 export const OAUTH_PROVIDER_GOOGLE = "google"
 export const OAUTH_PROVIDERS = [OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE] as const

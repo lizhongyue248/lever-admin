@@ -86,6 +86,8 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
   - 支持按部门节点、成员、设备类型和风险状态筛选。
 - `/dashboard/orgs/[slug]/setting` 设置：
   - 组织信息使用表单呈现，包含公司名称、slug、logo、组织 ID、创建时间和成员数量。
+  - Logo 支持上传文件，上传走 `18-dashboard-admin-platform-settings.md` 中定义的统一文件存储配置；上传成功后把返回 URL 写入 `system_organization.logo`。
+  - Logo URL 输入保留为可选高级方式，便于使用外部公开图片。
   - 可编辑字段使用输入框、选择器或上传入口；只读字段使用禁用输入框或只读文本域，避免纯详情列表样式。
   - 表单底部展示保存按钮和重置按钮，保存成功后展示 toast。
   - 危险区域由多组危险动作组成，每个动作必须包含标题、影响说明和右侧按钮。
@@ -170,6 +172,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 - `org.session.list`：读取当前公司范围内成员会话，只返回必要设备、IP、最近活跃时间和风险状态，并支持按部门筛选。
 - `org.session.revoke`：校验 owner/admin 或平台管理员权限后撤销成员会话。
 - `org.update`：校验 owner/admin 权限后更新 organization。
+- `org.uploadLogo` 或受控上传接口：校验 owner/admin 或平台管理员权限后上传组织 Logo，只允许图片 MIME 类型，成功后返回 URL 或对象引用，再由组织设置保存流程写入 `system_organization.logo`。
 - `org.delete`：校验 owner 或平台超级管理员权限，二次确认后删除组织。
 
 ### 组织风险与安全状态数据口径
@@ -241,6 +244,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 - 组织成员、邀请和登录情况的桌面表格使用 `src/components/data-table.tsx` 的共享 `DataTable`，页面负责定义业务列、风险 badge、行内图标操作和移动端卡片列表。
 - 组织成员、邀请和登录情况的分页控件使用 `src/components/data-pagination.tsx` 的共享 `DataPagination`，页面负责维护 `page`、`pageSize`、搜索和筛选状态。
 - 部门树、组织设置表单、邀请弹窗、成员分配弹窗和危险操作确认属于页面业务组件，不放入公共组件。
+- 组织 Logo 上传使用平台文件存储配置，相关 provider、路径、S3 凭据和上传测试由 `18-dashboard-admin-platform-settings.md` 统一管理。
 
 ## 通用工程约束
 

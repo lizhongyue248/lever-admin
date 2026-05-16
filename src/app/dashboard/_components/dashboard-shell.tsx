@@ -18,12 +18,12 @@ const DashboardShellInner = ({ children, data }: DashboardShellProps) => {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
+    <div className="fixed inset-0 flex overflow-hidden bg-background text-foreground">
       <DashboardSidebar collapsed={collapsed} data={data} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <DashboardTopbar collapsed={collapsed} data={data} onToggleSidebar={() => setCollapsed((current) => !current)} />
-        <main className="min-h-0 flex-1 overflow-y-auto bg-muted/45 dark:bg-background">
-          <div className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:px-8">{children}</div>
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-muted/45 dark:bg-background">
+          <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-7 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>

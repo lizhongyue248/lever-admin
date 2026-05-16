@@ -204,15 +204,15 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
   const smtpPasswordConfigured = savedEmailSettings.smtpPasswordConfigured && !clearSmtpPassword
 
   return (
-    <Card className="rounded-lg shadow-sm">
+    <Card className="min-w-0 rounded-lg shadow-sm">
       <CardHeader className="px-5">
         <CardTitle className="flex items-center gap-2 text-base">
           <Mail className="size-4 text-primary" />
           邮件服务
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-5 px-5 pb-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <form className="space-y-4" onSubmit={handleSubmit}>
+      <CardContent className="grid min-w-0 gap-5 px-5 pb-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
+        <form className="min-w-0 space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="email-provider">Provider</Label>
             <Select disabled={update.isPending} onValueChange={handleProviderChange} value={provider}>
@@ -281,8 +281,8 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
           ) : null}
 
           {provider === EMAIL_PROVIDER_SMTP ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="smtp-host">SMTP Host</Label>
                 <Input
                   aria-describedby={errors.smtpHost ? "smtp-host-error" : undefined}
@@ -298,7 +298,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="smtp-port">Port</Label>
                 <Input
                   aria-describedby={errors.smtpPort ? "smtp-port-error" : undefined}
@@ -315,7 +315,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="smtp-user">SMTP Username</Label>
                 <Input
                   aria-describedby={errors.smtpUser ? "smtp-user-error" : undefined}
@@ -331,7 +331,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="smtp-password">SMTP Password</Label>
                 <Input
                   aria-describedby={errors.smtpPassword ? "smtp-password-error" : undefined}
@@ -378,8 +378,8 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
           </div>
         </form>
 
-        <div className="space-y-4">
-          <div className="space-y-3 rounded-lg border bg-background/60 p-4 dark:bg-muted/20">
+        <div className="min-w-0 space-y-4">
+          <div className="min-w-0 space-y-3 rounded-lg border bg-background/60 p-4 dark:bg-muted/20">
             <Label htmlFor="test-email">测试收件人</Label>
             <Input
               aria-describedby={errors.testTo ? "test-email-error" : undefined}

@@ -14,7 +14,7 @@ export const signUpViaUi = async (page: Page, { email, name }: { email: string; 
   await page.goto("/sign-up")
   await fillSignUpForm(page, { email, name })
   await page.getByRole("button", { name: "创建账号" }).click()
-  await expect(page).toHaveURL(/\/verify-email\?email=.*&status=pending/, { timeout: 15_000 })
+  await expect(page).toHaveURL(/\/verify-email\?(?=.*email=)(?=.*status=pending)/, { timeout: 15_000 })
 }
 
 export const signInViaUi = async (page: Page, { email, password = e2ePassword }: { email: string; password?: string }) => {
