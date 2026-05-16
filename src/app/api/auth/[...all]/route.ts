@@ -1,6 +1,7 @@
 import { toNextJsHandler } from "better-auth/next-js"
 import type { NextRequest } from "next/server"
 
+import { REQUEST_LOG_SOURCE_AUTH } from "@/lib/const"
 import { auth } from "@/server/better-auth"
 import { recordRequestLogSafely } from "@/server/service/request-logs"
 
@@ -56,7 +57,7 @@ const handleAuthRequest = async (request: NextRequest, methodHandler: (request: 
       rawBodyText: await bodyTextPromise,
       requestId: request.headers.get("x-request-id"),
       routeName: request.nextUrl.pathname.replace(/^\/api\/auth\/?/u, "") || null,
-      source: "auth",
+      source: REQUEST_LOG_SOURCE_AUTH,
       statusCode,
       success: response.ok,
       user: null
@@ -75,7 +76,7 @@ const handleAuthRequest = async (request: NextRequest, methodHandler: (request: 
       rawBodyText: await bodyTextPromise,
       requestId: request.headers.get("x-request-id"),
       routeName: request.nextUrl.pathname.replace(/^\/api\/auth\/?/u, "") || null,
-      source: "auth",
+      source: REQUEST_LOG_SOURCE_AUTH,
       statusCode: 500,
       success: false,
       user: null

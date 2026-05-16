@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server"
 import { and, eq } from "drizzle-orm"
 
-import { ORGANIZATION_ROLES } from "@/lib/const"
+import { INVITATION_STATUS_ACCEPTED, INVITATION_STATUS_EXPIRED, INVITATION_STATUS_PENDING, INVITATION_STATUS_REJECTED, ORGANIZATION_ROLES } from "@/lib/const"
 import { invitation, member, organization, organizationDepartment, organizationDepartmentMember, session, user } from "@/server/db/schema"
 
 type Db = typeof import("@/server/db").db
@@ -20,8 +20,8 @@ type InvitationContext = {
 }
 
 export const getEffectiveInvitationStatus = (status: string, expiresAt: Date | null) => {
-  if (status === "pending" && expiresAt && expiresAt < new Date()) {
-    return "expired" as const
+  if (status === INVITATION_STATUS_PENDING && expiresAt && expiresAt < new Date()) {
+    return INVITATION_STATUS_EXPIRED
   }
 
   return status
@@ -69,7 +69,7 @@ export const getInvitationForCurrentUser = async (ctx: InvitationContext, invita
 export const acceptInvitationForCurrentUser = async (ctx: InvitationContext, invitationId: string) => {
   const target = await getInvitationForCurrentUser(ctx, invitationId)
 
-  if (target.effectiveStatus !== "pending") {
+  if (target.effectiveStatus !== INVITATION_STATUS_PENDING) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "该邀请已失效，不能接受。" })
   }
 
@@ -113,7 +113,7 @@ export const acceptInvitationForCurrentUser = async (ctx: InvitationContext, inv
     }
   }
 
-  await ctx.db.update(invitation).set({ status: "accepted" }).where(eq(invitation.id, target.id))
+  await ctx.db.update(invitation).set({ status: INVITATION_STATUS_ACCEPTED }).where(eq(invitation.id, target.id))
 
   if (ctx.session.session?.id) {
     await ctx.db.update(session).set({ activeOrganizationId: target.organizationId }).where(eq(session.id, ctx.session.session.id))
@@ -122,22 +122,22 @@ export const acceptInvitationForCurrentUser = async (ctx: InvitationContext, inv
   return {
     invitationId: target.id,
     organizationSlug: target.organizationSlug,
-    status: "accepted" as const
+    status: INVITATION_STATUS_ACCEPTED
   }
 }
 
 export const rejectInvitationForCurrentUser = async (ctx: InvitationContext, invitationId: string) => {
   const target = await getInvitationForCurrentUser(ctx, invitationId)
 
-  if (target.effectiveStatus !== "pending") {
+  if (target.effectiveStatus !== INVITATION_STATUS_PENDING) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "该邀请已失效，不能拒绝。" })
   }
 
-  await ctx.db.update(invitation).set({ status: "rejected" }).where(eq(invitation.id, target.id))
+  await ctx.db.update(invitation).set({ status: INVITATION_STATUS_REJECTED }).where(eq(invitation.id, target.id))
 
   return {
     invitationId: target.id,
     organizationSlug: target.organizationSlug,
-    status: "rejected" as const
+    status: INVITATION_STATUS_REJECTED
   }
 }

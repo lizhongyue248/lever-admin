@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ROUTE_SIGN_IN } from "@/lib/const"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/server/better-auth/client"
 
@@ -133,7 +134,7 @@ export const TwoFactorSignInForm = ({ redirectTo }: { redirectTo: string }) => {
         </button>
         <p className="text-muted-foreground">
           需要重新输入账号密码？{" "}
-          <Link className="font-medium text-primary hover:underline" href="/sign-in">
+          <Link className="font-medium text-primary hover:underline" href={ROUTE_SIGN_IN}>
             返回登录
           </Link>
         </p>

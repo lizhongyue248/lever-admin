@@ -1,39 +1,58 @@
-import type { RouterInputs } from "@/trpc/react"
+import {
+  FILTER_ALL,
+  REQUEST_LOG_RESULT_FAILED,
+  REQUEST_LOG_RESULT_SUCCESS,
+  REQUEST_LOG_SOURCE_API_KEY,
+  REQUEST_LOG_SOURCE_AUTH,
+  REQUEST_LOG_SOURCE_DASHBOARD,
+  REQUEST_LOG_SOURCE_ROUTE_HANDLER,
+  REQUEST_LOG_SOURCE_SYSTEM,
+  REQUEST_LOG_SOURCE_TRPC,
+  REQUEST_LOG_TIME_RANGE_1H,
+  REQUEST_LOG_TIME_RANGE_7D,
+  REQUEST_LOG_TIME_RANGE_24H,
+  REQUEST_LOG_TIME_RANGE_30D,
+  type RequestLogResultFilter,
+  type RequestLogRiskFilter,
+  type RequestLogSourceFilter,
+  type RequestLogTimeRangeFilter,
+  RISK_LEVEL_HIGH,
+  RISK_LEVEL_LOW,
+  RISK_LEVEL_MEDIUM
+} from "@/lib/const"
 
-type ListInput = RouterInputs["adminRequestLog"]["list"]
-
-export type ResultFilter = NonNullable<ListInput["result"]>
-export type RiskFilter = NonNullable<ListInput["risk"]>
-export type SourceFilter = NonNullable<ListInput["source"]>
-export type TimeRangeFilter = NonNullable<ListInput["timeRange"]>
+export type ResultFilter = RequestLogResultFilter
+export type RiskFilter = RequestLogRiskFilter
+export type SourceFilter = RequestLogSourceFilter
+export type TimeRangeFilter = RequestLogTimeRangeFilter
 
 export const resultLabels: Record<ResultFilter, string> = {
-  all: "全部结果",
-  failed: "失败",
-  success: "成功"
+  [FILTER_ALL]: "全部结果",
+  [REQUEST_LOG_RESULT_FAILED]: "失败",
+  [REQUEST_LOG_RESULT_SUCCESS]: "成功"
 }
 
 export const riskLabels: Record<RiskFilter, string> = {
-  all: "全部风险",
-  high: "高风险",
-  low: "低风险",
-  medium: "中风险"
+  [FILTER_ALL]: "全部风险",
+  [RISK_LEVEL_HIGH]: "高风险",
+  [RISK_LEVEL_LOW]: "低风险",
+  [RISK_LEVEL_MEDIUM]: "中风险"
 }
 
 export const sourceLabels: Record<SourceFilter, string> = {
-  all: "全部来源",
-  api_key: "API Key",
-  auth: "Auth",
-  dashboard: "Dashboard",
-  route_handler: "Route",
-  system: "系统",
-  trpc: "tRPC"
+  [FILTER_ALL]: "全部来源",
+  [REQUEST_LOG_SOURCE_API_KEY]: "API Key",
+  [REQUEST_LOG_SOURCE_AUTH]: "Auth",
+  [REQUEST_LOG_SOURCE_DASHBOARD]: "Dashboard",
+  [REQUEST_LOG_SOURCE_ROUTE_HANDLER]: "Route",
+  [REQUEST_LOG_SOURCE_SYSTEM]: "系统",
+  [REQUEST_LOG_SOURCE_TRPC]: "tRPC"
 }
 
 export const timeRangeLabels: Record<TimeRangeFilter, string> = {
-  "1h": "最近 1 小时",
-  "24h": "最近 24 小时",
-  "7d": "最近 7 天",
-  "30d": "最近 30 天",
-  all: "全部时间"
+  [REQUEST_LOG_TIME_RANGE_1H]: "最近 1 小时",
+  [REQUEST_LOG_TIME_RANGE_24H]: "最近 24 小时",
+  [REQUEST_LOG_TIME_RANGE_7D]: "最近 7 天",
+  [REQUEST_LOG_TIME_RANGE_30D]: "最近 30 天",
+  [FILTER_ALL]: "全部时间"
 }

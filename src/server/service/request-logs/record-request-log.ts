@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto"
 
+import type { RequestLogSource } from "@/lib/const"
 import { db } from "@/server/db"
 import { requestLog } from "@/server/db/schema"
 import { buildRequestLogRisk, type RequestRiskLevel } from "./request-log-risk"
@@ -24,7 +25,7 @@ export type RecordRequestLogInput = {
   requestId?: string | null
   routeName?: string | null
   sessionId?: string | null
-  source: "api_key" | "auth" | "dashboard" | "route_handler" | "system" | "trpc"
+  source: RequestLogSource
   statusCode?: number | null
   success: boolean
   user?: {

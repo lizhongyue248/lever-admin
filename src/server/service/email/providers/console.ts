@@ -1,5 +1,7 @@
 import "server-only"
 
+import { EMAIL_PROVIDER_CONSOLE } from "@/lib/const"
+
 import type { EmailProvider } from "../types"
 
 const extractActionUrl = (text: string) => {
@@ -18,7 +20,7 @@ export const consoleEmailProvider: EmailProvider = {
     })
 
     return {
-      provider: "console"
+      provider: EMAIL_PROVIDER_CONSOLE
     }
   }
 }

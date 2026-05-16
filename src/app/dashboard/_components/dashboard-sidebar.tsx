@@ -4,7 +4,21 @@ import { Building2, KeyRound, LayoutDashboard, type LucideIcon, ScrollText, Sett
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-import { ORGANIZATION_ADMIN_ROLES, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
+import {
+  ORGANIZATION_ADMIN_ROLES,
+  PLATFORM_ROLE_ADMIN,
+  PLATFORM_ROLE_SUPER_ADMIN,
+  ROUTE_DASHBOARD,
+  ROUTE_DASHBOARD_ADMIN_API_KEYS,
+  ROUTE_DASHBOARD_ADMIN_ORGS,
+  ROUTE_DASHBOARD_ADMIN_REQUEST_LOGS,
+  ROUTE_DASHBOARD_ADMIN_SETTINGS,
+  ROUTE_DASHBOARD_ADMIN_USERS,
+  ROUTE_DASHBOARD_SETTINGS_API_KEYS,
+  ROUTE_DASHBOARD_SETTINGS_PROFILE,
+  ROUTE_DASHBOARD_SETTINGS_SECURITY,
+  ROUTE_DASHBOARD_SETTINGS_SESSIONS
+} from "@/lib/const"
 import { cn } from "@/lib/utils"
 import { DashboardUserMenu } from "./dashboard-user-menu"
 import type { DashboardShellData } from "./types"
@@ -31,25 +45,25 @@ const getNavGroups = (data: DashboardShellData): { items: NavItem[]; label: stri
   const isPlatformSuperAdmin = platformRole === PLATFORM_ROLE_SUPER_ADMIN
   const adminItems: NavItem[] = isPlatformAdmin
     ? [
-        { href: "/dashboard/admin/users", icon: UsersRound, label: "用户管理" },
-        { href: "/dashboard/admin/orgs", icon: Building2, label: "平台组织" },
-        { href: "/dashboard/admin/api-keys", icon: KeyRound, label: "平台 API Key" },
-        isPlatformSuperAdmin ? { href: "/dashboard/admin/request-logs", icon: ScrollText, label: "请求日志" } : null,
-        isPlatformSuperAdmin ? { href: "/dashboard/admin/settings", icon: SlidersHorizontal, label: "平台设置" } : null
+        { href: ROUTE_DASHBOARD_ADMIN_USERS, icon: UsersRound, label: "用户管理" },
+        { href: ROUTE_DASHBOARD_ADMIN_ORGS, icon: Building2, label: "平台组织" },
+        { href: ROUTE_DASHBOARD_ADMIN_API_KEYS, icon: KeyRound, label: "平台 API Key" },
+        isPlatformSuperAdmin ? { href: ROUTE_DASHBOARD_ADMIN_REQUEST_LOGS, icon: ScrollText, label: "请求日志" } : null,
+        isPlatformSuperAdmin ? { href: ROUTE_DASHBOARD_ADMIN_SETTINGS, icon: SlidersHorizontal, label: "平台设置" } : null
       ].filter((item): item is NavItem => item !== null)
     : []
 
   return [
     {
-      items: [{ href: "/dashboard", icon: LayoutDashboard, label: "工作台" }],
+      items: [{ href: ROUTE_DASHBOARD, icon: LayoutDashboard, label: "工作台" }],
       label: "概览"
     },
     {
       items: [
-        { href: "/dashboard/settings/profile", icon: Settings, label: "个人资料" },
-        { href: "/dashboard/settings/security", icon: ShieldCheck, label: "安全设置" },
-        { href: "/dashboard/settings/sessions", icon: UsersRound, label: "我的会话" },
-        { href: "/dashboard/settings/api-keys", icon: KeyRound, label: "API Keys" },
+        { href: ROUTE_DASHBOARD_SETTINGS_PROFILE, icon: Settings, label: "个人资料" },
+        { href: ROUTE_DASHBOARD_SETTINGS_SECURITY, icon: ShieldCheck, label: "安全设置" },
+        { href: ROUTE_DASHBOARD_SETTINGS_SESSIONS, icon: UsersRound, label: "我的会话" },
+        { href: ROUTE_DASHBOARD_SETTINGS_API_KEYS, icon: KeyRound, label: "API Keys" },
         activeOrganization && canShowCurrentOrganization ? { href: `/dashboard/orgs/${activeOrganization.organizationSlug}`, icon: Building2, label: "当前组织" } : null
       ].filter((item): item is NavItem => item !== null),
       label: "账号设置"
@@ -92,7 +106,7 @@ export const DashboardSidebar = ({ collapsed = false, data, mobile = false }: Da
             <div className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`))
+                const isActive = pathname === item.href || (item.href !== ROUTE_DASHBOARD && pathname.startsWith(`${item.href}/`))
 
                 return (
                   <Link

@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { ROUTE_DASHBOARD_SETTINGS_PROFILE, ROUTE_DASHBOARD_SETTINGS_SECURITY, ROUTE_DASHBOARD_SETTINGS_SESSIONS } from "@/lib/const"
 import { cn } from "@/lib/utils"
 
 import { DashboardNotificationMenu } from "./dashboard-notification-menu"
@@ -24,15 +25,15 @@ type DashboardTopbarProps = {
 const BreadcrumbLink = ({ children }: { children: ReactNode }) => <span className="text-muted-foreground text-xs sm:text-sm">{children}</span>
 
 const getBreadcrumbs = (pathname: string) => {
-  if (pathname === "/dashboard/settings/profile") {
+  if (pathname === ROUTE_DASHBOARD_SETTINGS_PROFILE) {
     return ["首页", "设置", "个人资料"]
   }
 
-  if (pathname === "/dashboard/settings/security") {
+  if (pathname === ROUTE_DASHBOARD_SETTINGS_SECURITY) {
     return ["首页", "设置", "安全设置"]
   }
 
-  if (pathname === "/dashboard/settings/sessions") {
+  if (pathname === ROUTE_DASHBOARD_SETTINGS_SESSIONS) {
     return ["首页", "设置", "我的会话"]
   }
 

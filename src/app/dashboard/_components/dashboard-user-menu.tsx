@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
+import { ROUTE_DASHBOARD, ROUTE_DASHBOARD_SETTINGS_PROFILE, ROUTE_DASHBOARD_SETTINGS_SECURITY, ROUTE_SIGN_IN } from "@/lib/const"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/server/better-auth/client"
 import { api } from "@/trpc/react"
@@ -59,7 +60,7 @@ export const DashboardUserMenu = ({ compact = false, data }: DashboardUserMenuPr
         return
       }
 
-      router.replace("/sign-in")
+      router.replace(ROUTE_SIGN_IN)
       router.refresh()
     } catch {
       setErrorMessage("退出登录服务暂时不可用。")
@@ -136,15 +137,15 @@ export const DashboardUserMenu = ({ compact = false, data }: DashboardUserMenuPr
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={() => router.push("/dashboard/settings/profile")}>
+          <DropdownMenuItem onSelect={() => router.push(ROUTE_DASHBOARD_SETTINGS_PROFILE)}>
             <UserRound className="size-4" />
             个人资料
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => router.push("/dashboard/settings/security")}>
+          <DropdownMenuItem onSelect={() => router.push(ROUTE_DASHBOARD_SETTINGS_SECURITY)}>
             <ShieldCheck className="size-4" />
             安全设置
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => router.push("/dashboard/orgs")}>
+          <DropdownMenuItem onSelect={() => router.push(`${ROUTE_DASHBOARD}/orgs`)}>
             <Settings className="size-4" />
             组织设置
           </DropdownMenuItem>

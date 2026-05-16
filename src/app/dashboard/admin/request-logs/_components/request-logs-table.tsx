@@ -5,6 +5,7 @@ import { useMemo } from "react"
 
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
+import { RISK_LEVEL_HIGH, RISK_LEVEL_MEDIUM } from "@/lib/const"
 import type { RouterOutputs } from "@/trpc/react"
 
 import { type SourceFilter, sourceLabels } from "./request-log-labels"
@@ -25,11 +26,11 @@ const formatDateTime = (date: Date) =>
 const formatDuration = (value: number | null) => (value === null ? "-" : `${value}ms`)
 
 const riskVariant = (risk: string) => {
-  if (risk === "high") {
+  if (risk === RISK_LEVEL_HIGH) {
     return "destructive" as const
   }
 
-  if (risk === "medium") {
+  if (risk === RISK_LEVEL_MEDIUM) {
     return "outline" as const
   }
 
@@ -37,11 +38,11 @@ const riskVariant = (risk: string) => {
 }
 
 const riskText = (risk: string) => {
-  if (risk === "high") {
+  if (risk === RISK_LEVEL_HIGH) {
     return "高"
   }
 
-  if (risk === "medium") {
+  if (risk === RISK_LEVEL_MEDIUM) {
     return "中"
   }
 

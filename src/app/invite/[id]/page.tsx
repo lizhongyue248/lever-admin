@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { ROUTE_SIGN_IN } from "@/lib/const"
 import { getSession } from "@/server/better-auth/server"
 import { api } from "@/trpc/server"
 
@@ -14,7 +15,7 @@ const InvitePage = async ({ params }: InvitePageProps) => {
   const session = await getSession()
 
   if (!session?.user) {
-    redirect(`/sign-in?redirectTo=${encodeURIComponent(`/invite/${id}`)}`)
+    redirect(`${ROUTE_SIGN_IN}?redirectTo=${encodeURIComponent(`/invite/${id}`)}`)
   }
 
   const invitation = await api.notification.invitation.getMine({ invitationId: id })

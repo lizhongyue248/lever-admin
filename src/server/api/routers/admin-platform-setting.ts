@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server"
 
-import { PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
+import { EMAIL_PROVIDER_RESEND, EMAIL_PROVIDER_SMTP, PLATFORM_ROLE_SUPER_ADMIN, type PlatformEmailProviderName } from "@/lib/const"
 import { adminProcedure, createTRPCRouter } from "@/server/api/trpc"
 import { sendEmail } from "@/server/service/email"
 import { getEmailSettings, testEmailSchema, updateEmailSettings, updateEmailSettingsSchema } from "@/server/service/platform-settings"
@@ -13,12 +13,12 @@ const assertSuperAdmin = (role: string | null | undefined) => {
 
 const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;")
 
-const getTestEmailFailureMessage = (provider: "console" | "resend" | "smtp") => {
-  if (provider === "smtp") {
+const getTestEmailFailureMessage = (provider: PlatformEmailProviderName) => {
+  if (provider === EMAIL_PROVIDER_SMTP) {
     return "SMTP 连接失败，请检查主机、端口和凭据。"
   }
 
-  if (provider === "resend") {
+  if (provider === EMAIL_PROVIDER_RESEND) {
     return "Resend 发送失败，请检查 API Key 和发件人配置。"
   }
 

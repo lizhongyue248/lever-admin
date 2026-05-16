@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { ROUTE_SIGN_IN } from "@/lib/const"
 import { getSession } from "@/server/better-auth/server"
 import { api } from "@/trpc/server"
 import { OrgSettingContent } from "../_components/org-setting-content"
@@ -9,7 +10,7 @@ const OrgSettingPage = async ({ params }: { params: Promise<{ slug: string }> })
   const session = await getSession()
 
   if (!session?.user) {
-    redirect(`/sign-in?redirectTo=${encodeURIComponent(`/dashboard/orgs/${slug}/setting`)}`)
+    redirect(`${ROUTE_SIGN_IN}?redirectTo=${encodeURIComponent(`/dashboard/orgs/${slug}/setting`)}`)
   }
 
   const data = await api.org.getBySlug({ slug })

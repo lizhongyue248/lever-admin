@@ -14,6 +14,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  API_KEY_STATUS_DISABLED,
+  API_KEY_STATUS_ENABLED,
+  API_KEY_STATUS_EXPIRING,
+  API_KEY_STATUS_RISKY,
+  DEFAULT_PAGE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  ROUTE_DASHBOARD_SETTINGS_API_KEYS
+} from "@/lib/const"
 import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 import { ApiKeyDetailContent } from "./api-key-detail-content"
 import { CopyCreatedApiKeyButton, CreateApiKeyDialog, type CreatedApiKeyResult, DeleteApiKeyDialog, DisableApiKeyDialog, EnableApiKeyDialog } from "./api-key-dialogs"
@@ -25,11 +35,11 @@ type StatusFilter = NonNullable<RouterInputs["apiKey"]["listMine"]["status"]>
 type RowAction = "delete" | "disable" | "enable" | null
 
 const statusLabels: Record<StatusFilter, string> = {
-  all: "全部状态",
-  disabled: "已禁用",
-  enabled: "启用中",
-  expiring: "即将过期",
-  risky: "有风险"
+  [FILTER_ALL]: "全部状态",
+  [API_KEY_STATUS_DISABLED]: "已禁用",
+  [API_KEY_STATUS_ENABLED]: "启用中",
+  [API_KEY_STATUS_EXPIRING]: "即将过期",
+  [API_KEY_STATUS_RISKY]: "有风险"
 }
 
 const formatDate = (date: Date | null) => {
@@ -44,9 +54,9 @@ const formatExpiresAt = (date: Date | null) => (date ? formatDate(date) : "不�
 
 export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initialKeys: ApiKeyList; selectedKeyId: string | null }) => {
   const router = useRouter()
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(DEFAULT_PAGE)
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<StatusFilter>("all")
+  const [status, setStatus] = useState<StatusFilter>(FILTER_ALL)
   const [sheetKeyId, setSheetKeyId] = useState<string | null>(selectedKeyId)
   const [isDesktop, setIsDesktop] = useState(false)
   const [hasViewportState, setHasViewportState] = useState(false)
@@ -67,14 +77,14 @@ export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initial
 
   useEffect(() => {
     if (hasViewportState && sheetKeyId && !isDesktop) {
-      router.replace(`/dashboard/settings/api-keys/${sheetKeyId}`)
+      router.replace(`${ROUTE_DASHBOARD_SETTINGS_API_KEYS}/${sheetKeyId}`)
     }
   }, [hasViewportState, isDesktop, router, sheetKeyId])
 
   const keys = api.apiKey.listMine.useQuery(
-    { page, pageSize: 20, search, status },
+    { page, pageSize: DENSE_PAGE_SIZE, search, status },
     {
-      initialData: page === 1 && search === "" && status === "all" ? initialKeys : undefined,
+      initialData: page === DEFAULT_PAGE && search === "" && status === FILTER_ALL ? initialKeys : undefined,
       placeholderData: (previousData) => previousData
     }
   )
@@ -89,14 +99,14 @@ export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initial
   const openSheet = useCallback(
     (id: string) => {
       setSheetKeyId(id)
-      router.replace(`/dashboard/settings/api-keys?keyId=${encodeURIComponent(id)}`, { scroll: false })
+      router.replace(`${ROUTE_DASHBOARD_SETTINGS_API_KEYS}?keyId=${encodeURIComponent(id)}`, { scroll: false })
     },
     [router]
   )
 
   const closeSheet = () => {
     setSheetKeyId(null)
-    router.replace("/dashboard/settings/api-keys", { scroll: false })
+    router.replace(ROUTE_DASHBOARD_SETTINGS_API_KEYS, { scroll: false })
   }
 
   return (
@@ -119,7 +129,7 @@ export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initial
                 className="pl-9"
                 onChange={(event) => {
                   setSearch(event.target.value)
-                  setPage(1)
+                  setPage(DEFAULT_PAGE)
                 }}
                 placeholder="搜索 API Key 名称"
                 value={search}
@@ -138,7 +148,7 @@ export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initial
                     key={item}
                     onSelect={() => {
                       setStatus(item)
-                      setPage(1)
+                      setPage(DEFAULT_PAGE)
                     }}
                   >
                     {statusLabels[item]}
@@ -164,7 +174,7 @@ export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initial
             onPageChange={setPage}
             page={data.page}
             pageCount={data.pageCount}
-            pageSize={20}
+            pageSize={DENSE_PAGE_SIZE}
             total={data.total}
           />
         </CardContent>
@@ -187,7 +197,7 @@ export const PersonalApiKeysContent = ({ initialKeys, selectedKeyId }: { initial
             <div className="flex items-center gap-2">
               {sheetKeyId ? (
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/dashboard/settings/api-keys/${sheetKeyId}`}>
+                  <Link href={`${ROUTE_DASHBOARD_SETTINGS_API_KEYS}/${sheetKeyId}`}>
                     <ExternalLink className="size-4" />
                     完整详情页
                   </Link>
@@ -284,7 +294,7 @@ const ApiKeysTable = ({ items, onOpen }: { items: ApiKeyItem[]; onOpen: (id: str
       </div>
       <div className="grid gap-3 lg:hidden">
         {items.map((item) => (
-          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`api-key-card-${item.id}`} href={`/dashboard/settings/api-keys/${item.id}`} key={item.id}>
+          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`api-key-card-${item.id}`} href={`${ROUTE_DASHBOARD_SETTINGS_API_KEYS}/${item.id}`} key={item.id}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="truncate font-semibold">{item.name}</div>

@@ -2,11 +2,20 @@ import { TRPCError } from "@trpc/server"
 import { and, asc, eq, gt, sql } from "drizzle-orm"
 import { z } from "zod"
 
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  FILTER_ALL,
+  INVITATION_STATUS_PENDING,
+  NOTIFICATION_MAX_PAGE_SIZE,
+  NOTIFICATION_TYPE_FILTERS,
+  NOTIFICATION_TYPE_INVITATION
+} from "@/lib/const"
 import { acceptInvitationForCurrentUser, getEffectiveInvitationStatus, getInvitationForCurrentUser, rejectInvitationForCurrentUser } from "@/server/api/lib/invitations"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { invitation, organization, organizationDepartment, user } from "@/server/db/schema"
 
-const notificationTypeInput = z.enum(["all", "invitation", "security", "system"]).default("all")
+const notificationTypeInput = z.enum(NOTIFICATION_TYPE_FILTERS).default(FILTER_ALL)
 
 type InvitationNotificationRow = {
   createdAt: Date
@@ -44,9 +53,9 @@ const toInvitationNotification = (row: InvitationNotificationRow) => ({
     invitationId: row.id,
     kind: "organizationInvitation" as const
   },
-  status: "pending" as const,
+  status: INVITATION_STATUS_PENDING,
   title: `${row.organizationName} 邀请你加入`,
-  type: "invitation" as const,
+  type: NOTIFICATION_TYPE_INVITATION,
   unread: true
 })
 
@@ -55,7 +64,7 @@ export const notificationRouter = createTRPCRouter({
     const [row] = await ctx.db
       .select({ value: sql<number>`count(*)::int` })
       .from(invitation)
-      .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, "pending"), gt(invitation.expiresAt, new Date())))
+      .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, INVITATION_STATUS_PENDING), gt(invitation.expiresAt, new Date())))
 
     return {
       pendingCount: row?.value ?? 0,
@@ -66,15 +75,15 @@ export const notificationRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(20).default(10),
+        page: z.number().int().min(1).default(DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(NOTIFICATION_MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
         type: notificationTypeInput
       })
     )
     .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.pageSize
-      const where = and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, "pending"), gt(invitation.expiresAt, new Date()))
-      const shouldListInvitations = input.type === "all" || input.type === "invitation"
+      const where = and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, INVITATION_STATUS_PENDING), gt(invitation.expiresAt, new Date()))
+      const shouldListInvitations = input.type === FILTER_ALL || input.type === NOTIFICATION_TYPE_INVITATION
       const invitationRows = shouldListInvitations
         ? await ctx.db
             .select({

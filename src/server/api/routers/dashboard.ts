@@ -2,7 +2,19 @@ import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm"
 import { z } from "zod"
 
-import { ORGANIZATION_ADMIN_ROLES, PLATFORM_ROLE_USER } from "@/lib/const"
+import {
+  API_KEY_EXPIRING_SOON_DAYS,
+  API_KEY_OWNER_ORGANIZATION,
+  API_KEY_OWNER_USER,
+  DASHBOARD_RECENT_WINDOW_DAYS,
+  INVITATION_STATUS_PENDING,
+  ORGANIZATION_ADMIN_ROLES,
+  PLATFORM_ROLE_USER,
+  ROUTE_DASHBOARD,
+  ROUTE_DASHBOARD_ADMIN_API_KEYS,
+  ROUTE_DASHBOARD_SETTINGS_SECURITY,
+  ROUTE_DASHBOARD_SETTINGS_SESSIONS
+} from "@/lib/const"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import {
   account,
@@ -40,8 +52,8 @@ const isOrganizationAdminRole = (role: string | null | undefined) => ORGANIZATIO
 
 const getActiveSessionOrganizationId = (activeSession: typeof session.$inferSelect) => activeSession.activeOrganizationId ?? null
 const getPlatformRole = (role: string | null | undefined) => role ?? PLATFORM_ROLE_USER
-const getRecentWindowStart = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-const getExpiringSoonEnd = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+const getRecentWindowStart = () => new Date(Date.now() - DASHBOARD_RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+const getExpiringSoonEnd = () => new Date(Date.now() + API_KEY_EXPIRING_SOON_DAYS * 24 * 60 * 60 * 1000)
 const toReturnedEvents = (events: DashboardRecentEvent[]) =>
   events
     .sort((first, second) => second.createdAt.getTime() - first.createdAt.getTime())
@@ -71,7 +83,7 @@ export const dashboardRouter = createTRPCRouter({
     const [pendingNotificationCount] = await ctx.db
       .select({ value: sql<number>`count(*)::int` })
       .from(invitation)
-      .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, "pending"), gt(invitation.expiresAt, new Date())))
+      .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, INVITATION_STATUS_PENDING), gt(invitation.expiresAt, new Date())))
 
     return {
       activeOrganizationId: activeOrganization?.organizationId ?? null,
@@ -157,7 +169,7 @@ export const dashboardRouter = createTRPCRouter({
         ctx.db
           .select({ value: sql<number>`count(*)::int` })
           .from(invitation)
-          .where(and(eq(invitation.organizationId, organizationId), eq(invitation.status, "pending")))
+          .where(and(eq(invitation.organizationId, organizationId), eq(invitation.status, INVITATION_STATUS_PENDING)))
       )
       const teamCount = await countRows(ctx.db.select({ value: sql<number>`count(*)::int` }).from(team).where(eq(team.organizationId, organizationId)))
       const departmentRows = await ctx.db
@@ -194,13 +206,13 @@ export const dashboardRouter = createTRPCRouter({
         ctx.db
           .select({ value: sql<number>`count(*)::int` })
           .from(apikey)
-          .where(and(eq(apikey.configId, "organization"), eq(apikey.referenceId, organizationId)))
+          .where(and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(apikey.referenceId, organizationId)))
       )
       const enabledApiKeyCount = await countRows(
         ctx.db
           .select({ value: sql<number>`count(*)::int` })
           .from(apikey)
-          .where(and(eq(apikey.configId, "organization"), eq(apikey.referenceId, organizationId), eq(apikey.enabled, true)))
+          .where(and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(apikey.referenceId, organizationId), eq(apikey.enabled, true)))
       )
       const expiringApiKeyCount = await countRows(
         ctx.db
@@ -208,7 +220,7 @@ export const dashboardRouter = createTRPCRouter({
           .from(apikey)
           .where(
             and(
-              eq(apikey.configId, "organization"),
+              eq(apikey.configId, API_KEY_OWNER_ORGANIZATION),
               eq(apikey.referenceId, organizationId),
               eq(apikey.enabled, true),
               gt(apikey.expiresAt, now),
@@ -231,7 +243,7 @@ export const dashboardRouter = createTRPCRouter({
       const apiKeyEvents = await ctx.db
         .select({ createdAt: apiKeyUsageLog.createdAt, id: apiKeyUsageLog.id, method: apiKeyUsageLog.method, path: apiKeyUsageLog.path, success: apiKeyUsageLog.success })
         .from(apiKeyUsageLog)
-        .where(and(eq(apiKeyUsageLog.configId, "organization"), eq(apiKeyUsageLog.referenceId, organizationId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
+        .where(and(eq(apiKeyUsageLog.configId, API_KEY_OWNER_ORGANIZATION), eq(apiKeyUsageLog.referenceId, organizationId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
         .orderBy(desc(apiKeyUsageLog.createdAt))
         .limit(3)
       const invitationEvents = await ctx.db
@@ -279,7 +291,7 @@ export const dashboardRouter = createTRPCRouter({
           },
           { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: `/dashboard/orgs/${activeMembership.organizationSlug}/invite`, title: "过期或撤销邀请" },
           { description: `${activeSessionCount} 个成员会话可供检查`, href: `/dashboard/orgs/${activeMembership.organizationSlug}/auth`, title: "异常会话待检查" },
-          { description: `${expiringApiKeyCount} 个组织密钥将在 30 天内过期`, href: "/dashboard/admin/api-keys", title: "即将过期 API Key" }
+          { description: `${expiringApiKeyCount} 个组织密钥将在 ${API_KEY_EXPIRING_SOON_DAYS} 天内过期`, href: ROUTE_DASHBOARD_ADMIN_API_KEYS, title: "即将过期 API Key" }
         ].map((action) => ({ ...action, count: action.description.match(/^\d+/)?.[0] ?? "0" })),
         departmentStructure: {
           emptyDepartmentCount: departmentRows.filter((department) => (departmentMemberCounts.get(department.id) ?? 0) === 0).length,
@@ -321,25 +333,33 @@ export const dashboardRouter = createTRPCRouter({
       ctx.db
         .select({ value: sql<number>`count(*)::int` })
         .from(apikey)
-        .where(and(eq(apikey.configId, "user"), eq(apikey.referenceId, sessionUserId)))
+        .where(and(eq(apikey.configId, API_KEY_OWNER_USER), eq(apikey.referenceId, sessionUserId)))
     )
     const personalApiKeyRecentUsedCount = await countRows(
       ctx.db
         .select({ value: sql<number>`count(distinct ${apiKeyUsageLog.apiKeyId})::int` })
         .from(apiKeyUsageLog)
-        .where(and(eq(apiKeyUsageLog.configId, "user"), eq(apiKeyUsageLog.referenceId, sessionUserId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
+        .where(and(eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, sessionUserId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
     )
     const personalApiKeyExpiringSoonCount = await countRows(
       ctx.db
         .select({ value: sql<number>`count(*)::int` })
         .from(apikey)
-        .where(and(eq(apikey.configId, "user"), eq(apikey.referenceId, sessionUserId), eq(apikey.enabled, true), gt(apikey.expiresAt, now), lte(apikey.expiresAt, expiringSoonEnd)))
+        .where(
+          and(
+            eq(apikey.configId, API_KEY_OWNER_USER),
+            eq(apikey.referenceId, sessionUserId),
+            eq(apikey.enabled, true),
+            gt(apikey.expiresAt, now),
+            lte(apikey.expiresAt, expiringSoonEnd)
+          )
+        )
     )
     const pendingInvitationCount = await countRows(
       ctx.db
         .select({ value: sql<number>`count(*)::int` })
         .from(invitation)
-        .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, "pending")))
+        .where(and(eq(invitation.email, ctx.session.user.email.toLowerCase()), eq(invitation.status, INVITATION_STATUS_PENDING)))
     )
     const requestEvents = await ctx.db
       .select({
@@ -370,7 +390,7 @@ export const dashboardRouter = createTRPCRouter({
         userAgentSummary: apiKeyUsageLog.userAgentSummary
       })
       .from(apiKeyUsageLog)
-      .where(and(eq(apiKeyUsageLog.configId, "user"), eq(apiKeyUsageLog.referenceId, sessionUserId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
+      .where(and(eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, sessionUserId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
       .orderBy(desc(apiKeyUsageLog.createdAt))
       .limit(3)
     const recentEvents = toReturnedEvents([
@@ -404,10 +424,14 @@ export const dashboardRouter = createTRPCRouter({
 
     return {
       actions: [
-        { description: twoFactorCount > 0 ? "已启用 2FA，建议保管恢复码" : "开启 2FA 可显著降低账号接管风险", href: "/dashboard/settings/security", title: "开启 2FA" },
-        { description: passkeyCount > 0 ? "已添加 Passkey，可继续添加备用设备" : "添加 Passkey 提升无密码登录体验", href: "/dashboard/settings/security", title: "添加 Passkey" },
-        { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: "/dashboard", title: "处理组织邀请" },
-        { description: `${activeSessionCount} 个活跃会话可供检查`, href: "/dashboard/settings/sessions", title: "检查长期会话" }
+        { description: twoFactorCount > 0 ? "已启用 2FA，建议保管恢复码" : "开启 2FA 可显著降低账号接管风险", href: ROUTE_DASHBOARD_SETTINGS_SECURITY, title: "开启 2FA" },
+        {
+          description: passkeyCount > 0 ? "已添加 Passkey，可继续添加备用设备" : "添加 Passkey 提升无密码登录体验",
+          href: ROUTE_DASHBOARD_SETTINGS_SECURITY,
+          title: "添加 Passkey"
+        },
+        { description: `${pendingInvitationCount} 个组织邀请等待处理`, href: ROUTE_DASHBOARD, title: "处理组织邀请" },
+        { description: `${activeSessionCount} 个活跃会话可供检查`, href: ROUTE_DASHBOARD_SETTINGS_SESSIONS, title: "检查长期会话" }
       ].map((action, index) => ({
         ...action,
         count: index === 0 ? (twoFactorCount > 0 ? "0" : "1") : index === 1 ? (passkeyCount > 0 ? "0" : "1") : (action.description.match(/^\d+/)?.[0] ?? "0")

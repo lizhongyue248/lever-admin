@@ -9,12 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE, ROUTE_DASHBOARD_SETTINGS_SECURITY } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 import type { RouterOutputs } from "@/trpc/react"
 
 type OAuthProviders = RouterOutputs["security"]["getOverview"]["oauthProviders"]
-type GitHubProvider = OAuthProviders["github"]
-type GoogleProvider = OAuthProviders["google"]
+type GitHubProvider = OAuthProviders[typeof OAUTH_PROVIDER_GITHUB]
+type GoogleProvider = OAuthProviders[typeof OAUTH_PROVIDER_GOOGLE]
 
 type OAuthAccountsCardProps = {
   oauthProviders: OAuthProviders
@@ -51,14 +52,15 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
   const router = useRouter()
   const [unlinkTarget, setUnlinkTarget] = useState<GitHubProvider | null>(null)
   const [loading, setLoading] = useState(false)
+  const github = oauthProviders[OAUTH_PROVIDER_GITHUB]
 
   const linkGitHub = async () => {
     setLoading(true)
 
     try {
       const result = await authClient.linkSocial({
-        callbackURL: "/dashboard/settings/security",
-        provider: "github"
+        callbackURL: ROUTE_DASHBOARD_SETTINGS_SECURITY,
+        provider: OAUTH_PROVIDER_GITHUB
       })
 
       if (result.error) {
@@ -82,7 +84,7 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
     try {
       const result = await authClient.unlinkAccount({
         accountId: target.accountId,
-        providerId: "github"
+        providerId: OAUTH_PROVIDER_GITHUB
       })
 
       if (result.error) {
@@ -98,19 +100,19 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
     }
   }
 
-  const githubAction = oauthProviders.github.linked ? (
-    <Button className="shrink-0" disabled={!oauthProviders.github.canUnlink} onClick={() => setUnlinkTarget(oauthProviders.github)} size="sm" type="button" variant="destructive">
+  const githubAction = github.linked ? (
+    <Button className="shrink-0" disabled={!github.canUnlink} onClick={() => setUnlinkTarget(github)} size="sm" type="button" variant="destructive">
       <Link2Off className="size-3.5" />
       解绑
     </Button>
   ) : (
-    <Button className="shrink-0" disabled={!oauthProviders.github.configured || loading} onClick={linkGitHub} size="sm" type="button" variant="outline">
+    <Button className="shrink-0" disabled={!github.configured || loading} onClick={linkGitHub} size="sm" type="button" variant="outline">
       {loading ? <Loader2 className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />}
       绑定 GitHub
     </Button>
   )
 
-  const google: GoogleProvider = oauthProviders.google
+  const google: GoogleProvider = oauthProviders[OAUTH_PROVIDER_GOOGLE]
 
   return (
     <>
@@ -121,11 +123,11 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
         <CardContent className="space-y-3 px-5">
           <ProviderRow
             action={githubAction}
-            configured={oauthProviders.github.configured}
-            description={oauthProviders.github.linked ? "GitHub 已作为备用登录方式。" : "绑定 GitHub 后可作为备用登录方式。"}
+            configured={github.configured}
+            description={github.linked ? "GitHub 已作为备用登录方式。" : "绑定 GitHub 后可作为备用登录方式。"}
             icon={<span className="font-semibold text-xs">GH</span>}
             label="GitHub"
-            linked={oauthProviders.github.linked}
+            linked={github.linked}
           />
           <ProviderRow
             action={
@@ -139,7 +141,7 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
             label="Google"
             linked={google.linked}
           />
-          {oauthProviders.github.linked && !oauthProviders.github.canUnlink ? (
+          {github.linked && !github.canUnlink ? (
             <p className="text-muted-foreground text-xs leading-5">GitHub 是当前账号仅有的可用登录方式之一时不能直接解绑，请先添加密码或 Passkey。</p>
           ) : null}
         </CardContent>

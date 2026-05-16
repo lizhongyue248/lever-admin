@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ROUTE_DASHBOARD_SETTINGS_API_KEYS } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { DeleteApiKeyDialog, DisableApiKeyDialog, EnableApiKeyDialog } from "./api-key-dialogs"
 import { ApiKeyRiskBadge, ApiKeyStatusBadge } from "./api-key-status"
@@ -126,7 +127,7 @@ export const ApiKeyDetailContent = ({ apiKey, mode }: { apiKey: ApiKeyDetail; mo
   }
   const handleDeleteSuccess = () => {
     if (mode === "page") {
-      router.push("/dashboard/settings/api-keys")
+      router.push(ROUTE_DASHBOARD_SETTINGS_API_KEYS)
       router.refresh()
     }
   }

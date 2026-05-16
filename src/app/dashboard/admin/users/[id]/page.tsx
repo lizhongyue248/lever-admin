@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
+import { ROUTE_DASHBOARD_ADMIN_USERS } from "@/lib/const"
 import { api } from "@/trpc/server"
 import { AdminUserDetailContent } from "../_components/admin-user-detail-content"
 
@@ -16,7 +17,7 @@ const AdminUserDetailPage = async ({ params }: { params: Promise<{ id: string }>
           <p className="mt-2 text-muted-foreground text-xs">查看单个用户完整身份、安全、组织、会话和 API Key 信息。</p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/dashboard/admin/users">返回列表</Link>
+          <Link href={ROUTE_DASHBOARD_ADMIN_USERS}>返回列表</Link>
         </Button>
       </div>
       <AdminUserDetailContent mode="page" user={user} />

@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ROUTE_DASHBOARD, ROUTE_DASHBOARD_ADMIN_API_KEYS, ROUTE_DASHBOARD_SETTINGS_SECURITY, ROUTE_DASHBOARD_SETTINGS_SESSIONS } from "@/lib/const"
 import { cn } from "@/lib/utils"
 
 import { HealthRadarChart } from "./health-radar-chart"
@@ -52,18 +53,18 @@ const getHeroConfig = (data: DashboardHomeData) => {
 const getActions = (data: DashboardHomeData): ActionItem[] => {
   if (data.view === "organization-admin") {
     return [
-      { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? "/dashboard/orgs", title: "未开启 2FA 成员" },
-      { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? "/dashboard/orgs", title: "过期或撤销邀请" },
-      { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? "/dashboard/settings/sessions", title: "异常会话待检查" },
-      { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? "/dashboard/admin/api-keys", title: "即将过期 API Key" }
+      { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? `${ROUTE_DASHBOARD}/orgs`, title: "未开启 2FA 成员" },
+      { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? `${ROUTE_DASHBOARD}/orgs`, title: "过期或撤销邀请" },
+      { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? ROUTE_DASHBOARD_SETTINGS_SESSIONS, title: "异常会话待检查" },
+      { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? ROUTE_DASHBOARD_ADMIN_API_KEYS, title: "即将过期 API Key" }
     ]
   }
 
   return [
-    { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? "/dashboard/settings/security", title: "开启 2FA" },
-    { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? "/dashboard/settings/security", title: "添加 Passkey" },
-    { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? "/dashboard", title: "处理组织邀请" },
-    { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? "/dashboard/settings/sessions", title: "检查长期会话" }
+    { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? ROUTE_DASHBOARD_SETTINGS_SECURITY, title: "开启 2FA" },
+    { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? ROUTE_DASHBOARD_SETTINGS_SECURITY, title: "添加 Passkey" },
+    { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? ROUTE_DASHBOARD, title: "处理组织邀请" },
+    { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? ROUTE_DASHBOARD_SETTINGS_SESSIONS, title: "检查长期会话" }
   ]
 }
 
@@ -110,7 +111,7 @@ export const DashboardHomeContent = ({ data }: DashboardHomeContentProps) => {
               <p className="sr-only">{hero.title}</p>
               <p className="max-w-sm text-muted-foreground text-xs leading-5">{hero.description}</p>
               <Button asChild className="mt-6 h-10 min-w-34 px-6 text-xs">
-                <Link href={data.view === "organization-admin" ? "/dashboard/orgs" : "/dashboard/settings/security"}>{hero.cta}</Link>
+                <Link href={data.view === "organization-admin" ? `${ROUTE_DASHBOARD}/orgs` : ROUTE_DASHBOARD_SETTINGS_SECURITY}>{hero.cta}</Link>
               </Button>
             </div>
             <div className="flex min-h-60 items-center justify-center">

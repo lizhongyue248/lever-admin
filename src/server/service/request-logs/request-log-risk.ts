@@ -1,4 +1,6 @@
-export type RequestRiskLevel = "high" | "low" | "medium"
+import { REQUEST_LOG_HIGH_RISK_SLOW_MS, REQUEST_LOG_SLOW_MS, RISK_LEVEL_HIGH, RISK_LEVEL_LOW, RISK_LEVEL_MEDIUM, type RiskSeverity } from "@/lib/const"
+
+export type RequestRiskLevel = RiskSeverity
 
 export type RequestLogRisk = {
   level: RequestRiskLevel
@@ -31,25 +33,25 @@ export const buildRequestLogRisk = ({
     reasons.push("高危路由失败")
   }
 
-  if (durationMs !== null && durationMs >= 10_000) {
+  if (durationMs !== null && durationMs >= REQUEST_LOG_HIGH_RISK_SLOW_MS) {
     reasons.push("请求耗时超过 10 秒")
   }
 
   if (reasons.length > 0) {
-    return { level: "high", reasons }
+    return { level: RISK_LEVEL_HIGH, reasons }
   }
 
   if (!success && statusCode !== null && statusCode >= 400 && statusCode < 500) {
     reasons.push("客户端失败请求")
   }
 
-  if (durationMs !== null && durationMs >= 2000) {
+  if (durationMs !== null && durationMs >= REQUEST_LOG_SLOW_MS) {
     reasons.push("请求耗时超过 2 秒")
   }
 
   if (reasons.length > 0) {
-    return { level: "medium", reasons }
+    return { level: RISK_LEVEL_MEDIUM, reasons }
   }
 
-  return { level: "low", reasons }
+  return { level: RISK_LEVEL_LOW, reasons }
 }

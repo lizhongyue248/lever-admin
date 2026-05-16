@@ -3,6 +3,23 @@ import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { z } from "zod"
 
+import {
+  API_KEY_EXPIRING_SOON_DAYS,
+  API_KEY_OWNER_USER,
+  API_KEY_STALE_REQUEST_DAYS,
+  API_KEY_STATUS_DISABLED,
+  API_KEY_STATUS_ENABLED,
+  API_KEY_STATUS_EXPIRED,
+  API_KEY_STATUS_EXPIRING,
+  API_KEY_STATUS_RISKY,
+  DEFAULT_PAGE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  MAX_PAGE_SIZE,
+  REQUEST_LOG_RESULT_FAILED,
+  REQUEST_LOG_RESULT_SUCCESS,
+  RISK_LEVEL_LOW
+} from "@/lib/const"
 import { apiKeyStatusSchema, assertPersonalKey, buildApiKeyRisk, maskApiKey, usageResultSchema } from "@/server/api/lib/api-key"
 import { getApiKeyUsageStats } from "@/server/api/lib/api-key-usage-stats"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
@@ -13,18 +30,18 @@ import { apiKeyUsageLog, apikey } from "@/server/db/schema"
 const secondsPerDay = 24 * 60 * 60
 const getKeyDisplayStatus = ({ enabled, expiresAt }: { enabled: boolean | null; expiresAt: Date | null }) => {
   if (!enabled) {
-    return "disabled" as const
+    return API_KEY_STATUS_DISABLED
   }
 
   if (expiresAt && expiresAt <= new Date()) {
-    return "expired" as const
+    return API_KEY_STATUS_EXPIRED
   }
 
-  if (expiresAt && expiresAt <= new Date(Date.now() + 30 * secondsPerDay * 1000)) {
-    return "expiring" as const
+  if (expiresAt && expiresAt <= new Date(Date.now() + API_KEY_EXPIRING_SOON_DAYS * secondsPerDay * 1000)) {
+    return API_KEY_STATUS_EXPIRING
   }
 
-  return "enabled" as const
+  return API_KEY_STATUS_ENABLED
 }
 
 const getUsageSummary = async ({ apiKeyId, referenceId }: { apiKeyId: string; referenceId: string }) => {
@@ -35,7 +52,9 @@ const getUsageSummary = async ({ apiKeyId, referenceId }: { apiKeyId: string; re
       total24h: sql<number>`count(*)::int`
     })
     .from(apiKeyUsageLog)
-    .where(and(eq(apiKeyUsageLog.apiKeyId, apiKeyId), eq(apiKeyUsageLog.configId, "user"), eq(apiKeyUsageLog.referenceId, referenceId), gte(apiKeyUsageLog.createdAt, since)))
+    .where(
+      and(eq(apiKeyUsageLog.apiKeyId, apiKeyId), eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, referenceId), gte(apiKeyUsageLog.createdAt, since))
+    )
     .catch(() => [])
 
   return {
@@ -112,7 +131,7 @@ export const apiKeyRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const created = await auth.api.createApiKey({
         body: {
-          configId: "user",
+          configId: API_KEY_OWNER_USER,
           ...(input.expiresInDays ? { expiresIn: input.expiresInDays * secondsPerDay } : {}),
           metadata: {
             note: input.note
@@ -155,7 +174,7 @@ export const apiKeyRouter = createTRPCRouter({
     assertPersonalKey(target, ctx.session.user.id)
 
     const headerList = await headers()
-    await auth.api.deleteApiKey({ body: { configId: "user", keyId: input.id }, headers: headerList })
+    await auth.api.deleteApiKey({ body: { configId: API_KEY_OWNER_USER, keyId: input.id }, headers: headerList })
 
     return { success: true }
   }),
@@ -169,7 +188,7 @@ export const apiKeyRouter = createTRPCRouter({
 
     assertPersonalKey(target, ctx.session.user.id)
 
-    await auth.api.updateApiKey({ body: { configId: "user", enabled: false, keyId: input.id, userId: ctx.session.user.id } })
+    await auth.api.updateApiKey({ body: { configId: API_KEY_OWNER_USER, enabled: false, keyId: input.id, userId: ctx.session.user.id } })
 
     return { success: true }
   }),
@@ -183,7 +202,7 @@ export const apiKeyRouter = createTRPCRouter({
 
     assertPersonalKey(target, ctx.session.user.id)
 
-    await auth.api.updateApiKey({ body: { configId: "user", enabled: true, keyId: input.id, userId: ctx.session.user.id } })
+    await auth.api.updateApiKey({ body: { configId: API_KEY_OWNER_USER, enabled: true, keyId: input.id, userId: ctx.session.user.id } })
 
     return { success: true }
   }),
@@ -215,7 +234,7 @@ export const apiKeyRouter = createTRPCRouter({
         userAgentSummary: apiKeyUsageLog.userAgentSummary
       })
       .from(apiKeyUsageLog)
-      .where(and(eq(apiKeyUsageLog.apiKeyId, input.id), eq(apiKeyUsageLog.configId, "user"), eq(apiKeyUsageLog.referenceId, ctx.session.user.id)))
+      .where(and(eq(apiKeyUsageLog.apiKeyId, input.id), eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, ctx.session.user.id)))
       .orderBy(desc(apiKeyUsageLog.createdAt))
       .limit(5)
       .catch(() => [])
@@ -238,7 +257,7 @@ export const apiKeyRouter = createTRPCRouter({
 
     return await getApiKeyUsageStats({
       apiKeyId: input.id,
-      configId: "user",
+      configId: API_KEY_OWNER_USER,
       referenceId: ctx.session.user.id
     })
   }),
@@ -246,30 +265,30 @@ export const apiKeyRouter = createTRPCRouter({
   listMine: protectedProcedure
     .input(
       z.object({
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(50).default(20),
+        page: z.number().int().min(1).default(DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DENSE_PAGE_SIZE),
         search: z.string().default(""),
-        status: apiKeyStatusSchema.default("all")
+        status: apiKeyStatusSchema.default(FILTER_ALL)
       })
     )
     .query(async ({ ctx, input }) => {
       const now = new Date()
-      const expiringBefore = new Date(now.getTime() + 30 * secondsPerDay * 1000)
+      const expiringBefore = new Date(now.getTime() + API_KEY_EXPIRING_SOON_DAYS * secondsPerDay * 1000)
       const trimmedSearch = input.search.trim()
       const searchValue = `%${trimmedSearch}%`
       const baseFilters = and(
-        eq(apikey.configId, "user"),
+        eq(apikey.configId, API_KEY_OWNER_USER),
         eq(apikey.referenceId, ctx.session.user.id),
         trimmedSearch ? or(ilike(apikey.name, searchValue), ilike(apikey.prefix, searchValue), ilike(apikey.start, searchValue)) : undefined,
-        input.status === "enabled" ? and(eq(apikey.enabled, true), or(sql`${apikey.expiresAt} is null`, sql`${apikey.expiresAt} > ${now}`)) : undefined,
-        input.status === "disabled" ? eq(apikey.enabled, false) : undefined,
-        input.status === "expiring" ? and(eq(apikey.enabled, true), gte(apikey.expiresAt, now), lte(apikey.expiresAt, expiringBefore)) : undefined
+        input.status === API_KEY_STATUS_ENABLED ? and(eq(apikey.enabled, true), or(sql`${apikey.expiresAt} is null`, sql`${apikey.expiresAt} > ${now}`)) : undefined,
+        input.status === API_KEY_STATUS_DISABLED ? eq(apikey.enabled, false) : undefined,
+        input.status === API_KEY_STATUS_EXPIRING ? and(eq(apikey.enabled, true), gte(apikey.expiresAt, now), lte(apikey.expiresAt, expiringBefore)) : undefined
       )
 
-      if (input.status === "risky") {
+      if (input.status === API_KEY_STATUS_RISKY) {
         const candidateRows = await ctx.db.select(selectSafeApiKey).from(apikey).where(baseFilters).orderBy(desc(apikey.createdAt))
         const candidateItems = await Promise.all(candidateRows.map(toSafeItem))
-        const riskyItems = candidateItems.filter((item) => item.risk.level !== "low")
+        const riskyItems = candidateItems.filter((item) => item.risk.level !== RISK_LEVEL_LOW)
         const total = riskyItems.length
 
         return {
@@ -303,9 +322,9 @@ export const apiKeyRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().min(1),
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(50).default(20),
-        result: usageResultSchema.default("all")
+        page: z.number().int().min(1).default(DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DENSE_PAGE_SIZE),
+        result: usageResultSchema.default(FILTER_ALL)
       })
     )
     .query(async ({ ctx, input }) => {
@@ -317,14 +336,14 @@ export const apiKeyRouter = createTRPCRouter({
 
       assertPersonalKey(target, ctx.session.user.id)
 
-      const since = new Date(Date.now() - 90 * secondsPerDay * 1000)
+      const since = new Date(Date.now() - API_KEY_STALE_REQUEST_DAYS * secondsPerDay * 1000)
       const filters = and(
         eq(apiKeyUsageLog.apiKeyId, input.id),
-        eq(apiKeyUsageLog.configId, "user"),
+        eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER),
         eq(apiKeyUsageLog.referenceId, ctx.session.user.id),
         gte(apiKeyUsageLog.createdAt, since),
-        input.result === "success" ? eq(apiKeyUsageLog.success, true) : undefined,
-        input.result === "failed" ? eq(apiKeyUsageLog.success, false) : undefined
+        input.result === REQUEST_LOG_RESULT_SUCCESS ? eq(apiKeyUsageLog.success, true) : undefined,
+        input.result === REQUEST_LOG_RESULT_FAILED ? eq(apiKeyUsageLog.success, false) : undefined
       )
       const [totalRow] = await ctx.db
         .select({ value: sql<number>`count(*)::int` })

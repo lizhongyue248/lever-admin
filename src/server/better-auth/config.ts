@@ -8,7 +8,15 @@ import { adminAc, userAc } from "better-auth/plugins/admin/access"
 import { sql } from "drizzle-orm"
 
 import { env } from "@/env"
-import { PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN, PLATFORM_ROLE_SUPPORT, PLATFORM_ROLE_USER } from "@/lib/const"
+import {
+  API_KEY_OWNER_ORGANIZATION,
+  API_KEY_OWNER_USER,
+  PLATFORM_ADMIN_ROLES,
+  PLATFORM_ROLE_ADMIN,
+  PLATFORM_ROLE_SUPER_ADMIN,
+  PLATFORM_ROLE_SUPPORT,
+  PLATFORM_ROLE_USER
+} from "@/lib/const"
 import { db } from "@/server/db"
 import { user as userTable } from "@/server/db/schema"
 import { renderOrganizationInvitationEmail, renderResetPasswordEmail, renderVerifyEmail, sendEmail } from "@/server/service/email"
@@ -164,12 +172,12 @@ export const auth = betterAuth({
     }),
     apiKey([
       {
-        configId: "user",
+        configId: API_KEY_OWNER_USER,
         enableMetadata: true,
         references: "user"
       },
       {
-        configId: "organization",
+        configId: API_KEY_OWNER_ORGANIZATION,
         enableMetadata: true,
         references: "organization"
       }

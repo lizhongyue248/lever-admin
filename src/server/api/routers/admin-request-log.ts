@@ -2,29 +2,52 @@ import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm"
 import { z } from "zod"
 
-import { PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  MAX_PAGE_SIZE,
+  PLATFORM_ROLE_SUPER_ADMIN,
+  REQUEST_LOG_DEFAULT_TIME_RANGE,
+  REQUEST_LOG_EXPORT_LIMIT,
+  REQUEST_LOG_EXPORT_QUERY_LIMIT,
+  REQUEST_LOG_METHOD_FILTERS,
+  REQUEST_LOG_RESULT_FAILED,
+  REQUEST_LOG_RESULT_FILTERS,
+  REQUEST_LOG_RESULT_SUCCESS,
+  REQUEST_LOG_RISK_FILTERS,
+  REQUEST_LOG_SLOW_MS,
+  REQUEST_LOG_SOURCE_FILTERS,
+  REQUEST_LOG_TIME_RANGE_1H,
+  REQUEST_LOG_TIME_RANGE_7D,
+  REQUEST_LOG_TIME_RANGE_24H,
+  REQUEST_LOG_TIME_RANGE_30D,
+  REQUEST_LOG_TIME_RANGE_FILTERS,
+  RISK_LEVEL_HIGH
+} from "@/lib/const"
 import { adminProcedure, createTRPCRouter } from "@/server/api/trpc"
 import { requestLog } from "@/server/db/schema"
 
 const secondsPerHour = 60 * 60
 const secondsPerDay = 24 * secondsPerHour
 
-const requestLogSourceSchema = z.enum(["all", "api_key", "auth", "dashboard", "route_handler", "system", "trpc"])
-const requestLogMethodSchema = z.enum(["all", "DELETE", "GET", "PATCH", "POST", "PUT"])
-const requestLogResultSchema = z.enum(["all", "failed", "success"])
-const requestLogRiskSchema = z.enum(["all", "high", "low", "medium"])
-const requestLogTimeRangeSchema = z.enum(["1h", "24h", "7d", "30d", "all"])
+const requestLogSourceSchema = z.enum(REQUEST_LOG_SOURCE_FILTERS)
+const requestLogMethodSchema = z.enum(REQUEST_LOG_METHOD_FILTERS)
+const requestLogResultSchema = z.enum(REQUEST_LOG_RESULT_FILTERS)
+const requestLogRiskSchema = z.enum(REQUEST_LOG_RISK_FILTERS)
+const requestLogTimeRangeSchema = z.enum(REQUEST_LOG_TIME_RANGE_FILTERS)
 
 const requestLogListInputSchema = z.object({
-  method: requestLogMethodSchema.default("all"),
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(50).default(10),
-  result: requestLogResultSchema.default("all"),
-  risk: requestLogRiskSchema.default("all"),
+  method: requestLogMethodSchema.default(FILTER_ALL),
+  page: z.number().int().min(1).default(DEFAULT_PAGE),
+  pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
+  result: requestLogResultSchema.default(FILTER_ALL),
+  risk: requestLogRiskSchema.default(FILTER_ALL),
   search: z.string().default(""),
-  source: requestLogSourceSchema.default("all"),
+  source: requestLogSourceSchema.default(FILTER_ALL),
   statusCode: z.number().int().min(100).max(599).nullable().default(null),
-  timeRange: requestLogTimeRangeSchema.default("24h")
+  timeRange: requestLogTimeRangeSchema.default(REQUEST_LOG_DEFAULT_TIME_RANGE)
 })
 
 type RequestLogListInput = z.infer<typeof requestLogListInputSchema>
@@ -32,19 +55,19 @@ type RequestLogListInput = z.infer<typeof requestLogListInputSchema>
 const getSinceDate = (timeRange: RequestLogListInput["timeRange"]) => {
   const now = Date.now()
 
-  if (timeRange === "1h") {
+  if (timeRange === REQUEST_LOG_TIME_RANGE_1H) {
     return new Date(now - secondsPerHour * 1000)
   }
 
-  if (timeRange === "24h") {
+  if (timeRange === REQUEST_LOG_TIME_RANGE_24H) {
     return new Date(now - secondsPerDay * 1000)
   }
 
-  if (timeRange === "7d") {
+  if (timeRange === REQUEST_LOG_TIME_RANGE_7D) {
     return new Date(now - 7 * secondsPerDay * 1000)
   }
 
-  if (timeRange === "30d") {
+  if (timeRange === REQUEST_LOG_TIME_RANGE_30D) {
     return new Date(now - 30 * secondsPerDay * 1000)
   }
 
@@ -58,11 +81,11 @@ const buildListFilters = (input: RequestLogListInput) => {
 
   return and(
     since ? gte(requestLog.createdAt, since) : undefined,
-    input.result === "success" ? eq(requestLog.success, true) : undefined,
-    input.result === "failed" ? eq(requestLog.success, false) : undefined,
-    input.risk !== "all" ? eq(requestLog.riskLevel, input.risk) : undefined,
-    input.source !== "all" ? eq(requestLog.source, input.source) : undefined,
-    input.method !== "all" ? eq(requestLog.method, input.method) : undefined,
+    input.result === REQUEST_LOG_RESULT_SUCCESS ? eq(requestLog.success, true) : undefined,
+    input.result === REQUEST_LOG_RESULT_FAILED ? eq(requestLog.success, false) : undefined,
+    input.risk !== FILTER_ALL ? eq(requestLog.riskLevel, input.risk) : undefined,
+    input.source !== FILTER_ALL ? eq(requestLog.source, input.source) : undefined,
+    input.method !== FILTER_ALL ? eq(requestLog.method, input.method) : undefined,
     input.statusCode ? eq(requestLog.statusCode, input.statusCode) : undefined,
     trimmedSearch
       ? or(
@@ -212,12 +235,12 @@ export const adminRequestLogRouter = createTRPCRouter({
         userName: requestLog.userName
       })
       .from(requestLog)
-      .where(buildListFilters({ ...input, page: 1, pageSize: 20 }))
+      .where(buildListFilters({ ...input, page: DEFAULT_PAGE, pageSize: DENSE_PAGE_SIZE }))
       .orderBy(desc(requestLog.createdAt))
-      .limit(10_001)
+      .limit(REQUEST_LOG_EXPORT_QUERY_LIMIT)
 
-    if (rows.length > 10_000) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "导出结果超过 10,000 行，请缩小筛选范围。" })
+    if (rows.length > REQUEST_LOG_EXPORT_LIMIT) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: `导出结果超过 ${REQUEST_LOG_EXPORT_LIMIT.toLocaleString()} 行，请缩小筛选范围。` })
     }
 
     return {
@@ -244,8 +267,8 @@ export const adminRequestLogRouter = createTRPCRouter({
     const [summary] = await ctx.db
       .select({
         failed24h: sql<number>`count(*) filter (where ${requestLog.success} = false)::int`,
-        highRisk24h: sql<number>`count(*) filter (where ${requestLog.riskLevel} = 'high')::int`,
-        slow24h: sql<number>`count(*) filter (where ${requestLog.durationMs} >= 2000)::int`,
+        highRisk24h: sql<number>`count(*) filter (where ${requestLog.riskLevel} = ${RISK_LEVEL_HIGH})::int`,
+        slow24h: sql<number>`count(*) filter (where ${requestLog.durationMs} >= ${REQUEST_LOG_SLOW_MS})::int`,
         total24h: sql<number>`count(*)::int`
       })
       .from(requestLog)

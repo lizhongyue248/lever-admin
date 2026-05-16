@@ -1,4 +1,6 @@
-export const defaultAuthRedirect = "/dashboard"
+import { ROUTE_DASHBOARD } from "@/lib/const"
+
+export const defaultAuthRedirect = ROUTE_DASHBOARD
 
 export const normalizeRedirectTo = (value: string | string[] | undefined, fallback = defaultAuthRedirect) => {
   const redirectTo = Array.isArray(value) ? value[0] : value

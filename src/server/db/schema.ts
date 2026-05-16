@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm"
 import { boolean, foreignKey, index, integer, pgTableCreator, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
-import { ORGANIZATION_ROLE_MEMBER } from "@/lib/const"
+import { API_KEY_OWNER_USER, INVITATION_STATUS_PENDING, ORGANIZATION_ROLE_MEMBER, ORGANIZATION_STATUS_ACTIVE, RISK_LEVEL_LOW } from "@/lib/const"
 
 export const createSystemTable = pgTableCreator((name) => `system_${name}`)
 
@@ -90,7 +90,7 @@ export const organization = createSystemTable(
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
     metadata: text("metadata"),
-    status: text("status").default("active").notNull(),
+    status: text("status").default(ORGANIZATION_STATUS_ACTIVE).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -109,7 +109,7 @@ export const organizationDepartment = createSystemTable(
     path: text("path").notNull(),
     depth: integer("depth").default(0).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
-    status: text("status").default("active").notNull(),
+    status: text("status").default(ORGANIZATION_STATUS_ACTIVE).notNull(),
     managerUserId: text("manager_user_id"),
     description: text("description"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -205,7 +205,7 @@ export const invitation = createSystemTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     email: text("email").notNull(),
     role: text("role").notNull(),
-    status: text("status").default("pending").notNull(),
+    status: text("status").default(INVITATION_STATUS_PENDING).notNull(),
     expiresAt: timestamp("expires_at"),
     inviterId: text("inviter_id")
       .notNull()
@@ -310,7 +310,7 @@ export const apikey = createSystemTable(
   "apikey",
   {
     id: text("id").primaryKey(),
-    configId: text("config_id").default("user").notNull(),
+    configId: text("config_id").default(API_KEY_OWNER_USER).notNull(),
     name: text("name"),
     start: text("start"),
     referenceId: text("reference_id").notNull(),
@@ -407,7 +407,7 @@ export const requestLog = createSystemTable(
     userAgentHash: text("user_agent_hash"),
     userAgentRaw: text("user_agent_raw"),
     userAgentSummary: text("user_agent_summary"),
-    riskLevel: text("risk_level").default("low").notNull(),
+    riskLevel: text("risk_level").default(RISK_LEVEL_LOW).notNull(),
     riskReasons: text("risk_reasons"),
     metadata: text("metadata"),
     createdAt: timestamp("created_at").defaultNow().notNull()

@@ -2,8 +2,9 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
+import { ROUTE_SIGN_IN } from "@/lib/const"
 
-export const AuthBackButton = ({ href = "/sign-in", label = "返回登录" }: { href?: string; label?: string }) => {
+export const AuthBackButton = ({ href = ROUTE_SIGN_IN, label = "返回登录" }: { href?: string; label?: string }) => {
   return (
     <Button aria-label={label} asChild className="fixed top-6 left-6 z-20 bg-background/85 shadow-sm backdrop-blur lg:left-[544px]" size="icon-lg" variant="outline">
       <Link href={href} title={label}>

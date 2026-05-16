@@ -14,18 +14,10 @@ import { type FieldErrors, getZodFieldErrors, type SignUpValues, signUpSchema } 
 import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { getEmailVerificationPendingRoute, ROUTE_SIGN_IN } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 
-const getEmailVerificationPendingTarget = (email: string) => {
-  const params = new URLSearchParams({
-    email,
-    status: "pending"
-  })
-
-  return `/verify-email?${params.toString()}`
-}
-
-const emailVerificationPendingTarget = "/verify-email?status=pending"
+const emailVerificationPendingTarget = getEmailVerificationPendingRoute()
 
 export const SignUpForm = () => {
   const router = useRouter()
@@ -67,7 +59,7 @@ export const SignUpForm = () => {
           return
         }
 
-        router.replace(getEmailVerificationPendingTarget(parsed.data.email))
+        router.replace(getEmailVerificationPendingRoute(parsed.data.email))
         router.refresh()
       } catch {
         setMessage("注册服务暂时不可用，请稍后重试。")
@@ -172,7 +164,7 @@ export const SignUpForm = () => {
 
       <p className="text-center text-muted-foreground text-sm">
         已有账号？{" "}
-        <Link className="font-medium text-primary hover:underline" href="/sign-in">
+        <Link className="font-medium text-primary hover:underline" href={ROUTE_SIGN_IN}>
           返回登录
         </Link>
       </p>

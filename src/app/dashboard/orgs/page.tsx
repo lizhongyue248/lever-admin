@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { ROUTE_DASHBOARD } from "@/lib/const"
 import { api } from "@/trpc/server"
 
 const DashboardOrgsPage = async () => {
@@ -7,7 +8,7 @@ const DashboardOrgsPage = async () => {
   const activeOrganization = shell.organizations.find((item) => item.organizationId === shell.activeOrganizationId) ?? shell.organizations[0]
 
   if (!activeOrganization) {
-    redirect("/dashboard")
+    redirect(ROUTE_DASHBOARD)
   }
 
   redirect(`/dashboard/orgs/${activeOrganization.organizationSlug}`)

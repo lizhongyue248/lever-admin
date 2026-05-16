@@ -14,6 +14,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  API_KEY_OWNER_ORGANIZATION,
+  API_KEY_STATUS_DISABLED,
+  API_KEY_STATUS_ENABLED,
+  API_KEY_STATUS_EXPIRING,
+  API_KEY_STATUS_RISKY,
+  DEFAULT_PAGE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  ROUTE_DASHBOARD_ADMIN_API_KEYS
+} from "@/lib/const"
 import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 import { AdminApiKeyDetailContent, AdminApiKeyRiskBadge, AdminApiKeyStatusBadge } from "./admin-api-key-detail-content"
 import { DeleteAdminApiKeyDialog, DisableAdminApiKeyDialog, EnableAdminApiKeyDialog } from "./admin-api-key-dialogs"
@@ -26,11 +37,11 @@ type StatusFilter = NonNullable<RouterInputs["adminApiKey"]["list"]["status"]>
 type RowAction = "delete" | "disable" | "enable" | null
 
 const statusLabels: Record<StatusFilter, string> = {
-  all: "全部状态",
-  disabled: "已禁用",
-  enabled: "启用中",
-  expiring: "即将过期",
-  risky: "有风险"
+  [FILTER_ALL]: "全部状态",
+  [API_KEY_STATUS_DISABLED]: "已禁用",
+  [API_KEY_STATUS_ENABLED]: "启用中",
+  [API_KEY_STATUS_EXPIRING]: "即将过期",
+  [API_KEY_STATUS_RISKY]: "有风险"
 }
 
 const formatDate = (date: Date | null) => {
@@ -42,7 +53,7 @@ const formatDate = (date: Date | null) => {
 }
 
 const formatExpiresAt = (date: Date | null) => (date ? formatDate(date) : "不过期")
-const ownerTypeLabel = (type: AdminApiKeyItem["owner"]["type"]) => (type === "organization" ? "组织" : "用户")
+const ownerTypeLabel = (type: AdminApiKeyItem["owner"]["type"]) => (type === API_KEY_OWNER_ORGANIZATION ? "组织" : "用户")
 
 export const AdminApiKeysContent = ({
   initialKeys,
@@ -56,9 +67,9 @@ export const AdminApiKeysContent = ({
   selectedKeyId: string | null
 }) => {
   const router = useRouter()
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(DEFAULT_PAGE)
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<StatusFilter>("all")
+  const [status, setStatus] = useState<StatusFilter>(FILTER_ALL)
   const [sheetKeyId, setSheetKeyId] = useState<string | null>(selectedKeyId)
   const [isDesktop, setIsDesktop] = useState(false)
   const [hasViewportState, setHasViewportState] = useState(false)
@@ -78,14 +89,14 @@ export const AdminApiKeysContent = ({
 
   useEffect(() => {
     if (hasViewportState && sheetKeyId && !isDesktop) {
-      router.replace(`/dashboard/admin/api-keys/${sheetKeyId}`)
+      router.replace(`${ROUTE_DASHBOARD_ADMIN_API_KEYS}/${sheetKeyId}`)
     }
   }, [hasViewportState, isDesktop, router, sheetKeyId])
 
   const keys = api.adminApiKey.list.useQuery(
-    { page, pageSize: 20, search, status },
+    { page, pageSize: DENSE_PAGE_SIZE, search, status },
     {
-      initialData: page === 1 && search === "" && status === "all" ? initialKeys : undefined,
+      initialData: page === DEFAULT_PAGE && search === "" && status === FILTER_ALL ? initialKeys : undefined,
       placeholderData: (previousData) => previousData
     }
   )
@@ -106,14 +117,14 @@ export const AdminApiKeysContent = ({
   const openSheet = useCallback(
     (id: string) => {
       setSheetKeyId(id)
-      router.replace(`/dashboard/admin/api-keys?keyId=${encodeURIComponent(id)}`, { scroll: false })
+      router.replace(`${ROUTE_DASHBOARD_ADMIN_API_KEYS}?keyId=${encodeURIComponent(id)}`, { scroll: false })
     },
     [router]
   )
 
   const closeSheet = () => {
     setSheetKeyId(null)
-    router.replace("/dashboard/admin/api-keys", { scroll: false })
+    router.replace(ROUTE_DASHBOARD_ADMIN_API_KEYS, { scroll: false })
   }
 
   return (
@@ -135,7 +146,7 @@ export const AdminApiKeysContent = ({
                 className="pl-9"
                 onChange={(event) => {
                   setSearch(event.target.value)
-                  setPage(1)
+                  setPage(DEFAULT_PAGE)
                 }}
                 placeholder="搜索平台 API Key、所属用户或组织"
                 value={search}
@@ -154,7 +165,7 @@ export const AdminApiKeysContent = ({
                     key={item}
                     onSelect={() => {
                       setStatus(item)
-                      setPage(1)
+                      setPage(DEFAULT_PAGE)
                     }}
                   >
                     {statusLabels[item]}
@@ -178,7 +189,7 @@ export const AdminApiKeysContent = ({
             onPageChange={setPage}
             page={data.page}
             pageCount={data.pageCount}
-            pageSize={20}
+            pageSize={DENSE_PAGE_SIZE}
             total={data.total}
           />
         </CardContent>
@@ -201,7 +212,7 @@ export const AdminApiKeysContent = ({
             <div className="flex items-center gap-2">
               {sheetKeyId ? (
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/dashboard/admin/api-keys/${sheetKeyId}`}>
+                  <Link href={`${ROUTE_DASHBOARD_ADMIN_API_KEYS}/${sheetKeyId}`}>
                     <ExternalLink className="size-4" />
                     完整详情页
                   </Link>
@@ -305,7 +316,12 @@ const AdminApiKeysTable = ({ items, onOpen }: { items: AdminApiKeyItem[]; onOpen
       </div>
       <div className="grid gap-3 lg:hidden">
         {items.map((item) => (
-          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-api-key-card-${item.id}`} href={`/dashboard/admin/api-keys/${item.id}`} key={item.id}>
+          <Link
+            className="rounded-lg border bg-card p-4 shadow-sm"
+            data-testid={`admin-api-key-card-${item.id}`}
+            href={`${ROUTE_DASHBOARD_ADMIN_API_KEYS}/${item.id}`}
+            key={item.id}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="truncate font-semibold">{item.name}</div>

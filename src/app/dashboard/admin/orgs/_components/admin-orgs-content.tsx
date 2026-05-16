@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ADMIN_ORG_DEFAULT_PAGE_SIZE, DEFAULT_PAGE, FILTER_ALL, ORGANIZATION_STATUS_ACTIVE, ORGANIZATION_STATUS_DISABLED } from "@/lib/const"
 import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 import { CreateOrganizationDialog } from "./create-organization-dialog"
 
@@ -23,14 +24,14 @@ type OrganizationStatusFilter = RouterInputs["adminOrg"]["list"]["status"]
 const OrganizationStatusDialog = ({ organization }: { organization: OrganizationItem }) => {
   const [open, setOpen] = useState(false)
   const utils = api.useUtils()
-  const targetStatus = organization.status === "disabled" ? "active" : "disabled"
-  const actionLabel = targetStatus === "disabled" ? "停用" : "启用"
-  const Icon = targetStatus === "disabled" ? PowerOff : Power
+  const targetStatus = organization.status === ORGANIZATION_STATUS_DISABLED ? ORGANIZATION_STATUS_ACTIVE : ORGANIZATION_STATUS_DISABLED
+  const actionLabel = targetStatus === ORGANIZATION_STATUS_DISABLED ? "停用" : "启用"
+  const Icon = targetStatus === ORGANIZATION_STATUS_DISABLED ? PowerOff : Power
   const updateStatus = api.adminOrg.updateStatus.useMutation({
     onError: (error) => toast.error(error.message || "组织状态更新失败。"),
     onSuccess: async () => {
       await Promise.all([utils.adminOrg.getOverview.invalidate(), utils.adminOrg.list.invalidate()])
-      toast.success(targetStatus === "disabled" ? "组织已停用。" : "组织已启用。")
+      toast.success(targetStatus === ORGANIZATION_STATUS_DISABLED ? "组织已停用。" : "组织已启用。")
       setOpen(false)
     }
   })
@@ -38,7 +39,12 @@ const OrganizationStatusDialog = ({ organization }: { organization: Organization
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button aria-label={`${actionLabel}组织 ${organization.name}`} className="w-full" type="button" variant={targetStatus === "disabled" ? "destructive" : "outline"}>
+        <Button
+          aria-label={`${actionLabel}组织 ${organization.name}`}
+          className="w-full"
+          type="button"
+          variant={targetStatus === ORGANIZATION_STATUS_DISABLED ? "destructive" : "outline"}
+        >
           <Icon className="size-4" />
           {actionLabel}
         </Button>
@@ -47,7 +53,9 @@ const OrganizationStatusDialog = ({ organization }: { organization: Organization
         <DialogHeader>
           <DialogTitle>{actionLabel}组织</DialogTitle>
           <DialogDescription>
-            {targetStatus === "disabled" ? `停用 ${organization.name} 后，普通组织成员将无法继续访问该组织。` : `启用 ${organization.name} 后，组织成员可恢复访问。`}
+            {targetStatus === ORGANIZATION_STATUS_DISABLED
+              ? `停用 ${organization.name} 后，普通组织成员将无法继续访问该组织。`
+              : `启用 ${organization.name} 后，组织成员可恢复访问。`}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -58,7 +66,7 @@ const OrganizationStatusDialog = ({ organization }: { organization: Organization
             disabled={updateStatus.isPending}
             onClick={() => updateStatus.mutate({ organizationId: organization.id, status: targetStatus })}
             type="button"
-            variant={targetStatus === "disabled" ? "destructive" : "default"}
+            variant={targetStatus === ORGANIZATION_STATUS_DISABLED ? "destructive" : "default"}
           >
             {updateStatus.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
             确认{actionLabel}
@@ -71,12 +79,12 @@ const OrganizationStatusDialog = ({ organization }: { organization: Organization
 
 export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOrganizations: Organizations; overview: Overview }) => {
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<OrganizationStatusFilter>("all")
-  const [page, setPage] = useState(1)
+  const [status, setStatus] = useState<OrganizationStatusFilter>(FILTER_ALL)
+  const [page, setPage] = useState(DEFAULT_PAGE)
   const organizations = api.adminOrg.list.useQuery(
-    { page, pageSize: 12, search, status },
+    { page, pageSize: ADMIN_ORG_DEFAULT_PAGE_SIZE, search, status },
     {
-      initialData: page === 1 && search === "" && status === "all" ? initialOrganizations : undefined,
+      initialData: page === DEFAULT_PAGE && search === "" && status === FILTER_ALL ? initialOrganizations : undefined,
       placeholderData: (previousData) => previousData
     }
   )
@@ -99,7 +107,7 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
               className="pl-9"
               onChange={(event) => {
                 setSearch(event.target.value)
-                setPage(1)
+                setPage(DEFAULT_PAGE)
               }}
               placeholder="搜索组织名称或 slug"
               value={search}
@@ -108,7 +116,7 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
           <Select
             onValueChange={(value) => {
               setStatus(value as OrganizationStatusFilter)
-              setPage(1)
+              setPage(DEFAULT_PAGE)
             }}
             value={status}
           >
@@ -116,9 +124,9 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
               <SelectValue placeholder="全部状态" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="active">正常</SelectItem>
-              <SelectItem value="disabled">已停用</SelectItem>
+              <SelectItem value={FILTER_ALL}>全部状态</SelectItem>
+              <SelectItem value={ORGANIZATION_STATUS_ACTIVE}>正常</SelectItem>
+              <SelectItem value={ORGANIZATION_STATUS_DISABLED}>已停用</SelectItem>
             </SelectContent>
           </Select>
           <CreateOrganizationDialog />
@@ -154,7 +162,9 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
                   <h2 className="truncate font-semibold text-base">{item.name}</h2>
                   <p className="text-muted-foreground text-xs">{item.slug}</p>
                 </div>
-                <Badge variant={item.status === "disabled" ? "destructive" : "secondary"}>{item.status === "disabled" ? "已停用" : "正常"}</Badge>
+                <Badge variant={item.status === ORGANIZATION_STATUS_DISABLED ? "destructive" : "secondary"}>
+                  {item.status === ORGANIZATION_STATUS_DISABLED ? "已停用" : "正常"}
+                </Badge>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-lg bg-muted/60 p-3">
@@ -198,7 +208,7 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
         onPageChange={setPage}
         page={data.page}
         pageCount={data.pageCount}
-        pageSize={12}
+        pageSize={ADMIN_ORG_DEFAULT_PAGE_SIZE}
         total={data.total}
       />
     </div>

@@ -1,9 +1,10 @@
 import { and, eq, gt, gte, inArray, sql } from "drizzle-orm"
 
+import { RISK_LEVEL_HIGH, SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER, SESSION_RISK_NORMAL, SESSION_RISK_RISK, SESSION_RISK_WINDOW_DAYS, type SessionRiskLevel } from "@/lib/const"
 import type { db } from "@/server/db"
 import { requestLog, session } from "@/server/db/schema"
 
-export type RiskLevel = "normal" | "risk"
+export type RiskLevel = SessionRiskLevel
 
 export type SessionRisk = {
   level: RiskLevel
@@ -19,10 +20,7 @@ export type SessionRiskInput = {
   userId: string
 }
 
-const riskWindowDays = 30
-const maxActiveSessionsPerUser = 5
-
-const getRiskWindowStart = (now = new Date()) => new Date(now.getTime() - riskWindowDays * 24 * 60 * 60 * 1000)
+const getRiskWindowStart = (now = new Date()) => new Date(now.getTime() - SESSION_RISK_WINDOW_DAYS * 24 * 60 * 60 * 1000)
 
 export const getSessionRisk = ({
   activeSessionCountForUser,
@@ -39,7 +37,7 @@ export const getSessionRisk = ({
   const lastActiveAt = sessionRow.updatedAt ?? sessionRow.createdAt
   const riskWindowStart = getRiskWindowStart(now)
 
-  if (activeSessionCountForUser > maxActiveSessionsPerUser) {
+  if (activeSessionCountForUser > SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER) {
     reasons.push("活跃会话数量超过阈值")
   }
 
@@ -56,7 +54,7 @@ export const getSessionRisk = ({
   }
 
   return {
-    level: reasons.length > 0 ? "risk" : "normal",
+    level: reasons.length > 0 ? SESSION_RISK_RISK : SESSION_RISK_NORMAL,
     reasons
   }
 }
@@ -73,7 +71,7 @@ export const getHighRiskUserIds = async ({ database, organizationId, userIds }: 
       and(
         inArray(requestLog.userId, userIds),
         organizationId ? eq(requestLog.organizationId, organizationId) : undefined,
-        eq(requestLog.riskLevel, "high"),
+        eq(requestLog.riskLevel, RISK_LEVEL_HIGH),
         gte(requestLog.createdAt, getRiskWindowStart())
       )
     )

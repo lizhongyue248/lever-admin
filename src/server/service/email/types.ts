@@ -1,4 +1,6 @@
-export type EmailProviderName = "console" | "resend" | "smtp"
+import type { PlatformEmailProviderName } from "@/lib/const"
+
+export type EmailProviderName = PlatformEmailProviderName
 
 export type SendEmailInput = {
   html: string

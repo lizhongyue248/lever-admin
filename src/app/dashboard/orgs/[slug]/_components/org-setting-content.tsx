@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ROUTE_DASHBOARD } from "@/lib/const"
 import type { RouterOutputs } from "@/trpc/react"
 import { api } from "@/trpc/react"
 import { formatDate } from "../_lib/org-format"
@@ -46,7 +47,7 @@ export const OrgSettingContent = ({ data, slug }: { data: OrgData; slug: string 
     onError: (error) => toast.error(error.message || "删除组织失败。"),
     onSuccess: () => {
       toast.success("组织已删除。")
-      router.replace("/dashboard")
+      router.replace(ROUTE_DASHBOARD)
       router.refresh()
     }
   })

@@ -6,6 +6,7 @@ import { DataPagination } from "@/components/data-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DEFAULT_PAGE, SESSION_RISK_RISK } from "@/lib/const"
 import { cn } from "@/lib/utils"
 import type { RouterOutputs } from "@/trpc/react"
 import { SessionDeviceIcon } from "./session-device-icon"
@@ -30,7 +31,7 @@ const formatDate = (date: Date) =>
   }).format(date)
 
 export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }: SessionListProps) => {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(DEFAULT_PAGE)
   const pageCount = Math.max(1, Math.ceil(sessions.length / PAGE_SIZE))
   const visibleSessions = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
@@ -75,7 +76,7 @@ export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }:
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <p className="text-muted-foreground text-xs">创建于 {formatDate(item.createdAt)}</p>
-                          {item.riskLevel === "risk" ? <Badge variant="destructive">{item.riskReasons[0] ?? "风险会话"}</Badge> : null}
+                          {item.riskLevel === SESSION_RISK_RISK ? <Badge variant="destructive">{item.riskReasons[0] ?? "风险会话"}</Badge> : null}
                         </div>
                       </div>
                     </div>
@@ -113,7 +114,7 @@ export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }:
                     <p>
                       {item.lastActiveLabel} · 创建于 {formatDate(item.createdAt)}
                     </p>
-                    {item.riskLevel === "risk" ? <Badge variant="destructive">{item.riskReasons[0] ?? "风险会话"}</Badge> : null}
+                    {item.riskLevel === SESSION_RISK_RISK ? <Badge variant="destructive">{item.riskReasons[0] ?? "风险会话"}</Badge> : null}
                   </div>
                   <div className="mt-3 flex justify-end">
                     {item.isCurrent ? (

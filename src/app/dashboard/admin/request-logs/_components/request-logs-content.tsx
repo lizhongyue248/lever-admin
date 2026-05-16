@@ -12,27 +12,37 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, type RouterOutputs } from "@/trpc/react"
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  FILTER_ALL,
+  PAGE_SIZE_OPTIONS,
+  type PageSizeOption,
+  REQUEST_LOG_DEFAULT_TIME_RANGE,
+  RISK_LEVEL_HIGH,
+  RISK_LEVEL_MEDIUM,
+  ROUTE_DASHBOARD_ADMIN_REQUEST_LOGS
+} from "@/lib/const"
+import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 
 import { type ResultFilter, type RiskFilter, riskLabels, type SourceFilter, type TimeRangeFilter } from "./request-log-labels"
 import { RequestLogToolbar } from "./request-log-toolbar"
 import { RequestLogsTable } from "./request-logs-table"
 
 type RequestLogList = RouterOutputs["adminRequestLog"]["list"]
+type RequestLogListInput = RouterInputs["adminRequestLog"]["list"]
 type RequestLogDetail = RouterOutputs["adminRequestLog"]["get"]
 type RequestLogOverview = RouterOutputs["adminRequestLog"]["getOverview"]
-
-const pageSizeOptions = [10, 20, 50] as const
-type PageSize = (typeof pageSizeOptions)[number]
+type PageSize = PageSizeOption
 
 const formatDuration = (value: number | null) => (value === null ? "-" : `${value}ms`)
 
 const riskVariant = (risk: string) => {
-  if (risk === "high") {
+  if (risk === RISK_LEVEL_HIGH) {
     return "destructive" as const
   }
 
-  if (risk === "medium") {
+  if (risk === RISK_LEVEL_MEDIUM) {
     return "outline" as const
   }
 
@@ -60,13 +70,13 @@ export const RequestLogsContent = ({
   selectedLogId: string | null
 }) => {
   const router = useRouter()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState<PageSize>(10)
+  const [page, setPage] = useState(DEFAULT_PAGE)
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE)
   const [search, setSearch] = useState("")
-  const [result, setResult] = useState<ResultFilter>("all")
-  const [risk, setRisk] = useState<RiskFilter>("all")
-  const [source, setSource] = useState<SourceFilter>("all")
-  const [timeRange, setTimeRange] = useState<TimeRangeFilter>("24h")
+  const [result, setResult] = useState<ResultFilter>(FILTER_ALL)
+  const [risk, setRisk] = useState<RiskFilter>(FILTER_ALL)
+  const [source, setSource] = useState<SourceFilter>(FILTER_ALL)
+  const [timeRange, setTimeRange] = useState<TimeRangeFilter>(REQUEST_LOG_DEFAULT_TIME_RANGE)
   const [autoRefreshMs, setAutoRefreshMs] = useState<number | null>(null)
   const [sheetLogId, setSheetLogId] = useState<string | null>(selectedLogId)
   const [isDesktop, setIsDesktop] = useState(true)
@@ -80,9 +90,18 @@ export const RequestLogsContent = ({
     return () => mediaQuery.removeEventListener("change", updateDesktopState)
   }, [])
 
-  const listInput = { method: "all" as const, page, pageSize, result, risk, search, source, statusCode: null, timeRange }
+  const listInput: RequestLogListInput = { method: FILTER_ALL, page, pageSize, result, risk, search, source, statusCode: null, timeRange }
   const logs = api.adminRequestLog.list.useQuery(listInput, {
-    initialData: page === 1 && pageSize === 10 && search === "" && result === "all" && risk === "all" && source === "all" && timeRange === "24h" ? initialLogs : undefined,
+    initialData:
+      page === DEFAULT_PAGE &&
+      pageSize === DEFAULT_PAGE_SIZE &&
+      search === "" &&
+      result === FILTER_ALL &&
+      risk === FILTER_ALL &&
+      source === FILTER_ALL &&
+      timeRange === REQUEST_LOG_DEFAULT_TIME_RANGE
+        ? initialLogs
+        : undefined,
     placeholderData: (previousData) => previousData
   })
   const overview = api.adminRequestLog.getOverview.useQuery(undefined, {
@@ -127,14 +146,14 @@ export const RequestLogsContent = ({
     return () => window.clearInterval(intervalId)
   }, [autoRefreshMs, refreshRequestLogs])
 
-  const resetPage = () => setPage(1)
+  const resetPage = () => setPage(DEFAULT_PAGE)
   const openSheet = (id: string) => {
     setSheetLogId(id)
-    router.replace(`/dashboard/admin/request-logs?logId=${encodeURIComponent(id)}`, { scroll: false })
+    router.replace(`${ROUTE_DASHBOARD_ADMIN_REQUEST_LOGS}?logId=${encodeURIComponent(id)}`, { scroll: false })
   }
   const closeSheet = () => {
     setSheetLogId(null)
-    router.replace("/dashboard/admin/request-logs", { scroll: false })
+    router.replace(ROUTE_DASHBOARD_ADMIN_REQUEST_LOGS, { scroll: false })
   }
 
   return (
@@ -144,7 +163,7 @@ export const RequestLogsContent = ({
           <h1 className="font-bold text-2xl tracking-normal">系统请求日志</h1>
           <p className="mt-2 text-muted-foreground text-xs">审计用户请求、完整 IP、User-Agent 与脱敏请求体快照。</p>
         </div>
-        <Button disabled={exportCsv.isPending} onClick={() => exportCsv.mutate({ method: "all", result, risk, search, source, statusCode: null, timeRange })} type="button">
+        <Button disabled={exportCsv.isPending} onClick={() => exportCsv.mutate({ method: FILTER_ALL, result, risk, search, source, statusCode: null, timeRange })} type="button">
           <Download className="size-4" />
           导出 CSV
         </Button>
@@ -180,12 +199,12 @@ export const RequestLogsContent = ({
             onPageChange={setPage}
             onPageSizeChange={(nextPageSize) => {
               setPageSize(nextPageSize as PageSize)
-              setPage(1)
+              setPage(DEFAULT_PAGE)
             }}
             page={data.page}
             pageCount={data.pageCount}
             pageSize={pageSize}
-            pageSizeOptions={pageSizeOptions}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
             total={data.total}
           />
         </CardContent>

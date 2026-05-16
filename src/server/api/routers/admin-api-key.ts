@@ -2,7 +2,26 @@ import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gte, ilike, isNull, lte, or, sql } from "drizzle-orm"
 import { z } from "zod"
 
-import { PLATFORM_ROLE_SUPPORT } from "@/lib/const"
+import {
+  API_KEY_EXPIRING_SOON_DAYS,
+  API_KEY_OWNER_ORGANIZATION,
+  API_KEY_OWNER_USER,
+  API_KEY_STALE_REQUEST_DAYS,
+  API_KEY_STATUS_DISABLED,
+  API_KEY_STATUS_ENABLED,
+  API_KEY_STATUS_EXPIRED,
+  API_KEY_STATUS_EXPIRING,
+  API_KEY_STATUS_RISKY,
+  type ApiKeyOwnerType,
+  DEFAULT_PAGE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  MAX_PAGE_SIZE,
+  PLATFORM_ROLE_SUPPORT,
+  REQUEST_LOG_RESULT_FAILED,
+  REQUEST_LOG_RESULT_SUCCESS,
+  RISK_LEVEL_LOW
+} from "@/lib/const"
 import { apiKeyStatusSchema, assertCanMutatePlatformApiKey, buildApiKeyRisk, maskApiKey, usageResultSchema } from "@/server/api/lib/api-key"
 import { getApiKeyUsageStats } from "@/server/api/lib/api-key-usage-stats"
 import { adminProcedure, createTRPCRouter } from "@/server/api/trpc"
@@ -14,24 +33,24 @@ const deletedOwnerLabel = "已删除主体"
 
 const getKeyDisplayStatus = ({ enabled, expiresAt }: { enabled: boolean | null; expiresAt: Date | null }) => {
   if (!enabled) {
-    return "disabled" as const
+    return API_KEY_STATUS_DISABLED
   }
 
   if (expiresAt && expiresAt <= new Date()) {
-    return "expired" as const
+    return API_KEY_STATUS_EXPIRED
   }
 
-  if (expiresAt && expiresAt <= new Date(Date.now() + 30 * secondsPerDay * 1000)) {
-    return "expiring" as const
+  if (expiresAt && expiresAt <= new Date(Date.now() + API_KEY_EXPIRING_SOON_DAYS * secondsPerDay * 1000)) {
+    return API_KEY_STATUS_EXPIRING
   }
 
-  return "enabled" as const
+  return API_KEY_STATUS_ENABLED
 }
 
 type ApiKeyOwner = {
   id: string
   label: string
-  type: "user" | "organization"
+  type: ApiKeyOwnerType
 }
 
 type ApiKeySafeRow = {
@@ -69,18 +88,18 @@ const selectAdminSafeApiKey = {
 }
 
 const getOwner = (row: ApiKeySafeRow): ApiKeyOwner => {
-  if (row.configId === "organization") {
+  if (row.configId === API_KEY_OWNER_ORGANIZATION) {
     return {
       id: row.referenceId,
       label: row.organizationName ?? deletedOwnerLabel,
-      type: "organization"
+      type: API_KEY_OWNER_ORGANIZATION
     }
   }
 
   return {
     id: row.referenceId,
     label: row.userName ?? row.userEmail ?? deletedOwnerLabel,
-    type: "user"
+    type: API_KEY_OWNER_USER
   }
 }
 
@@ -134,8 +153,8 @@ export const adminApiKeyRouter = createTRPCRouter({
     const [target] = await ctx.db
       .select(selectAdminSafeApiKey)
       .from(apikey)
-      .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-      .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+      .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+      .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
       .where(eq(apikey.id, input.id))
       .limit(1)
 
@@ -156,8 +175,8 @@ export const adminApiKeyRouter = createTRPCRouter({
     const [target] = await ctx.db
       .select(selectAdminSafeApiKey)
       .from(apikey)
-      .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-      .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+      .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+      .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
       .where(eq(apikey.id, input.id))
       .limit(1)
 
@@ -178,8 +197,8 @@ export const adminApiKeyRouter = createTRPCRouter({
     const [target] = await ctx.db
       .select(selectAdminSafeApiKey)
       .from(apikey)
-      .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-      .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+      .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+      .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
       .where(eq(apikey.id, input.id))
       .limit(1)
 
@@ -198,8 +217,8 @@ export const adminApiKeyRouter = createTRPCRouter({
     const [target] = await ctx.db
       .select(selectAdminSafeApiKey)
       .from(apikey)
-      .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-      .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+      .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+      .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
       .where(eq(apikey.id, input.id))
       .limit(1)
 
@@ -209,7 +228,7 @@ export const adminApiKeyRouter = createTRPCRouter({
 
     const item = await toSafeItem(target)
     const usageSummary = await getUsageSummary(target.id)
-    const since = new Date(Date.now() - 90 * secondsPerDay * 1000)
+    const since = new Date(Date.now() - API_KEY_STALE_REQUEST_DAYS * secondsPerDay * 1000)
     const recentLogs = await ctx.db
       .select({
         createdAt: apiKeyUsageLog.createdAt,
@@ -247,8 +266,8 @@ export const adminApiKeyRouter = createTRPCRouter({
     const [target] = await ctx.db
       .select(selectAdminSafeApiKey)
       .from(apikey)
-      .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-      .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+      .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+      .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
       .where(eq(apikey.id, input.id))
       .limit(1)
 
@@ -262,12 +281,12 @@ export const adminApiKeyRouter = createTRPCRouter({
   getOverview: adminProcedure.query(async ({ ctx }) => {
     const now = new Date()
     const recentSince = new Date(now.getTime() - secondsPerDay * 1000)
-    const expiringBefore = new Date(now.getTime() + 30 * secondsPerDay * 1000)
+    const expiringBefore = new Date(now.getTime() + API_KEY_EXPIRING_SOON_DAYS * secondsPerDay * 1000)
     const rows = await ctx.db
       .select(selectAdminSafeApiKey)
       .from(apikey)
-      .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-      .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+      .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+      .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
       .orderBy(desc(apikey.createdAt))
     const items = await Promise.all(rows.map(toSafeItem))
     const [recentRow] = await ctx.db
@@ -280,7 +299,7 @@ export const adminApiKeyRouter = createTRPCRouter({
       enabled: rows.filter((row) => row.enabled === true && (!row.expiresAt || row.expiresAt > now)).length,
       expiring: rows.filter((row) => row.enabled === true && row.expiresAt && row.expiresAt >= now && row.expiresAt <= expiringBefore).length,
       recent24h: recentRow?.value ?? 0,
-      risky: items.filter((item) => item.risk.level !== "low").length,
+      risky: items.filter((item) => item.risk.level !== RISK_LEVEL_LOW).length,
       total: rows.length
     }
   }),
@@ -288,15 +307,15 @@ export const adminApiKeyRouter = createTRPCRouter({
   list: adminProcedure
     .input(
       z.object({
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(50).default(20),
+        page: z.number().int().min(1).default(DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DENSE_PAGE_SIZE),
         search: z.string().default(""),
-        status: apiKeyStatusSchema.default("all")
+        status: apiKeyStatusSchema.default(FILTER_ALL)
       })
     )
     .query(async ({ ctx, input }) => {
       const now = new Date()
-      const expiringBefore = new Date(now.getTime() + 30 * secondsPerDay * 1000)
+      const expiringBefore = new Date(now.getTime() + API_KEY_EXPIRING_SOON_DAYS * secondsPerDay * 1000)
       const trimmedSearch = input.search.trim()
       const searchValue = `%${trimmedSearch}%`
       const baseFilters = and(
@@ -310,20 +329,20 @@ export const adminApiKeyRouter = createTRPCRouter({
               ilike(organization.name, searchValue)
             )
           : undefined,
-        input.status === "enabled" ? and(eq(apikey.enabled, true), or(sql`${apikey.expiresAt} is null`, sql`${apikey.expiresAt} > ${now}`)) : undefined,
-        input.status === "disabled" ? or(eq(apikey.enabled, false), isNull(apikey.enabled)) : undefined,
-        input.status === "expiring" ? and(eq(apikey.enabled, true), gte(apikey.expiresAt, now), lte(apikey.expiresAt, expiringBefore)) : undefined
+        input.status === API_KEY_STATUS_ENABLED ? and(eq(apikey.enabled, true), or(sql`${apikey.expiresAt} is null`, sql`${apikey.expiresAt} > ${now}`)) : undefined,
+        input.status === API_KEY_STATUS_DISABLED ? or(eq(apikey.enabled, false), isNull(apikey.enabled)) : undefined,
+        input.status === API_KEY_STATUS_EXPIRING ? and(eq(apikey.enabled, true), gte(apikey.expiresAt, now), lte(apikey.expiresAt, expiringBefore)) : undefined
       )
       const query = ctx.db
         .select(selectAdminSafeApiKey)
         .from(apikey)
-        .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-        .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+        .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+        .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
 
-      if (input.status === "risky") {
+      if (input.status === API_KEY_STATUS_RISKY) {
         const candidateRows = await query.where(baseFilters).orderBy(desc(apikey.createdAt))
         const candidateItems = await Promise.all(candidateRows.map(toSafeItem))
-        const riskyItems = candidateItems.filter((item) => item.risk.level !== "low")
+        const riskyItems = candidateItems.filter((item) => item.risk.level !== RISK_LEVEL_LOW)
         const total = riskyItems.length
         const canMutate = ctx.session.user.role !== PLATFORM_ROLE_SUPPORT
 
@@ -338,8 +357,8 @@ export const adminApiKeyRouter = createTRPCRouter({
       const [totalRow] = await ctx.db
         .select({ value: sql<number>`count(*)::int` })
         .from(apikey)
-        .leftJoin(user, and(eq(apikey.configId, "user"), eq(user.id, apikey.referenceId)))
-        .leftJoin(organization, and(eq(apikey.configId, "organization"), eq(organization.id, apikey.referenceId)))
+        .leftJoin(user, and(eq(apikey.configId, API_KEY_OWNER_USER), eq(user.id, apikey.referenceId)))
+        .leftJoin(organization, and(eq(apikey.configId, API_KEY_OWNER_ORGANIZATION), eq(organization.id, apikey.referenceId)))
         .where(baseFilters)
       const rows = await query
         .where(baseFilters)
@@ -362,18 +381,18 @@ export const adminApiKeyRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().min(1),
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(50).default(20),
-        result: usageResultSchema.default("all")
+        page: z.number().int().min(1).default(DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DENSE_PAGE_SIZE),
+        result: usageResultSchema.default(FILTER_ALL)
       })
     )
     .query(async ({ ctx, input }) => {
-      const since = new Date(Date.now() - 90 * secondsPerDay * 1000)
+      const since = new Date(Date.now() - API_KEY_STALE_REQUEST_DAYS * secondsPerDay * 1000)
       const filters = and(
         eq(apiKeyUsageLog.apiKeyId, input.id),
         gte(apiKeyUsageLog.createdAt, since),
-        input.result === "success" ? eq(apiKeyUsageLog.success, true) : undefined,
-        input.result === "failed" ? eq(apiKeyUsageLog.success, false) : undefined
+        input.result === REQUEST_LOG_RESULT_SUCCESS ? eq(apiKeyUsageLog.success, true) : undefined,
+        input.result === REQUEST_LOG_RESULT_FAILED ? eq(apiKeyUsageLog.success, false) : undefined
       )
       const [totalRow] = await ctx.db
         .select({ value: sql<number>`count(*)::int` })

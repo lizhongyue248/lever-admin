@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DEFAULT_PAGE, DENSE_PAGE_SIZE, FILTER_ALL, ROUTE_DASHBOARD_ADMIN_USERS, USER_STATUS_ACTIVE, USER_STATUS_BANNED } from "@/lib/const"
 import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 import { AdminUserDetailContent } from "./admin-user-detail-content"
 import { BanUserDialog, CreateUserDialog, RemoveUserDialog, SetPasswordDialog, SetRoleDialog, UnbanUserDialog } from "./admin-user-dialogs"
@@ -46,10 +47,10 @@ export const AdminUsersContent = ({
   selectedUserId: string | null
 }) => {
   const router = useRouter()
-  const [page, setPage] = useState(1)
-  const [role, setRole] = useState<RoleFilter>("all")
+  const [page, setPage] = useState(DEFAULT_PAGE)
+  const [role, setRole] = useState<RoleFilter>(FILTER_ALL)
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<StatusFilter>("all")
+  const [status, setStatus] = useState<StatusFilter>(FILTER_ALL)
   const [drawerUserId, setDrawerUserId] = useState<string | null>(selectedUserId)
   const [isDesktop, setIsDesktop] = useState(false)
 
@@ -64,9 +65,9 @@ export const AdminUsersContent = ({
   }, [])
 
   const users = api.adminUser.list.useQuery(
-    { page, pageSize: 20, role, search, status },
+    { page, pageSize: DENSE_PAGE_SIZE, role, search, status },
     {
-      initialData: page === 1 && role === "all" && search === "" && status === "all" ? initialUsers : undefined,
+      initialData: page === DEFAULT_PAGE && role === FILTER_ALL && search === "" && status === FILTER_ALL ? initialUsers : undefined,
       placeholderData: (previousData) => previousData
     }
   )
@@ -81,12 +82,12 @@ export const AdminUsersContent = ({
 
   const openDrawer = (userId: string) => {
     setDrawerUserId(userId)
-    router.replace(`/dashboard/admin/users?userId=${encodeURIComponent(userId)}`, { scroll: false })
+    router.replace(`${ROUTE_DASHBOARD_ADMIN_USERS}?userId=${encodeURIComponent(userId)}`, { scroll: false })
   }
 
   const closeDrawer = () => {
     setDrawerUserId(null)
-    router.replace("/dashboard/admin/users", { scroll: false })
+    router.replace(ROUTE_DASHBOARD_ADMIN_USERS, { scroll: false })
   }
 
   return (
@@ -108,7 +109,7 @@ export const AdminUsersContent = ({
                 className="pl-9"
                 onChange={(event) => {
                   setSearch(event.target.value)
-                  setPage(1)
+                  setPage(DEFAULT_PAGE)
                 }}
                 placeholder="搜索用户名称或邮箱"
                 value={search}
@@ -117,7 +118,7 @@ export const AdminUsersContent = ({
             <Select
               onValueChange={(value) => {
                 setRole(value as RoleFilter)
-                setPage(1)
+                setPage(DEFAULT_PAGE)
               }}
               value={role}
             >
@@ -125,7 +126,7 @@ export const AdminUsersContent = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部角色</SelectItem>
+                <SelectItem value={FILTER_ALL}>全部角色</SelectItem>
                 <SelectItem value="user">user</SelectItem>
                 <SelectItem value="support">support</SelectItem>
                 <SelectItem value="admin">admin</SelectItem>
@@ -135,7 +136,7 @@ export const AdminUsersContent = ({
             <Select
               onValueChange={(value) => {
                 setStatus(value as StatusFilter)
-                setPage(1)
+                setPage(DEFAULT_PAGE)
               }}
               value={status}
             >
@@ -143,9 +144,9 @@ export const AdminUsersContent = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="active">正常</SelectItem>
-                <SelectItem value="banned">已封禁</SelectItem>
+                <SelectItem value={FILTER_ALL}>全部状态</SelectItem>
+                <SelectItem value={USER_STATUS_ACTIVE}>正常</SelectItem>
+                <SelectItem value={USER_STATUS_BANNED}>已封禁</SelectItem>
               </SelectContent>
             </Select>
             <CreateUserDialog />
@@ -165,7 +166,7 @@ export const AdminUsersContent = ({
             onPageChange={setPage}
             page={data.page}
             pageCount={data.pageCount}
-            pageSize={20}
+            pageSize={DENSE_PAGE_SIZE}
             total={data.total}
           />
         </CardContent>
@@ -188,7 +189,7 @@ export const AdminUsersContent = ({
             <div className="flex items-center gap-2">
               {drawerUserId ? (
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/dashboard/admin/users/${drawerUserId}`}>
+                  <Link href={`${ROUTE_DASHBOARD_ADMIN_USERS}/${drawerUserId}`}>
                     <ExternalLink className="size-4" />
                     完整页
                   </Link>
@@ -273,7 +274,9 @@ const AdminUsersTable = ({ items, onOpen }: { items: UserRow[]; onOpen: (userId:
         size: 120
       },
       {
-        cell: ({ row }) => <Badge variant={row.original.status === "banned" ? "destructive" : "secondary"}>{row.original.status === "banned" ? "已封禁" : "正常"}</Badge>,
+        cell: ({ row }) => (
+          <Badge variant={row.original.status === USER_STATUS_BANNED ? "destructive" : "secondary"}>{row.original.status === USER_STATUS_BANNED ? "已封禁" : "正常"}</Badge>
+        ),
         header: "状态",
         size: 120
       },
@@ -310,13 +313,13 @@ const AdminUsersTable = ({ items, onOpen }: { items: UserRow[]; onOpen: (userId:
       </div>
       <div className="grid gap-3 lg:hidden">
         {items.map((item) => (
-          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-user-card-${item.id}`} href={`/dashboard/admin/users/${item.id}`} key={item.id}>
+          <Link className="rounded-lg border bg-card p-4 shadow-sm" data-testid={`admin-user-card-${item.id}`} href={`${ROUTE_DASHBOARD_ADMIN_USERS}/${item.id}`} key={item.id}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold">{item.name}</div>
                 <div className="text-muted-foreground text-xs">{item.email}</div>
               </div>
-              <Badge variant={item.status === "banned" ? "destructive" : "secondary"}>{item.status === "banned" ? "已封禁" : "正常"}</Badge>
+              <Badge variant={item.status === USER_STATUS_BANNED ? "destructive" : "secondary"}>{item.status === USER_STATUS_BANNED ? "已封禁" : "正常"}</Badge>
             </div>
             <div className="mt-3 text-muted-foreground text-xs">
               {roleLabel(item.role)} · {item.emailVerified ? "已验证" : "未验证"}
@@ -351,7 +354,7 @@ const AdminUserRowActions = ({ user }: { user: UserRow }) => {
           <DropdownMenuItem onSelect={() => setActiveAction("role")}>设置角色</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setActiveAction("password")}>重置密码</DropdownMenuItem>
           <DropdownMenuSeparator />
-          {user.status === "banned" ? (
+          {user.status === USER_STATUS_BANNED ? (
             <DropdownMenuItem asChild>
               <UnbanUserDialog userId={user.id} />
             </DropdownMenuItem>

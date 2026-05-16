@@ -1,22 +1,21 @@
 import { env } from "@/env"
-
-export type OAuthProviderId = "github" | "google"
+import { type AuthOAuthProviderId, OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE } from "@/lib/const"
 
 export type OAuthProviderConfig = {
   configured: boolean
-  id: OAuthProviderId
+  id: AuthOAuthProviderId
   label: string
 }
 
 export const getOAuthProviderConfigs = (): OAuthProviderConfig[] => [
   {
     configured: Boolean(env.BETTER_AUTH_GITHUB_CLIENT_ID && env.BETTER_AUTH_GITHUB_CLIENT_SECRET),
-    id: "github",
+    id: OAUTH_PROVIDER_GITHUB,
     label: "GitHub"
   },
   {
     configured: false,
-    id: "google",
+    id: OAUTH_PROVIDER_GOOGLE,
     label: "Google"
   }
 ]

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { DEFAULT_PAGE, PAGE_SIZE_OPTIONS } from "@/lib/const"
 import { cn } from "@/lib/utils"
 
 type DataPaginationProps = {
@@ -32,23 +33,26 @@ export const DataPagination = ({
   page,
   pageCount,
   pageSize,
-  pageSizeOptions = [10, 20, 50],
+  pageSizeOptions = PAGE_SIZE_OPTIONS,
   total
 }: DataPaginationProps) => {
-  const normalizedPageCount = Math.max(pageCount, 1)
-  const [pageInput, setPageInput] = useState(page.toString())
-  const canPrevious = !disabled && page > 1
-  const canNext = !disabled && page < normalizedPageCount
+  const normalizedItemCount = Number.isFinite(itemCount) ? itemCount : 0
+  const normalizedPageCount = Number.isFinite(pageCount) ? Math.max(pageCount, 1) : 1
+  const normalizedPage = Number.isFinite(page) ? page : DEFAULT_PAGE
+  const normalizedTotal = Number.isFinite(total) ? total : normalizedItemCount
+  const [pageInput, setPageInput] = useState(normalizedPage.toString())
+  const canPrevious = !disabled && normalizedPage > 1
+  const canNext = !disabled && normalizedPage < normalizedPageCount
 
   useEffect(() => {
-    setPageInput(page.toString())
-  }, [page])
+    setPageInput(normalizedPage.toString())
+  }, [normalizedPage])
 
   const submitPage = () => {
     const parsedPage = Number.parseInt(pageInput, 10)
 
     if (Number.isNaN(parsedPage)) {
-      setPageInput(page.toString())
+      setPageInput(normalizedPage.toString())
       return
     }
 
@@ -59,7 +63,7 @@ export const DataPagination = ({
 
   return (
     <div className={cn("flex flex-col gap-3 text-muted-foreground text-xs sm:flex-row sm:items-center sm:justify-between", className)}>
-      <span>{`显示 ${itemCount} / ${total}`}</span>
+      <span>{`显示 ${normalizedItemCount} / ${normalizedTotal}`}</span>
       <div className="flex flex-wrap items-center gap-2">
         {pageSize && onPageSizeChange ? (
           <DropdownMenu>
@@ -82,7 +86,7 @@ export const DataPagination = ({
         <Button aria-label="首页" disabled={!canPrevious} onClick={() => onPageChange(1)} size="icon-sm" type="button" variant="outline">
           <ChevronsLeft className="size-4" />
         </Button>
-        <Button aria-label="上一页" disabled={!canPrevious} onClick={() => onPageChange(page - 1)} size="icon-sm" type="button" variant="outline">
+        <Button aria-label="上一页" disabled={!canPrevious} onClick={() => onPageChange(normalizedPage - 1)} size="icon-sm" type="button" variant="outline">
           <ChevronLeft className="size-4" />
         </Button>
         <div className="flex items-center gap-2">
@@ -104,7 +108,7 @@ export const DataPagination = ({
           />
           <span>{`/ ${normalizedPageCount}`}</span>
         </div>
-        <Button aria-label="下一页" disabled={!canNext} onClick={() => onPageChange(page + 1)} size="icon-sm" type="button" variant="outline">
+        <Button aria-label="下一页" disabled={!canNext} onClick={() => onPageChange(normalizedPage + 1)} size="icon-sm" type="button" variant="outline">
           <ChevronRight className="size-4" />
         </Button>
         <Button aria-label="末页" disabled={!canNext} onClick={() => onPageChange(normalizedPageCount)} size="icon-sm" type="button" variant="outline">

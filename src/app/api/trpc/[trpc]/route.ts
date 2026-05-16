@@ -2,6 +2,7 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch"
 import type { NextRequest } from "next/server"
 
 import { env } from "@/env"
+import { REQUEST_LOG_SOURCE_TRPC } from "@/lib/const"
 import { appRouter } from "@/server/api/root"
 import { createTRPCContext } from "@/server/api/trpc"
 import { recordRequestLogSafely } from "@/server/service/request-logs"
@@ -96,7 +97,7 @@ const handler = async (req: NextRequest) => {
       rawBodyText: bodyText,
       requestId: req.headers.get("x-request-id"),
       routeName,
-      source: "trpc",
+      source: REQUEST_LOG_SOURCE_TRPC,
       statusCode,
       success: response.ok,
       user: context.session?.user
@@ -124,7 +125,7 @@ const handler = async (req: NextRequest) => {
       rawBodyText: bodyText,
       requestId: req.headers.get("x-request-id"),
       routeName,
-      source: "trpc",
+      source: REQUEST_LOG_SOURCE_TRPC,
       statusCode: 500,
       success: false,
       user: context.session?.user

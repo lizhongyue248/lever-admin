@@ -1,14 +1,14 @@
 import { and, eq, gte, sql } from "drizzle-orm"
 
+import { API_KEY_USAGE_RECENT_DAYS, type ApiKeyOwnerType } from "@/lib/const"
 import { db } from "@/server/db"
 import { apiKeyUsageLog } from "@/server/db/schema"
 
 const secondsPerDay = 24 * 60 * 60
-const recentDays = 7
 
 type UsageStatsScope = {
   apiKeyId: string
-  configId?: "organization" | "user"
+  configId?: ApiKeyOwnerType
   referenceId?: string
 }
 
@@ -45,10 +45,10 @@ export type ApiKeyUsageStats = {
 const formatBucketDate = (date: Date) => date.toISOString().slice(0, 10)
 
 export const buildRecentTrendBuckets = (now: Date) =>
-  Array.from({ length: recentDays }, (_, index) => {
+  Array.from({ length: API_KEY_USAGE_RECENT_DAYS }, (_, index) => {
     const date = new Date(now)
     date.setUTCHours(0, 0, 0, 0)
-    date.setUTCDate(date.getUTCDate() - (recentDays - 1 - index))
+    date.setUTCDate(date.getUTCDate() - (API_KEY_USAGE_RECENT_DAYS - 1 - index))
 
     return formatBucketDate(date)
   })
@@ -87,7 +87,7 @@ const buildFilters = ({ apiKeyId, configId, referenceId }: UsageStatsScope, sinc
 export const getApiKeyUsageStats = async (scope: UsageStatsScope): Promise<ApiKeyUsageStats> => {
   const now = new Date()
   const since24h = new Date(now.getTime() - secondsPerDay * 1000)
-  const since7d = new Date(now.getTime() - recentDays * secondsPerDay * 1000)
+  const since7d = new Date(now.getTime() - API_KEY_USAGE_RECENT_DAYS * secondsPerDay * 1000)
   const emptyStats = emptyApiKeyUsageStats(now)
 
   try {

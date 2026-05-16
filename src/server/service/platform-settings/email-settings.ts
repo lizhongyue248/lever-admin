@@ -5,11 +5,27 @@ import { eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 
 import { env } from "@/env"
+import {
+  EMAIL_PROVIDER_CONSOLE,
+  EMAIL_PROVIDER_RESEND,
+  EMAIL_PROVIDER_SMTP,
+  EMAIL_PROVIDERS,
+  EMAIL_SETTING_KEY_FROM,
+  EMAIL_SETTING_KEY_PROVIDER,
+  EMAIL_SETTING_KEY_RESEND_API_KEY,
+  EMAIL_SETTING_KEY_SMTP_HOST,
+  EMAIL_SETTING_KEY_SMTP_PASSWORD,
+  EMAIL_SETTING_KEY_SMTP_PORT,
+  EMAIL_SETTING_KEY_SMTP_SECURE,
+  EMAIL_SETTING_KEY_SMTP_USER,
+  EMAIL_SETTING_KEYS,
+  EMAIL_SETTING_SENSITIVE_KEYS
+} from "@/lib/const"
 import type { db as appDb } from "@/server/db"
 import { platformSetting } from "@/server/db/schema"
 import { decryptSecret, encryptSecret } from "./secret-codec"
 
-export const emailProviderSchema = z.enum(["console", "resend", "smtp"])
+export const emailProviderSchema = z.enum(EMAIL_PROVIDERS)
 
 export const updateEmailSettingsSchema = z.object({
   clearResendApiKey: z.boolean().default(false),
@@ -32,18 +48,18 @@ export type UpdateEmailSettingsInput = z.infer<typeof updateEmailSettingsSchema>
 export type TestEmailInput = z.infer<typeof testEmailSchema>
 
 const keys = {
-  from: "email.from",
-  provider: "email.provider",
-  resendApiKey: "email.resend.apiKey",
-  smtpHost: "email.smtp.host",
-  smtpPassword: "email.smtp.password",
-  smtpPort: "email.smtp.port",
-  smtpSecure: "email.smtp.secure",
-  smtpUser: "email.smtp.user"
+  from: EMAIL_SETTING_KEY_FROM,
+  provider: EMAIL_SETTING_KEY_PROVIDER,
+  resendApiKey: EMAIL_SETTING_KEY_RESEND_API_KEY,
+  smtpHost: EMAIL_SETTING_KEY_SMTP_HOST,
+  smtpPassword: EMAIL_SETTING_KEY_SMTP_PASSWORD,
+  smtpPort: EMAIL_SETTING_KEY_SMTP_PORT,
+  smtpSecure: EMAIL_SETTING_KEY_SMTP_SECURE,
+  smtpUser: EMAIL_SETTING_KEY_SMTP_USER
 } as const
 
-const sensitiveKeys = new Set<string>([keys.resendApiKey, keys.smtpPassword])
-const allowedKeys = Object.values(keys)
+const sensitiveKeys = new Set<string>(EMAIL_SETTING_SENSITIVE_KEYS)
+const allowedKeys = EMAIL_SETTING_KEYS
 
 type PlatformSettingsDb = typeof appDb
 type PlatformSettingsTransaction = Parameters<Parameters<PlatformSettingsDb["transaction"]>[0]>[0]
@@ -132,15 +148,15 @@ export const getEffectiveEmailProviderConfig = async (db: PlatformSettingsDb) =>
 }
 
 const assertEmailConfigComplete = (input: UpdateEmailSettingsInput, existing: Awaited<ReturnType<typeof getEmailSettings>>) => {
-  if (env.NODE_ENV === "production" && input.provider === "console") {
+  if (env.NODE_ENV === "production" && input.provider === EMAIL_PROVIDER_CONSOLE) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "生产环境不能启用 Console 邮件服务。" })
   }
 
-  if (input.provider === "resend" && !input.resendApiKey && (!existing.resendApiKeyConfigured || input.clearResendApiKey)) {
+  if (input.provider === EMAIL_PROVIDER_RESEND && !input.resendApiKey && (!existing.resendApiKeyConfigured || input.clearResendApiKey)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Resend 模式需要配置 API Key。" })
   }
 
-  if (input.provider === "smtp") {
+  if (input.provider === EMAIL_PROVIDER_SMTP) {
     if (!input.smtpHost || !input.smtpUser) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "SMTP 模式需要配置 Host 和用户名。" })
     }
@@ -185,11 +201,11 @@ export const updateEmailSettings = async (db: PlatformSettingsDb, input: UpdateE
     await upsertSetting(tx, keys.smtpPort, String(input.smtpPort), updatedBy)
     await upsertSetting(tx, keys.smtpSecure, String(input.smtpSecure), updatedBy)
 
-    if (input.provider === "resend" && input.resendApiKey) {
+    if (input.provider === EMAIL_PROVIDER_RESEND && input.resendApiKey) {
       await upsertSetting(tx, keys.resendApiKey, input.resendApiKey, updatedBy)
     }
 
-    if (input.provider === "smtp") {
+    if (input.provider === EMAIL_PROVIDER_SMTP) {
       await upsertSetting(tx, keys.smtpHost, input.smtpHost ?? "", updatedBy)
       await upsertSetting(tx, keys.smtpUser, input.smtpUser ?? "", updatedBy)
       if (input.smtpPassword) {

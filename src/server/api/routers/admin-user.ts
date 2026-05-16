@@ -3,14 +3,27 @@ import { and, desc, eq, ilike, or, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { z } from "zod"
 
-import { PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN, PLATFORM_ROLE_SUPPORT, PLATFORM_ROLE_USER } from "@/lib/const"
+import {
+  DEFAULT_PAGE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  MAX_PAGE_SIZE,
+  PLATFORM_ADMIN_ROLES,
+  PLATFORM_ROLE_ADMIN,
+  PLATFORM_ROLE_SUPER_ADMIN,
+  PLATFORM_ROLE_SUPPORT,
+  PLATFORM_ROLE_USER,
+  USER_STATUS_ACTIVE,
+  USER_STATUS_BANNED,
+  USER_STATUS_FILTERS
+} from "@/lib/const"
 import { adminProcedure, createTRPCRouter } from "@/server/api/trpc"
 import { auth } from "@/server/better-auth"
 import { apikey, member, organization, session, user } from "@/server/db/schema"
 
 const platformRoleSchema = z.enum([PLATFORM_ROLE_USER, PLATFORM_ROLE_SUPPORT, PLATFORM_ROLE_ADMIN, PLATFORM_ROLE_SUPER_ADMIN])
-const roleFilterSchema = platformRoleSchema.or(z.literal("all"))
-const userStatusSchema = z.enum(["all", "active", "banned"])
+const roleFilterSchema = platformRoleSchema.or(z.literal(FILTER_ALL))
+const userStatusSchema = z.enum(USER_STATUS_FILTERS)
 
 const assertCanManageTarget = ({
   actorRole,
@@ -116,7 +129,7 @@ export const adminUserRouter = createTRPCRouter({
       apiKeys,
       organizations,
       role: target.role ?? PLATFORM_ROLE_USER,
-      status: target.banned ? "banned" : "active"
+      status: target.banned ? USER_STATUS_BANNED : USER_STATUS_ACTIVE
     }
   }),
 
@@ -138,11 +151,11 @@ export const adminUserRouter = createTRPCRouter({
   list: adminProcedure
     .input(
       z.object({
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(50).default(20),
-        role: roleFilterSchema.default("all"),
+        page: z.number().int().min(1).default(DEFAULT_PAGE),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DENSE_PAGE_SIZE),
+        role: roleFilterSchema.default(FILTER_ALL),
         search: z.string().default(""),
-        status: userStatusSchema.default("all")
+        status: userStatusSchema.default(FILTER_ALL)
       })
     )
     .query(async ({ ctx, input }) => {
@@ -150,8 +163,8 @@ export const adminUserRouter = createTRPCRouter({
       const searchValue = `%${trimmedSearch}%`
       const filters = and(
         trimmedSearch ? or(ilike(user.name, searchValue), ilike(user.email, searchValue)) : undefined,
-        input.role === "all" ? undefined : eq(user.role, input.role),
-        input.status === "all" ? undefined : eq(user.banned, input.status === "banned")
+        input.role === FILTER_ALL ? undefined : eq(user.role, input.role),
+        input.status === FILTER_ALL ? undefined : eq(user.banned, input.status === USER_STATUS_BANNED)
       )
 
       const [totalRow] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(user).where(filters)
@@ -181,7 +194,7 @@ export const adminUserRouter = createTRPCRouter({
       const total = totalRow?.value ?? 0
 
       return {
-        items: rows.map((row) => ({ ...row, role: row.role ?? PLATFORM_ROLE_USER, status: row.banned ? "banned" : "active" })),
+        items: rows.map((row) => ({ ...row, role: row.role ?? PLATFORM_ROLE_USER, status: row.banned ? USER_STATUS_BANNED : USER_STATUS_ACTIVE })),
         page: input.page,
         pageCount: Math.max(1, Math.ceil(total / input.pageSize)),
         total

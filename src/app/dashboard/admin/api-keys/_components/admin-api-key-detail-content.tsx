@@ -28,6 +28,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  API_KEY_DISPLAY_STATUSES,
+  API_KEY_OWNER_ORGANIZATION,
+  API_KEY_OWNER_USER,
+  API_KEY_STATUS_DISABLED,
+  API_KEY_STATUS_ENABLED,
+  API_KEY_STATUS_EXPIRED,
+  API_KEY_STATUS_EXPIRING,
+  type ApiKeyDisplayStatus,
+  DEFAULT_PAGE,
+  DENSE_PAGE_SIZE,
+  FILTER_ALL,
+  RISK_LEVEL_HIGH,
+  RISK_LEVEL_LOW,
+  RISK_LEVEL_MEDIUM,
+  RISK_LEVELS,
+  type RiskSeverity,
+  ROUTE_DASHBOARD_ADMIN_API_KEYS,
+  ROUTE_DASHBOARD_ADMIN_ORGS
+} from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { DeleteAdminApiKeyDialog, DisableAdminApiKeyDialog, EnableAdminApiKeyDialog } from "./admin-api-key-dialogs"
 
@@ -37,19 +57,24 @@ type AdminApiKeyAction = "delete" | "disable" | "enable" | null
 type AdminApiKeyStatus = AdminApiKeyDetail["status"]
 type AdminApiKeyRisk = AdminApiKeyDetail["risk"]
 type LogItem = AdminApiKeyDetail["recentLogs"][number]
+type StatusBadgeConfig = { label: string; variant: "default" | "destructive" | "outline" | "secondary"; icon: LucideIcon }
 
-const statusConfig: Record<AdminApiKeyStatus, { label: string; variant: "default" | "destructive" | "outline" | "secondary"; icon: LucideIcon }> = {
-  disabled: { icon: ShieldAlert, label: "已禁用", variant: "outline" },
-  enabled: { icon: ShieldCheck, label: "启用中", variant: "secondary" },
-  expired: { icon: ShieldAlert, label: "已过期", variant: "destructive" },
-  expiring: { icon: CalendarClock, label: "即将过期", variant: "outline" }
+const enabledStatusConfig: StatusBadgeConfig = { icon: ShieldCheck, label: "启用中", variant: "secondary" }
+const statusConfig: Record<ApiKeyDisplayStatus, StatusBadgeConfig> = {
+  [API_KEY_STATUS_DISABLED]: { icon: ShieldAlert, label: "已禁用", variant: "outline" },
+  [API_KEY_STATUS_ENABLED]: enabledStatusConfig,
+  [API_KEY_STATUS_EXPIRED]: { icon: ShieldAlert, label: "已过期", variant: "destructive" },
+  [API_KEY_STATUS_EXPIRING]: { icon: CalendarClock, label: "即将过期", variant: "outline" }
 }
 
-const riskConfig: Record<AdminApiKeyRisk["level"], { label: string; variant: "default" | "destructive" | "outline" | "secondary"; icon: LucideIcon }> = {
-  high: { icon: ShieldAlert, label: "高风险", variant: "destructive" },
-  low: { icon: ShieldCheck, label: "低风险", variant: "secondary" },
-  medium: { icon: ShieldAlert, label: "中风险", variant: "outline" }
+const riskConfig: Record<RiskSeverity, { label: string; variant: "default" | "destructive" | "outline" | "secondary"; icon: LucideIcon }> = {
+  [RISK_LEVEL_HIGH]: { icon: ShieldAlert, label: "高风险", variant: "destructive" },
+  [RISK_LEVEL_LOW]: { icon: ShieldCheck, label: "低风险", variant: "secondary" },
+  [RISK_LEVEL_MEDIUM]: { icon: ShieldAlert, label: "中风险", variant: "outline" }
 }
+
+const isApiKeyDisplayStatus = (status: string): status is ApiKeyDisplayStatus => API_KEY_DISPLAY_STATUSES.some((item) => item === status)
+const isRiskSeverity = (level: string): level is RiskSeverity => RISK_LEVELS.some((item) => item === level)
 
 const formatDateTime = (date: Date | null) => {
   if (!date) {
@@ -67,11 +92,11 @@ const formatDateTime = (date: Date | null) => {
 
 const formatDuration = (value: number | null) => (value === null ? "-" : `${value}ms`)
 const formatPercent = (value: number) => `${value.toFixed(1)}%`
-const ownerTypeLabel = (type: AdminApiKeyDetail["owner"]["type"]) => (type === "organization" ? "组织" : "用户")
-const ownerHref = (owner: AdminApiKeyDetail["owner"]) => (owner.type === "user" ? `/dashboard/admin/users/${owner.id}` : "/dashboard/admin/orgs")
+const ownerTypeLabel = (type: AdminApiKeyDetail["owner"]["type"]) => (type === API_KEY_OWNER_ORGANIZATION ? "组织" : "用户")
+const ownerHref = (owner: AdminApiKeyDetail["owner"]) => (owner.type === API_KEY_OWNER_USER ? `/dashboard/admin/users/${owner.id}` : ROUTE_DASHBOARD_ADMIN_ORGS)
 
 export const AdminApiKeyStatusBadge = ({ status }: { status: AdminApiKeyStatus }) => {
-  const config = statusConfig[status]
+  const config = isApiKeyDisplayStatus(status) ? (statusConfig[status] ?? enabledStatusConfig) : enabledStatusConfig
   const Icon = config.icon
 
   return (
@@ -83,7 +108,7 @@ export const AdminApiKeyStatusBadge = ({ status }: { status: AdminApiKeyStatus }
 }
 
 export const AdminApiKeyRiskBadge = ({ risk }: { risk: AdminApiKeyRisk }) => {
-  const config = riskConfig[risk.level]
+  const config = riskConfig[isRiskSeverity(risk.level) ? risk.level : RISK_LEVEL_LOW]
   const Icon = config.icon
 
   return (
@@ -95,7 +120,7 @@ export const AdminApiKeyRiskBadge = ({ risk }: { risk: AdminApiKeyRisk }) => {
 }
 
 const AdminCompactSummary = ({ apiKey }: { apiKey: AdminApiKeyDetail }) => {
-  const OwnerIcon = apiKey.owner.type === "organization" ? Building2 : UserRound
+  const OwnerIcon = apiKey.owner.type === API_KEY_OWNER_ORGANIZATION ? Building2 : UserRound
 
   return (
     <Card className="rounded-lg shadow-sm" data-testid="admin-api-key-compact-summary">
@@ -155,7 +180,7 @@ export const AdminApiKeyDetailContent = ({ apiKey, mode, onDeleted }: { apiKey: 
   const [activeAction, setActiveAction] = useState<AdminApiKeyAction>(null)
   const [activeTab, setActiveTab] = useState("logs")
   const usageLogs = api.adminApiKey.listUsageLogs.useQuery(
-    { id: apiKey.id, page: 1, pageSize: 20, result: "all" },
+    { id: apiKey.id, page: DEFAULT_PAGE, pageSize: DENSE_PAGE_SIZE, result: FILTER_ALL },
     {
       enabled: mode === "page",
       placeholderData: (previousData) => previousData
@@ -176,7 +201,7 @@ export const AdminApiKeyDetailContent = ({ apiKey, mode, onDeleted }: { apiKey: 
   }
   const handleDeleteSuccess = () => {
     if (mode === "page") {
-      router.push("/dashboard/admin/api-keys")
+      router.push(ROUTE_DASHBOARD_ADMIN_API_KEYS)
       router.refresh()
       return
     }

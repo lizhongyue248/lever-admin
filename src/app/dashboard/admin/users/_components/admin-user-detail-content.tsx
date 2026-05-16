@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { USER_STATUS_BANNED } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { BanUserDialog, RemoveUserDialog, RevokeAllSessionsDialog, RevokeSessionDialog, SetPasswordDialog, SetRoleDialog, UnbanUserDialog } from "./admin-user-dialogs"
 
@@ -24,7 +25,7 @@ export const AdminUserDetailContent = ({ mode, user }: { mode: "drawer" | "page"
             <p className="text-muted-foreground text-xs">{user.email}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge variant="secondary">{user.role}</Badge>
-              <Badge variant={user.status === "banned" ? "destructive" : "secondary"}>{user.status === "banned" ? "已封禁" : "正常"}</Badge>
+              <Badge variant={user.status === USER_STATUS_BANNED ? "destructive" : "secondary"}>{user.status === USER_STATUS_BANNED ? "已封禁" : "正常"}</Badge>
               <Badge variant="outline">{user.emailVerified ? "已验证" : "未验证"}</Badge>
             </div>
           </div>
@@ -48,7 +49,7 @@ export const AdminUserDetailContent = ({ mode, user }: { mode: "drawer" | "page"
         <div className="grid gap-2">
           <SetRoleDialog currentRole={user.role} userId={user.id} />
           <SetPasswordDialog userId={user.id} />
-          {user.status === "banned" ? <UnbanUserDialog userId={user.id} /> : <BanUserDialog userId={user.id} userName={user.name} />}
+          {user.status === USER_STATUS_BANNED ? <UnbanUserDialog userId={user.id} /> : <BanUserDialog userId={user.id} userName={user.name} />}
           <RemoveUserDialog email={user.email} userId={user.id} />
         </div>
       </CardContent>

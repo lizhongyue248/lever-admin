@@ -1,6 +1,7 @@
 import "server-only"
 
 import { env } from "@/env"
+import { EMAIL_PROVIDER_CONSOLE, EMAIL_PROVIDER_RESEND, EMAIL_PROVIDER_SMTP } from "@/lib/const"
 import { db } from "@/server/db"
 import { getEffectiveEmailProviderConfig } from "@/server/service/platform-settings"
 
@@ -8,11 +9,11 @@ import type { EmailProvider, EmailProviderName, SendEmailInput, SendEmailResult 
 
 const getProvider = async (providerName: EmailProviderName): Promise<EmailProvider> => {
   switch (providerName) {
-    case "console":
+    case EMAIL_PROVIDER_CONSOLE:
       return (await import("./providers/console")).consoleEmailProvider
-    case "resend":
+    case EMAIL_PROVIDER_RESEND:
       return (await import("./providers/resend")).resendEmailProvider
-    case "smtp":
+    case EMAIL_PROVIDER_SMTP:
       return (await import("./providers/smtp")).smtpEmailProvider
   }
 }
@@ -20,7 +21,7 @@ const getProvider = async (providerName: EmailProviderName): Promise<EmailProvid
 export const sendEmail = async (input: SendEmailInput): Promise<SendEmailResult> => {
   const config = await getEffectiveEmailProviderConfig(db)
 
-  if (env.NODE_ENV === "production" && config.provider === "console") {
+  if (env.NODE_ENV === "production" && config.provider === EMAIL_PROVIDER_CONSOLE) {
     throw new Error("Console email provider is not allowed in production.")
   }
 

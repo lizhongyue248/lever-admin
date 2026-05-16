@@ -2,6 +2,8 @@ import "server-only"
 
 import { Resend } from "resend"
 
+import { EMAIL_PROVIDER_RESEND } from "@/lib/const"
+
 import type { EmailProvider } from "../types"
 
 export const resendEmailProvider: EmailProvider = {
@@ -24,7 +26,7 @@ export const resendEmailProvider: EmailProvider = {
 
     return {
       messageId: data?.id,
-      provider: "resend"
+      provider: EMAIL_PROVIDER_RESEND
     }
   }
 }

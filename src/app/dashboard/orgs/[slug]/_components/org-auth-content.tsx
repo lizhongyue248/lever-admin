@@ -8,6 +8,7 @@ import { DataPagination } from "@/components/data-pagination"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, FILTER_ALL, SESSION_RISK_RISK } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { formatRelativeTime } from "../_lib/org-format"
 
@@ -15,14 +16,16 @@ type AuthData = RouterOutputs["org"]["session"]["list"]
 type SessionItem = AuthData["items"][number]
 
 const RiskBadge = ({ session }: { session: SessionItem }) => (
-  <Badge variant={session.riskStatus === "risk" ? "destructive" : "secondary"}>{session.riskStatus === "risk" ? (session.riskReasons[0] ?? "风险会话") : "正常"}</Badge>
+  <Badge variant={session.riskStatus === SESSION_RISK_RISK ? "destructive" : "secondary"}>
+    {session.riskStatus === SESSION_RISK_RISK ? (session.riskReasons[0] ?? "风险会话") : "正常"}
+  </Badge>
 )
 
 export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; slug: string }) => {
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(DEFAULT_PAGE)
   const sessions = api.org.session.list.useQuery(
-    { deviceType: "all", page, pageSize: 10, riskStatus: "all", search: "", slug },
-    { initialData: page === 1 ? initialData : undefined, placeholderData: (previousData) => previousData }
+    { deviceType: FILTER_ALL, page, pageSize: DEFAULT_PAGE_SIZE, riskStatus: FILTER_ALL, search: "", slug },
+    { initialData: page === DEFAULT_PAGE ? initialData : undefined, placeholderData: (previousData) => previousData }
   )
   const columns: Array<ColumnDef<AuthData["items"][number]>> = [
     {
@@ -84,7 +87,7 @@ export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; s
           onPageChange={setPage}
           page={sessionData.page}
           pageCount={sessionData.pageCount}
-          pageSize={10}
+          pageSize={DEFAULT_PAGE_SIZE}
           total={sessionData.total}
         />
       </CardContent>

@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, FILTER_ALL, SESSION_RISK_RISK } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { formatDate, formatRelativeTime } from "../_lib/org-format"
 import { OrgEmptyState } from "./org-empty-state"
@@ -29,7 +30,7 @@ const selectClassName =
   "h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
 const SecurityStatusBadge = ({ status }: { status: MemberItem["securityStatus"] }) => (
-  <Badge variant={status === "risk" ? "destructive" : "secondary"}>{status === "risk" ? "风险" : "正常"}</Badge>
+  <Badge variant={status === SESSION_RISK_RISK ? "destructive" : "secondary"}>{status === SESSION_RISK_RISK ? "风险" : "正常"}</Badge>
 )
 
 export const OrgInformationContent = ({
@@ -56,7 +57,7 @@ export const OrgInformationContent = ({
   const [assignMember, setAssignMember] = useState<MemberItem | null>(null)
   const [assignDepartmentId, setAssignDepartmentId] = useState("")
   const [removeMember, setRemoveMember] = useState<MemberItem | null>(null)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(DEFAULT_PAGE)
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [addUserEmail, setAddUserEmail] = useState("")
   const [addUserName, setAddUserName] = useState("")
@@ -68,10 +69,10 @@ export const OrgInformationContent = ({
   const selectedNode = selectedTree.nodes.find((node) => node.id === selectedNodeId) ?? selectedTree.nodes[0] ?? null
   const departmentOptions = selectedTree.nodes.filter((node) => node.type === "department")
   const members = api.org.department.member.list.useQuery(
-    { departmentId: selectedNodeId ?? undefined, page, pageSize: 10, search: "", securityStatus: "all", slug },
+    { departmentId: selectedNodeId ?? undefined, page, pageSize: DEFAULT_PAGE_SIZE, search: "", securityStatus: FILTER_ALL, slug },
     {
       enabled: Boolean(selectedNodeId),
-      initialData: page === 1 && selectedNodeId === (tree.selectedNodeId ?? tree.nodes[0]?.id) ? initialMembers : undefined,
+      initialData: page === DEFAULT_PAGE && selectedNodeId === (tree.selectedNodeId ?? tree.nodes[0]?.id) ? initialMembers : undefined,
       placeholderData: (previousData) => previousData
     }
   )
@@ -261,7 +262,7 @@ export const OrgInformationContent = ({
               onPageChange={setPage}
               page={memberData.page}
               pageCount={memberData.pageCount}
-              pageSize={10}
+              pageSize={DEFAULT_PAGE_SIZE}
               total={memberData.total}
             />
           </CardContent>

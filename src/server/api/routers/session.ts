@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gt, ne } from "drizzle-orm"
 import { z } from "zod"
 
+import { SESSION_RISK_RISK } from "@/lib/const"
 import { getActiveSessionCountsByUser, getHighRiskUserIds, getSessionRisk } from "@/server/api/lib/session-risk"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { session } from "@/server/db/schema"
@@ -169,7 +170,7 @@ export const sessionRouter = createTRPCRouter({
       health: {
         activeCount: sessions.length,
         currentCount,
-        highRiskCount: sessions.filter((item) => item.riskLevel === "risk").length,
+        highRiskCount: sessions.filter((item) => item.riskLevel === SESSION_RISK_RISK).length,
         latestActivityLabel: latestActivity ? formatRelativeActivity(latestActivity) : "暂无",
         longestOnlineLabel: longestSession ? formatOnlineDuration(longestSession) : "暂无",
         revocableCount: sessions.filter((item) => !item.isCurrent).length

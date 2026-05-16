@@ -5,6 +5,7 @@ import { AuthLayout } from "@/app/(auth)/_components/auth-layout"
 import { AuthMessage } from "@/app/(auth)/_components/auth-message"
 import { ResetPasswordForm } from "@/app/(auth)/reset-password/_components/reset-password-form"
 import { Button } from "@/components/ui/button"
+import { ROUTE_SIGN_IN } from "@/lib/const"
 
 type ResetPasswordPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -17,7 +18,7 @@ const ResetPasswordPage = async ({ searchParams }: ResetPasswordPageProps) => {
   const token = getSingleParam(params.token)
 
   return (
-    <AuthLayout backHref="/sign-in" page="reset-password">
+    <AuthLayout backHref={ROUTE_SIGN_IN} page="reset-password">
       <AuthCard description="设置一个新的登录密码。" title="重置密码">
         {token ? (
           <ResetPasswordForm token={token} />

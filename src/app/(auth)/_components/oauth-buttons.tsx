@@ -4,9 +4,10 @@ import { useState } from "react"
 
 import { getAuthErrorMessage } from "@/app/(auth)/_lib/auth-errors"
 import { Button } from "@/components/ui/button"
+import { type AuthOAuthProviderId, OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 
-type Provider = "github" | "google"
+type Provider = AuthOAuthProviderId
 
 export const OAuthButtons = ({ callbackURL, onError, prefix = "" }: { callbackURL: string; onError: (message: string) => void; prefix?: string }) => {
   const [pendingProvider, setPendingProvider] = useState<Provider | null>(null)
@@ -28,11 +29,11 @@ export const OAuthButtons = ({ callbackURL, onError, prefix = "" }: { callbackUR
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      <Button disabled={pendingProvider !== null} onClick={() => signInWithProvider("github")} type="button" variant="outline">
-        {pendingProvider === "github" ? "处理中..." : `${prefix}GitHub`}
+      <Button disabled={pendingProvider !== null} onClick={() => signInWithProvider(OAUTH_PROVIDER_GITHUB)} type="button" variant="outline">
+        {pendingProvider === OAUTH_PROVIDER_GITHUB ? "处理中..." : `${prefix}GitHub`}
       </Button>
-      <Button disabled={pendingProvider !== null} onClick={() => signInWithProvider("google")} type="button" variant="outline">
-        {pendingProvider === "google" ? "处理中..." : `${prefix}Google`}
+      <Button disabled={pendingProvider !== null} onClick={() => signInWithProvider(OAUTH_PROVIDER_GOOGLE)} type="button" variant="outline">
+        {pendingProvider === OAUTH_PROVIDER_GOOGLE ? "处理中..." : `${prefix}Google`}
       </Button>
     </div>
   )

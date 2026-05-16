@@ -3,6 +3,7 @@ import "server-only"
 import nodemailer from "nodemailer"
 
 import { env } from "@/env"
+import { EMAIL_PROVIDER_SMTP } from "@/lib/const"
 
 import type { EmailProvider } from "../types"
 
@@ -40,7 +41,7 @@ export const smtpEmailProvider: EmailProvider = {
 
     return {
       messageId: result.messageId,
-      provider: "smtp"
+      provider: EMAIL_PROVIDER_SMTP
     }
   }
 }

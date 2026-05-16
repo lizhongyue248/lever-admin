@@ -1,3 +1,5 @@
+import { REQUEST_LOG_MAX_BODY_BYTES, REQUEST_LOG_REDACTED_VALUE } from "@/lib/const"
+
 export type RequestBodyStatus = "blocked_sensitive_route" | "not_collected" | "redacted" | "truncated"
 
 export type SanitizedRequestBody = {
@@ -9,8 +11,6 @@ type JsonPrimitive = boolean | null | number | string
 type JsonObject = { [key: string]: JsonValue }
 type JsonValue = JsonObject | JsonPrimitive | JsonValue[]
 
-const maxBodyBytes = 16 * 1024
-const redactedValue = "[REDACTED]"
 const sensitiveKeyPattern = /(api[-_]?key|authorization|captcha|code|cookie|credential|otp|password|secret|token)/iu
 const blockedPathPattern = /\/api\/auth\/(callback|forget-password|reset-password|verify-email)|\/api\/auth\/sign-in|\/api\/auth\/sign-up/iu
 
@@ -30,7 +30,7 @@ const redactJsonValue = (value: JsonValue, path: string[] = []): JsonValue => {
       const nextPath = [...path, key]
       const shouldRedact = sensitiveKeyPattern.test(key) || sensitiveKeyPattern.test(nextPath.join("."))
 
-      return [key, shouldRedact ? redactedValue : redactJsonValue(entry, nextPath)]
+      return [key, shouldRedact ? REQUEST_LOG_REDACTED_VALUE : redactJsonValue(entry, nextPath)]
     })
   )
 }
@@ -79,7 +79,7 @@ export const sanitizeRequestBody = ({ contentType, path, rawText }: { contentTyp
     return { status: "not_collected", summary: null }
   }
 
-  if (Buffer.byteLength(rawText, "utf8") > maxBodyBytes) {
+  if (Buffer.byteLength(rawText, "utf8") > REQUEST_LOG_MAX_BODY_BYTES) {
     return {
       status: "truncated",
       summary: JSON.stringify({ bodySize: Buffer.byteLength(rawText, "utf8"), bodyTruncated: true })

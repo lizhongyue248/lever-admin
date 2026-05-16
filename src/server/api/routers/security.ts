@@ -1,6 +1,14 @@
 import { TRPCError } from "@trpc/server"
 import { and, desc, eq, sql } from "drizzle-orm"
 
+import {
+  OAUTH_PROVIDER_GITHUB,
+  OAUTH_PROVIDER_GOOGLE,
+  RECENT_LOGIN_STATUS_ACTIVE,
+  RECENT_LOGIN_STATUS_AVAILABLE,
+  RECENT_LOGIN_STATUS_UNCONFIGURED,
+  SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER
+} from "@/lib/const"
 import { getOAuthProviderConfigs } from "@/server/api/lib/oauth-providers"
 import { getActiveSessionCountsByUser, getHighRiskUserIds } from "@/server/api/lib/session-risk"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
@@ -10,7 +18,7 @@ const credentialProviderIds = new Set(["credential", "email", "email-password"])
 
 const getDimensionValue = (enabled: boolean) => (enabled ? 100 : 0)
 
-const getStatusValue = (enabled: boolean) => (enabled ? ("active" as const) : ("available" as const))
+const getStatusValue = (enabled: boolean) => (enabled ? RECENT_LOGIN_STATUS_ACTIVE : RECENT_LOGIN_STATUS_AVAILABLE)
 
 export const securityRouter = createTRPCRouter({
   getOverview: protectedProcedure.query(async ({ ctx }) => {
@@ -67,7 +75,7 @@ export const securityRouter = createTRPCRouter({
     const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds: [userId] })
     const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, userIds: [userId] })
     const activeSessionCount = activeSessionCounts.get(userId) ?? 0
-    const hasSessionRisk = highRiskUserIds.has(userId) || activeSessionCount > 5
+    const hasSessionRisk = highRiskUserIds.has(userId) || activeSessionCount > SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER
     const sessionDimensionValue = hasSessionRisk ? 40 : 100
 
     const [currentSession] = await ctx.db
@@ -81,11 +89,11 @@ export const securityRouter = createTRPCRouter({
       .limit(1)
 
     const passwordAccount = accountRows.find((row) => row.hasPassword || credentialProviderIds.has(row.providerId))
-    const githubAccount = accountRows.find((row) => row.providerId === "github") ?? null
-    const googleAccount = accountRows.find((row) => row.providerId === "google") ?? null
+    const githubAccount = accountRows.find((row) => row.providerId === OAUTH_PROVIDER_GITHUB) ?? null
+    const googleAccount = accountRows.find((row) => row.providerId === OAUTH_PROVIDER_GOOGLE) ?? null
     const providers = getOAuthProviderConfigs()
     const providerById = new Map(providers.map((provider) => [provider.id, provider]))
-    const googleConfigured = providerById.get("google")?.configured ?? false
+    const googleConfigured = providerById.get(OAUTH_PROVIDER_GOOGLE)?.configured ?? false
     const hasPassword = Boolean(passwordAccount)
     const hasPasskey = passkeyRows.length > 0
     const hasGithub = Boolean(githubAccount)
@@ -133,14 +141,14 @@ export const securityRouter = createTRPCRouter({
         github: {
           accountId: githubAccount?.accountId ?? null,
           canUnlink: canUnlinkGithub,
-          configured: providerById.get("github")?.configured ?? false,
+          configured: providerById.get(OAUTH_PROVIDER_GITHUB)?.configured ?? false,
           connectedAt: githubAccount?.createdAt ?? null,
           linked: hasGithub
         },
         google: {
           accountId: googleAccount?.accountId ?? null,
           canUnlink: false,
-          configured: providerById.get("google")?.configured ?? false,
+          configured: providerById.get(OAUTH_PROVIDER_GOOGLE)?.configured ?? false,
           connectedAt: googleAccount?.createdAt ?? null,
           linked: hasGoogle
         }
@@ -175,7 +183,7 @@ export const securityRouter = createTRPCRouter({
         {
           description: hasGoogle ? "Google 已作为第三方登录方式绑定。" : googleConfigured ? "Google 可作为备用登录方式。" : "Google provider 暂未在 Better Auth 配置中启用。",
           label: "Google",
-          status: hasGoogle ? ("active" as const) : googleConfigured ? ("available" as const) : ("unconfigured" as const)
+          status: hasGoogle ? RECENT_LOGIN_STATUS_ACTIVE : googleConfigured ? RECENT_LOGIN_STATUS_AVAILABLE : RECENT_LOGIN_STATUS_UNCONFIGURED
         }
       ],
       score: {

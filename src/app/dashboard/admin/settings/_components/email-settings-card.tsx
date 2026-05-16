@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { EMAIL_PROVIDER_CONSOLE, EMAIL_PROVIDER_RESEND, EMAIL_PROVIDER_SMTP, EMAIL_PROVIDERS } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 
 type EmailSettings = RouterOutputs["adminPlatformSetting"]["getEmailSettings"]
@@ -36,7 +37,7 @@ const trpcFieldErrorsSchema = z.object({
 
 const formSchema = z.object({
   from: z.string().trim().min(1, "发件人不能为空。"),
-  provider: z.enum(["console", "resend", "smtp"]),
+  provider: z.enum(EMAIL_PROVIDERS),
   resendApiKey: z.string().trim(),
   smtpHost: z.string().trim(),
   smtpPassword: z.string().trim(),
@@ -135,11 +136,11 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
       testTo: current.testTo
     }))
 
-    if (nextProvider !== "resend") {
+    if (nextProvider !== EMAIL_PROVIDER_RESEND) {
       setClearResendApiKey(false)
     }
 
-    if (nextProvider !== "smtp") {
+    if (nextProvider !== EMAIL_PROVIDER_SMTP) {
       setClearSmtpPassword(false)
     }
   }
@@ -149,12 +150,12 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
     const formValues = {
       from,
       provider,
-      resendApiKey: provider === "resend" ? resendApiKey : "",
-      smtpHost: provider === "smtp" ? smtpHost : "",
-      smtpPassword: provider === "smtp" ? smtpPassword : "",
-      smtpPort: provider === "smtp" ? smtpPort : String(savedEmailSettings.smtpPort),
-      smtpSecure: provider === "smtp" ? smtpSecure : false,
-      smtpUser: provider === "smtp" ? smtpUser : ""
+      resendApiKey: provider === EMAIL_PROVIDER_RESEND ? resendApiKey : "",
+      smtpHost: provider === EMAIL_PROVIDER_SMTP ? smtpHost : "",
+      smtpPassword: provider === EMAIL_PROVIDER_SMTP ? smtpPassword : "",
+      smtpPort: provider === EMAIL_PROVIDER_SMTP ? smtpPort : String(savedEmailSettings.smtpPort),
+      smtpSecure: provider === EMAIL_PROVIDER_SMTP ? smtpSecure : false,
+      smtpUser: provider === EMAIL_PROVIDER_SMTP ? smtpUser : ""
     }
     const parsed = formSchema.safeParse(formValues)
 
@@ -177,13 +178,13 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
     setFormError(null)
     update.mutate({
       ...parsed.data,
-      clearResendApiKey: parsed.data.provider === "resend" ? clearResendApiKey : false,
-      clearSmtpPassword: parsed.data.provider === "smtp" ? clearSmtpPassword : false,
-      resendApiKey: parsed.data.provider === "resend" ? parsed.data.resendApiKey : "",
-      smtpHost: parsed.data.provider === "smtp" ? parsed.data.smtpHost : "",
-      smtpPassword: parsed.data.provider === "smtp" ? parsed.data.smtpPassword : "",
-      smtpSecure: parsed.data.provider === "smtp" ? parsed.data.smtpSecure : false,
-      smtpUser: parsed.data.provider === "smtp" ? parsed.data.smtpUser : ""
+      clearResendApiKey: parsed.data.provider === EMAIL_PROVIDER_RESEND ? clearResendApiKey : false,
+      clearSmtpPassword: parsed.data.provider === EMAIL_PROVIDER_SMTP ? clearSmtpPassword : false,
+      resendApiKey: parsed.data.provider === EMAIL_PROVIDER_RESEND ? parsed.data.resendApiKey : "",
+      smtpHost: parsed.data.provider === EMAIL_PROVIDER_SMTP ? parsed.data.smtpHost : "",
+      smtpPassword: parsed.data.provider === EMAIL_PROVIDER_SMTP ? parsed.data.smtpPassword : "",
+      smtpSecure: parsed.data.provider === EMAIL_PROVIDER_SMTP ? parsed.data.smtpSecure : false,
+      smtpUser: parsed.data.provider === EMAIL_PROVIDER_SMTP ? parsed.data.smtpUser : ""
     })
   }
 
@@ -219,9 +220,9 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="console">Console</SelectItem>
-                <SelectItem value="resend">Resend</SelectItem>
-                <SelectItem value="smtp">SMTP</SelectItem>
+                <SelectItem value={EMAIL_PROVIDER_CONSOLE}>Console</SelectItem>
+                <SelectItem value={EMAIL_PROVIDER_RESEND}>Resend</SelectItem>
+                <SelectItem value={EMAIL_PROVIDER_SMTP}>SMTP</SelectItem>
               </SelectContent>
             </Select>
             {errors.provider ? (
@@ -248,7 +249,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
             ) : null}
           </div>
 
-          {provider === "resend" ? (
+          {provider === EMAIL_PROVIDER_RESEND ? (
             <div className="space-y-2">
               <Label htmlFor="resend-api-key">Resend API Key</Label>
               <Input
@@ -279,7 +280,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
             </div>
           ) : null}
 
-          {provider === "smtp" ? (
+          {provider === EMAIL_PROVIDER_SMTP ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="smtp-host">SMTP Host</Label>

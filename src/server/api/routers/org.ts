@@ -3,7 +3,27 @@ import { and, asc, count, desc, eq, gt, ilike, inArray, isNull, ne, or, sql } fr
 import { z } from "zod"
 
 import { env } from "@/env"
-import { ORGANIZATION_ADMIN_ROLES, ORGANIZATION_ROLES, PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  FILTER_ALL,
+  INVITATION_STATUS_CANCELED,
+  INVITATION_STATUS_EXPIRED,
+  INVITATION_STATUS_PENDING,
+  INVITATION_STATUSES,
+  MAX_PAGE_SIZE,
+  ORGANIZATION_ADMIN_ROLES,
+  ORGANIZATION_ROLES,
+  ORGANIZATION_STATUS_ACTIVE,
+  ORGANIZATION_STATUS_DISABLED,
+  PLATFORM_ADMIN_ROLES,
+  PLATFORM_ROLE_SUPER_ADMIN,
+  SESSION_RISK_LEVELS,
+  SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER,
+  SESSION_RISK_NORMAL,
+  SESSION_RISK_RISK,
+  type SessionRiskLevel
+} from "@/lib/const"
 import { getActiveSessionCountsByUser, getHighRiskUserIds, getSessionRisk } from "@/server/api/lib/session-risk"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { invitation, member, organization, organizationDepartment, organizationDepartmentMember, session, user } from "@/server/db/schema"
@@ -13,9 +33,10 @@ const defaultAppBaseUrl = "http://localhost:4000"
 const roleInput = z.enum(ORGANIZATION_ROLES)
 const slugInput = z.object({ slug: z.string().min(1) })
 const pageInput = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(50).default(10)
+  page: z.number().int().min(1).default(DEFAULT_PAGE),
+  pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE)
 })
+const sessionRiskFilterInput = z.enum([FILTER_ALL, ...SESSION_RISK_LEVELS])
 
 type OrgContext = {
   db: typeof import("@/server/db").db
@@ -31,7 +52,7 @@ const isOrgAdminRole = (role: string | null | undefined) => ORGANIZATION_ADMIN_R
 const isPlatformAdminRole = (role: string | null | undefined) => PLATFORM_ADMIN_ROLES.some((item) => item === role)
 
 const assertOrgActive = (org: Pick<typeof organization.$inferSelect, "status">) => {
-  if (org.status === "disabled") {
+  if (org.status === ORGANIZATION_STATUS_DISABLED) {
     throw new TRPCError({ code: "FORBIDDEN", message: "该组织已停用。" })
   }
 }
@@ -133,8 +154,8 @@ const getDeviceLabel = (userAgent: string | null) => {
 }
 
 const getEffectiveInvitationStatus = (status: string, expiresAt: Date | null) => {
-  if (status === "pending" && expiresAt && expiresAt < new Date()) {
-    return "expired"
+  if (status === INVITATION_STATUS_PENDING && expiresAt && expiresAt < new Date()) {
+    return INVITATION_STATUS_EXPIRED
   }
 
   return status
@@ -177,7 +198,7 @@ const buildOrgRiskContext = async (ctx: OrgContext, organizationId: string) => {
   const userIds = Array.from(new Set(memberRows.map((row) => row.userId)))
   const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, organizationId, userIds })
   const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds })
-  const riskyUserIds = new Set(userIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > 5))
+  const riskyUserIds = new Set(userIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER))
 
   return { activeSessionCounts, highRiskUserIds, memberRows, riskyUserIds }
 }
@@ -203,7 +224,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
     ctx.db
       .select({ value: count() })
       .from(invitation)
-      .where(and(eq(invitation.organizationId, org.id), eq(invitation.status, "pending"), isNull(invitation.departmentId)))
+      .where(and(eq(invitation.organizationId, org.id), eq(invitation.status, INVITATION_STATUS_PENDING), isNull(invitation.departmentId)))
   )
   const departmentStats = await Promise.all(
     departmentRows.map(async (department) => {
@@ -211,7 +232,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
       const [invitationCountRow] = await ctx.db
         .select({ value: count() })
         .from(invitation)
-        .where(and(eq(invitation.departmentId, department.id), eq(invitation.status, "pending")))
+        .where(and(eq(invitation.departmentId, department.id), eq(invitation.status, INVITATION_STATUS_PENDING)))
 
       return {
         departmentId: department.id,
@@ -249,7 +270,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
       parentId: null,
       riskCount: riskContext.riskyUserIds.size,
       slug: org.slug,
-      status: "active",
+      status: ORGANIZATION_STATUS_ACTIVE,
       type: "organization" as const
     },
     ...departmentRows.map((department) => {
@@ -279,7 +300,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
 const listDepartmentMembers = async (
   ctx: OrgContext,
   input: z.infer<typeof slugInput> &
-    z.infer<typeof pageInput> & { departmentId?: string; nodeId?: string; role?: z.infer<typeof roleInput>; search: string; securityStatus: "all" | "normal" | "risk" }
+    z.infer<typeof pageInput> & { departmentId?: string; nodeId?: string; role?: z.infer<typeof roleInput>; search: string; securityStatus: typeof FILTER_ALL | SessionRiskLevel }
 ) => {
   const { org } = await requireOrgAccess(ctx, input.slug)
   const riskContext = await buildOrgRiskContext(ctx, org.id)
@@ -323,9 +344,9 @@ const listDepartmentMembers = async (
     .map((row) => ({
       ...row,
       departmentNames: row.departmentNames ?? "未分配",
-      securityStatus: riskContext.riskyUserIds.has(row.userId) ? ("risk" as const) : ("normal" as const)
+      securityStatus: riskContext.riskyUserIds.has(row.userId) ? SESSION_RISK_RISK : SESSION_RISK_NORMAL
     }))
-    .filter((row) => input.securityStatus === "all" || row.securityStatus === input.securityStatus)
+    .filter((row) => input.securityStatus === FILTER_ALL || row.securityStatus === input.securityStatus)
   const total = filteredRows.length
 
   return {
@@ -342,7 +363,7 @@ const departmentMemberListInput = slugInput
     nodeId: z.string().min(1).optional(),
     role: roleInput.optional(),
     search: z.string().default(""),
-    securityStatus: z.enum(["all", "normal", "risk"]).default("all")
+    securityStatus: sessionRiskFilterInput.default(FILTER_ALL)
   })
   .merge(pageInput)
 
@@ -371,11 +392,13 @@ export const orgRouter = createTRPCRouter({
         ctx.db
           .select({ value: sql<number>`count(*)::int` })
           .from(invitation)
-          .where(and(eq(invitation.organizationId, org.id), eq(invitation.status, "pending")))
+          .where(and(eq(invitation.organizationId, org.id), eq(invitation.status, INVITATION_STATUS_PENDING)))
       )
       const activeSessionCount = Array.from(activeSessionCounts.values()).reduce((sum, value) => sum + value, 0)
       const departmentCount = await countRows(ctx.db.select({ value: count() }).from(organizationDepartment).where(eq(organizationDepartment.organizationId, org.id)))
-      const riskyUserIds = new Set(memberUserIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > 5))
+      const riskyUserIds = new Set(
+        memberUserIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER)
+      )
       const riskySessionCount = Array.from(riskyUserIds).reduce((sum, userId) => {
         const activeCount = activeSessionCounts.get(userId) ?? 0
 
@@ -483,7 +506,7 @@ export const orgRouter = createTRPCRouter({
             parentDepartmentId: parentId,
             path,
             sortOrder: (sortRow?.value ?? -1) + 1,
-            status: "active"
+            status: ORGANIZATION_STATUS_ACTIVE
           })
           .returning()
 
@@ -752,7 +775,7 @@ export const orgRouter = createTRPCRouter({
             departmentId: z.string().min(1).optional(),
             nodeId: z.string().min(1).optional(),
             search: z.string().default(""),
-            status: z.enum(["all", "pending", "accepted", "rejected", "canceled", "expired"]).default("all")
+            status: z.enum([FILTER_ALL, ...INVITATION_STATUSES]).default(FILTER_ALL)
           })
           .merge(pageInput)
       )
@@ -761,9 +784,9 @@ export const orgRouter = createTRPCRouter({
         const selectedDepartmentId = input.departmentId ?? input.nodeId
         const search = `%${input.search.trim()}%`
         const statusFilter =
-          input.status === "expired"
-            ? and(eq(invitation.status, "pending"), sql`${invitation.expiresAt} < now()`)
-            : input.status === "all"
+          input.status === INVITATION_STATUS_EXPIRED
+            ? and(eq(invitation.status, INVITATION_STATUS_PENDING), sql`${invitation.expiresAt} < now()`)
+            : input.status === FILTER_ALL
               ? undefined
               : eq(invitation.status, input.status)
 
@@ -815,7 +838,8 @@ export const orgRouter = createTRPCRouter({
         return {
           items: rows.map((row) => ({ ...row, status: getEffectiveInvitationStatus(row.status, row.expiresAt) })),
           page: input.page,
-          pageCount: Math.max(1, Math.ceil(total / input.pageSize))
+          pageCount: Math.max(1, Math.ceil(total / input.pageSize)),
+          total
         }
       }),
 
@@ -851,8 +875,8 @@ export const orgRouter = createTRPCRouter({
         await ctx.db.transaction(async (tx) => {
           await tx
             .update(invitation)
-            .set({ status: "canceled" })
-            .where(and(eq(invitation.organizationId, org.id), eq(invitation.email, normalizedEmail), eq(invitation.status, "pending")))
+            .set({ status: INVITATION_STATUS_CANCELED })
+            .where(and(eq(invitation.organizationId, org.id), eq(invitation.email, normalizedEmail), eq(invitation.status, INVITATION_STATUS_PENDING)))
 
           await tx.insert(invitation).values({
             departmentId: targetDepartmentId,
@@ -862,7 +886,7 @@ export const orgRouter = createTRPCRouter({
             inviterId: ctx.session.user.id,
             organizationId: org.id,
             role: input.role,
-            status: "pending"
+            status: INVITATION_STATUS_PENDING
           })
         })
 
@@ -895,7 +919,7 @@ export const orgRouter = createTRPCRouter({
             departmentId: z.string().min(1).optional(),
             deviceType: z.enum(["all", "desktop", "mobile", "unknown"]).default("all"),
             nodeId: z.string().min(1).optional(),
-            riskStatus: z.enum(["all", "normal", "risk"]).default("all"),
+            riskStatus: sessionRiskFilterInput.default(FILTER_ALL),
             search: z.string().default("")
           })
           .merge(pageInput)
@@ -958,7 +982,7 @@ export const orgRouter = createTRPCRouter({
               riskStatus: risk.level
             }
           })
-          .filter((row) => input.riskStatus === "all" || row.riskStatus === input.riskStatus)
+          .filter((row) => input.riskStatus === FILTER_ALL || row.riskStatus === input.riskStatus)
         const offset = (input.page - 1) * input.pageSize
 
         return {

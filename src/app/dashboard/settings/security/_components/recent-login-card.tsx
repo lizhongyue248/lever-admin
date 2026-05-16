@@ -2,6 +2,7 @@ import { CircleCheck, CircleDot, CircleOff, MonitorSmartphone } from "lucide-rea
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { RECENT_LOGIN_STATUS_ACTIVE, RECENT_LOGIN_STATUS_AVAILABLE, RECENT_LOGIN_STATUS_UNCONFIGURED, RECENT_LOGIN_STATUSES, type RecentLoginStatus } from "@/lib/const"
 import { cn } from "@/lib/utils"
 import type { RouterOutputs } from "@/trpc/react"
 
@@ -14,19 +15,25 @@ type RecentLoginCardProps = {
   sessions: SecuritySessions
 }
 
-const statusMeta = {
-  active: {
+const statusMeta: Record<RecentLoginStatus, { icon: typeof CircleCheck; label: string }> = {
+  [RECENT_LOGIN_STATUS_ACTIVE]: {
     icon: CircleCheck,
     label: "已启用"
   },
-  available: {
+  [RECENT_LOGIN_STATUS_AVAILABLE]: {
     icon: CircleDot,
     label: "可配置"
   },
-  unconfigured: {
+  [RECENT_LOGIN_STATUS_UNCONFIGURED]: {
     icon: CircleOff,
     label: "未配置"
   }
+}
+
+const getRecentLoginStatus = (status: string): RecentLoginStatus => {
+  const recentLoginStatus = RECENT_LOGIN_STATUSES.find((item) => item === status)
+
+  return recentLoginStatus ?? RECENT_LOGIN_STATUS_UNCONFIGURED
 }
 
 const formatDate = (date: Date | null) => {
@@ -96,7 +103,8 @@ export const RecentLoginCard = ({ methods, sessions }: RecentLoginCardProps) => 
 
       <div className="space-y-2.5">
         {methods.map((method) => {
-          const Icon = statusMeta[method.status].icon
+          const status = getRecentLoginStatus(method.status)
+          const Icon = statusMeta[status].icon
 
           return (
             <div className="rounded-md border bg-background/60 p-3 dark:bg-muted/20" key={method.label}>
@@ -105,9 +113,9 @@ export const RecentLoginCard = ({ methods, sessions }: RecentLoginCardProps) => 
                   <Icon
                     className={cn(
                       "mt-0.5 size-4 shrink-0",
-                      method.status === "active" && "text-primary",
-                      method.status === "available" && "text-muted-foreground",
-                      method.status === "unconfigured" && "text-muted-foreground/70"
+                      status === RECENT_LOGIN_STATUS_ACTIVE && "text-primary",
+                      status === RECENT_LOGIN_STATUS_AVAILABLE && "text-muted-foreground",
+                      status === RECENT_LOGIN_STATUS_UNCONFIGURED && "text-muted-foreground/70"
                     )}
                   />
                   <div className="min-w-0">
@@ -115,8 +123,8 @@ export const RecentLoginCard = ({ methods, sessions }: RecentLoginCardProps) => 
                     <p className="mt-1 text-muted-foreground text-xs leading-5">{method.description}</p>
                   </div>
                 </div>
-                <Badge className="rounded-md" variant={method.status === "active" ? "default" : "secondary"}>
-                  {statusMeta[method.status].label}
+                <Badge className="rounded-md" variant={status === RECENT_LOGIN_STATUS_ACTIVE ? "default" : "secondary"}>
+                  {statusMeta[status].label}
                 </Badge>
               </div>
             </div>

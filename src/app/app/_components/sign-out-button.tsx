@@ -6,6 +6,7 @@ import { useState } from "react"
 
 import { getAuthErrorMessage } from "@/app/(auth)/_lib/auth-errors"
 import { Button } from "@/components/ui/button"
+import { ROUTE_SIGN_IN } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 
 export const SignOutButton = () => {
@@ -25,7 +26,7 @@ export const SignOutButton = () => {
         return
       }
 
-      router.replace("/sign-in")
+      router.replace(ROUTE_SIGN_IN)
       router.refresh()
     } catch {
       setErrorMessage("退出登录服务暂时不可用，请稍后重试。")

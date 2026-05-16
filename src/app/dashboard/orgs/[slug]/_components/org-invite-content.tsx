@@ -15,20 +15,33 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ORGANIZATION_ROLE_ADMIN, ORGANIZATION_ROLE_MEMBER, ORGANIZATION_ROLE_OWNER, type OrganizationRole } from "@/lib/const"
-import { api, type RouterOutputs } from "@/trpc/react"
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  FILTER_ALL,
+  INVITATION_STATUS_ACCEPTED,
+  INVITATION_STATUS_CANCELED,
+  INVITATION_STATUS_EXPIRED,
+  INVITATION_STATUS_PENDING,
+  INVITATION_STATUS_REJECTED,
+  type InvitationStatus,
+  ORGANIZATION_ROLE_ADMIN,
+  ORGANIZATION_ROLE_MEMBER,
+  ORGANIZATION_ROLE_OWNER,
+  type OrganizationRole
+} from "@/lib/const"
+import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
 import { formatDate } from "../_lib/org-format"
 
 type InvitationData = RouterOutputs["org"]["invitation"]["list"]
+type InvitationListInput = RouterInputs["org"]["invitation"]["list"]
 type BadgeVariant = "default" | "destructive" | "ghost" | "link" | "outline" | "secondary"
-type InvitationStatus = "accepted" | "canceled" | "expired" | "pending" | "rejected"
-
 const invitationStatusMeta = {
-  accepted: { label: "已接受", variant: "secondary" },
-  canceled: { label: "已取消", variant: "outline" },
-  expired: { label: "已过期", variant: "destructive" },
-  pending: { label: "待接受", variant: "default" },
-  rejected: { label: "已拒绝", variant: "secondary" }
+  [INVITATION_STATUS_ACCEPTED]: { label: "已接受", variant: "secondary" },
+  [INVITATION_STATUS_CANCELED]: { label: "已取消", variant: "outline" },
+  [INVITATION_STATUS_EXPIRED]: { label: "已过期", variant: "destructive" },
+  [INVITATION_STATUS_PENDING]: { label: "待接受", variant: "default" },
+  [INVITATION_STATUS_REJECTED]: { label: "已拒绝", variant: "secondary" }
 } satisfies Record<InvitationStatus, { label: string; variant: BadgeVariant }>
 
 const getInvitationStatusMeta = (status: string) => invitationStatusMeta[status as InvitationStatus] ?? { label: status, variant: "outline" as const }
@@ -39,10 +52,13 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [departmentId, setDepartmentId] = useState("none")
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(DEFAULT_PAGE)
   const [role, setRole] = useState<OrganizationRole>(ORGANIZATION_ROLE_MEMBER)
-  const invitationListInput = { page, pageSize: 10, search: "", slug, status: "all" as const }
-  const invitations = api.org.invitation.list.useQuery(invitationListInput, { initialData: page === 1 ? initialData : undefined, placeholderData: (previousData) => previousData })
+  const invitationListInput: InvitationListInput = { page, pageSize: DEFAULT_PAGE_SIZE, search: "", slug, status: FILTER_ALL }
+  const invitations = api.org.invitation.list.useQuery(invitationListInput, {
+    initialData: page === DEFAULT_PAGE ? initialData : undefined,
+    placeholderData: (previousData) => previousData
+  })
   const departments = api.org.department.list.useQuery({ slug })
   const invite = api.org.invitation.invite.useMutation({
     onError: (error) => toast.error(error.message || "邀请成员失败。"),
@@ -85,14 +101,14 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
       <Card className="rounded-lg shadow-sm">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <Input aria-label="搜索邮箱或邀请人" className="min-w-0 flex-1" placeholder="搜索邮箱或邀请人" />
-          <Select defaultValue="all">
+          <Select defaultValue={FILTER_ALL}>
             <SelectTrigger aria-label="邀请状态" className="w-full sm:w-36">
               <SelectValue placeholder="全部状态" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="pending">待接受</SelectItem>
-              <SelectItem value="expired">已过期</SelectItem>
+              <SelectItem value={FILTER_ALL}>全部状态</SelectItem>
+              <SelectItem value={INVITATION_STATUS_PENDING}>待接受</SelectItem>
+              <SelectItem value={INVITATION_STATUS_EXPIRED}>已过期</SelectItem>
             </SelectContent>
           </Select>
           <Select defaultValue="all">
@@ -143,8 +159,8 @@ export const OrgInviteContent = ({ initialData, slug }: { initialData: Invitatio
             onPageChange={setPage}
             page={invitationData.page}
             pageCount={invitationData.pageCount}
-            pageSize={10}
-            total={invitationData.items.length}
+            pageSize={DEFAULT_PAGE_SIZE}
+            total={invitationData.total}
           />
         </CardContent>
       </Card>

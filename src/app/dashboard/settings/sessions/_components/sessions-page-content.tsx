@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ROUTE_SIGN_IN } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 import { api, type RouterOutputs } from "@/trpc/react"
 import { SessionHealthCard } from "./session-health-card"
@@ -63,7 +64,7 @@ export const SessionsPageContent = ({ data }: SessionsPageContentProps) => {
         return
       }
 
-      router.replace("/sign-in")
+      router.replace(ROUTE_SIGN_IN)
       router.refresh()
     } catch {
       toast.error("退出登录失败，请稍后重试。")

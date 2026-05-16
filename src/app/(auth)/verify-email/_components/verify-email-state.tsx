@@ -11,9 +11,10 @@ import { getAuthErrorMessage } from "@/app/(auth)/_lib/auth-errors"
 import { defaultAuthRedirect } from "@/app/(auth)/_lib/auth-redirect"
 import { type FieldErrors, getZodFieldErrors, type VerifyEmailValues, verifyEmailSchema } from "@/app/(auth)/_lib/auth-validation"
 import { Button } from "@/components/ui/button"
+import { EMAIL_VERIFICATION_STATUS_FAILED, EMAIL_VERIFICATION_STATUS_PENDING, EMAIL_VERIFICATION_STATUS_SUCCESS, ROUTE_SIGN_IN } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 
-type VerifyState = "failed" | "pending" | "success" | "verifying"
+type VerifyState = typeof EMAIL_VERIFICATION_STATUS_FAILED | typeof EMAIL_VERIFICATION_STATUS_PENDING | typeof EMAIL_VERIFICATION_STATUS_SUCCESS | "verifying"
 
 const cooldownSeconds = 60
 
@@ -22,15 +23,15 @@ const getInitialState = ({ error, status, token }: { error?: string; status?: st
     return "verifying"
   }
 
-  if (error || status === "failed") {
-    return "failed"
+  if (error || status === EMAIL_VERIFICATION_STATUS_FAILED) {
+    return EMAIL_VERIFICATION_STATUS_FAILED
   }
 
-  if (status === "success") {
-    return "success"
+  if (status === EMAIL_VERIFICATION_STATUS_SUCCESS) {
+    return EMAIL_VERIFICATION_STATUS_SUCCESS
   }
 
-  return "pending"
+  return EMAIL_VERIFICATION_STATUS_PENDING
 }
 
 const getInitialMessage = ({ error, status }: { error?: string; status?: string }) => {
@@ -38,11 +39,11 @@ const getInitialMessage = ({ error, status }: { error?: string; status?: string 
     return "验证链接无效或已过期，请重新发送验证邮件。"
   }
 
-  if (status === "success") {
+  if (status === EMAIL_VERIFICATION_STATUS_SUCCESS) {
     return "邮箱已经完成验证，你可以继续进入控制台。"
   }
 
-  if (status === "failed") {
+  if (status === EMAIL_VERIFICATION_STATUS_FAILED) {
     return "验证链接无效或已过期，请重新发送验证邮件。"
   }
 
@@ -92,16 +93,16 @@ export const VerifyEmailState = ({
         }
 
         if (error) {
-          setState("failed")
+          setState(EMAIL_VERIFICATION_STATUS_FAILED)
           setMessage(getAuthErrorMessage(error, "验证链接无效或已过期。"))
           return
         }
 
-        setState("success")
+        setState(EMAIL_VERIFICATION_STATUS_SUCCESS)
         router.refresh()
       } catch {
         if (!canceled) {
-          setState("failed")
+          setState(EMAIL_VERIFICATION_STATUS_FAILED)
           setMessage("邮箱验证服务暂时不可用，请稍后重试。")
         }
       }
@@ -148,16 +149,16 @@ export const VerifyEmailState = ({
 
         if (error) {
           setMessage(getAuthErrorMessage(error, "验证邮件暂时无法发送，请稍后重试。"))
-          setState("failed")
+          setState(EMAIL_VERIFICATION_STATUS_FAILED)
           return
         }
 
         setMessage("验证邮件已发送，请检查收件箱。")
-        setState("pending")
+        setState(EMAIL_VERIFICATION_STATUS_PENDING)
         setCooldown(cooldownSeconds)
       } catch {
         setMessage("验证邮件服务暂时不可用，请稍后重试。")
-        setState("failed")
+        setState(EMAIL_VERIFICATION_STATUS_FAILED)
       } finally {
         setPending(false)
       }
@@ -167,17 +168,17 @@ export const VerifyEmailState = ({
   return (
     <div className="space-y-5">
       {state === "verifying" ? <AuthMessage message="正在确认验证链接，请稍候。" title="验证中" tone="info" /> : null}
-      {state === "success" ? <AuthMessage message="邮箱已经完成验证，你可以继续进入控制台。" title="验证成功" tone="success" /> : null}
-      {state === "pending" ? <AuthMessage message={message || "请打开邮箱中的验证链接完成账号确认。"} title="等待验证" tone="info" /> : null}
-      {state === "failed" ? <AuthMessage message={message || "验证链接无效或已过期，请重新发送验证邮件。"} title="验证失败" tone="error" /> : null}
+      {state === EMAIL_VERIFICATION_STATUS_SUCCESS ? <AuthMessage message="邮箱已经完成验证，你可以继续进入控制台。" title="验证成功" tone="success" /> : null}
+      {state === EMAIL_VERIFICATION_STATUS_PENDING ? <AuthMessage message={message || "请打开邮箱中的验证链接完成账号确认。"} title="等待验证" tone="info" /> : null}
+      {state === EMAIL_VERIFICATION_STATUS_FAILED ? <AuthMessage message={message || "验证链接无效或已过期，请重新发送验证邮件。"} title="验证失败" tone="error" /> : null}
 
-      {state === "success" ? (
+      {state === EMAIL_VERIFICATION_STATUS_SUCCESS ? (
         <div className="space-y-3">
           <Button asChild className="h-10 w-full">
             <Link href={defaultAuthRedirect}>进入应用</Link>
           </Button>
           <Button asChild className="h-10 w-full" variant="outline">
-            <Link href="/sign-in">返回登录</Link>
+            <Link href={ROUTE_SIGN_IN}>返回登录</Link>
           </Button>
         </div>
       ) : (
@@ -207,12 +208,17 @@ export const VerifyEmailState = ({
               )}
             </form.Field>
 
-            <Button className="h-10 w-full" disabled={pending || cooldown > 0 || state === "verifying"} type="submit" variant={state === "failed" ? "default" : "outline"}>
+            <Button
+              className="h-10 w-full"
+              disabled={pending || cooldown > 0 || state === "verifying"}
+              type="submit"
+              variant={state === EMAIL_VERIFICATION_STATUS_FAILED ? "default" : "outline"}
+            >
               {pending ? "发送中..." : cooldown > 0 ? `${cooldown} 秒后可重新发送` : "重新发送验证邮件"}
             </Button>
           </form>
           <Button asChild className="h-10 w-full" variant="outline">
-            <Link href="/sign-in">返回登录</Link>
+            <Link href={ROUTE_SIGN_IN}>返回登录</Link>
           </Button>
         </div>
       )}

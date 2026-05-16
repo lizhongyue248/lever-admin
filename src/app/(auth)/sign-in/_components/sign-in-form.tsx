@@ -13,23 +13,15 @@ import { type FieldErrors, getZodFieldErrors, type SignInValues, signInSchema } 
 import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { getEmailVerificationPendingRoute, ROUTE_SIGN_IN_2FA, ROUTE_SIGN_UP } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
-
-const getEmailVerificationPendingTarget = (email: string) => {
-  const params = new URLSearchParams({
-    email,
-    status: "pending"
-  })
-
-  return `/verify-email?${params.toString()}`
-}
 
 const getTwoFactorTarget = (redirectTo: string) => {
   const params = new URLSearchParams({
     redirectTo
   })
 
-  return `/sign-in/2fa?${params.toString()}`
+  return `${ROUTE_SIGN_IN_2FA}?${params.toString()}`
 }
 
 const hasTwoFactorRedirect = (value: object | null | undefined): value is { twoFactorRedirect: boolean } => {
@@ -70,7 +62,7 @@ export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
 
         if (error) {
           if (error.code === "EMAIL_NOT_VERIFIED") {
-            router.replace(getEmailVerificationPendingTarget(parsed.data.email))
+            router.replace(getEmailVerificationPendingRoute(parsed.data.email))
             router.refresh()
             return
           }
@@ -158,7 +150,7 @@ export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
 
       <p className="text-center text-muted-foreground text-sm">
         还没有账号？{" "}
-        <Link className="font-medium text-primary hover:underline" href="/sign-up">
+        <Link className="font-medium text-primary hover:underline" href={ROUTE_SIGN_UP}>
           创建账号
         </Link>
       </p>

@@ -1,6 +1,12 @@
 import { createEnv } from "@t3-oss/env-nextjs"
 import { z } from "zod"
 
+const emailProviderConsole = "console"
+const emailProviderResend = "resend"
+const emailProviderSmtp = "smtp"
+/** @type {["console", "resend", "smtp"]} */
+const emailProviders = [emailProviderConsole, emailProviderResend, emailProviderSmtp]
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -15,13 +21,13 @@ export const env = createEnv({
     BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string().optional(),
     DATABASE_URL: z.string().url(),
     EMAIL_FROM: z.string().default("Lever Admin <no-reply@example.com>"),
-    EMAIL_PROVIDER: z.enum(["console", "resend", "smtp"]).default("console"),
+    EMAIL_PROVIDER: z.enum(emailProviders).default(emailProviderConsole),
     GOOGLE_RECAPTCHA_MIN_SCORE: z.coerce.number().min(0).max(1).optional(),
     GOOGLE_RECAPTCHA_SECRET_KEY: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    RESEND_API_KEY: process.env.EMAIL_PROVIDER === "resend" ? z.string().min(1) : z.string().optional(),
-    SMTP_HOST: process.env.EMAIL_PROVIDER === "smtp" ? z.string().min(1) : z.string().optional(),
-    SMTP_PASSWORD: process.env.EMAIL_PROVIDER === "smtp" ? z.string().min(1) : z.string().optional(),
+    RESEND_API_KEY: process.env.EMAIL_PROVIDER === emailProviderResend ? z.string().min(1) : z.string().optional(),
+    SMTP_HOST: process.env.EMAIL_PROVIDER === emailProviderSmtp ? z.string().min(1) : z.string().optional(),
+    SMTP_PASSWORD: process.env.EMAIL_PROVIDER === emailProviderSmtp ? z.string().min(1) : z.string().optional(),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
     SMTP_SECURE: z.preprocess((value) => {
       if (value === undefined) {
@@ -38,7 +44,7 @@ export const env = createEnv({
 
       return value
     }, z.boolean()),
-    SMTP_USER: process.env.EMAIL_PROVIDER === "smtp" ? z.string().min(1) : z.string().optional()
+    SMTP_USER: process.env.EMAIL_PROVIDER === emailProviderSmtp ? z.string().min(1) : z.string().optional()
   },
 
   /**

@@ -10,9 +10,18 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  FILTER_ALL,
+  INVITATION_STATUS_PENDING,
+  NOTIFICATION_TYPE_INVITATION,
+  NOTIFICATION_TYPE_SECURITY,
+  type NotificationTypeFilter
+} from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 
-type NotificationType = "all" | "invitation" | "security" | "system"
+type NotificationType = NotificationTypeFilter
 type NotificationCounts = RouterOutputs["notification"]["getUnreadCount"]
 type NotificationList = RouterOutputs["notification"]["list"]
 type NotificationItem = NotificationList["items"][number]
@@ -23,19 +32,19 @@ type DashboardNotificationMenuProps = {
 }
 
 const filters: { label: string; value: NotificationType }[] = [
-  { label: "全部", value: "all" },
-  { label: "邀请", value: "invitation" },
-  { label: "安全", value: "security" }
+  { label: "全部", value: FILTER_ALL },
+  { label: "邀请", value: NOTIFICATION_TYPE_INVITATION },
+  { label: "安全", value: NOTIFICATION_TYPE_SECURITY }
 ]
 
 const formatCount = (count: number) => (count > 99 ? "99+" : count.toString())
 
 export const DashboardNotificationMenu = ({ disabled = false, initialCounts }: DashboardNotificationMenuProps) => {
   const [hydrated, setHydrated] = useState(false)
-  const [type, setType] = useState<NotificationType>("all")
+  const [type, setType] = useState<NotificationType>(FILTER_ALL)
   const [mobileOpen, setMobileOpen] = useState(false)
   const counts = api.notification.getUnreadCount.useQuery(undefined, { initialData: initialCounts })
-  const list = api.notification.list.useQuery({ page: 1, pageSize: 10, type })
+  const list = api.notification.list.useQuery({ page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE, type })
   const count = counts.data.pendingCount || counts.data.unreadCount
 
   useEffect(() => {
@@ -171,12 +180,12 @@ const NotificationListItem = ({ item, onActionComplete }: { item: NotificationIt
     <div className="rounded-xl border bg-card p-3 shadow-sm">
       <div className="flex items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary text-sm">
-          {item.type === "invitation" ? "邀" : "通"}
+          {item.type === NOTIFICATION_TYPE_INVITATION ? "邀" : "通"}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <div className="truncate font-medium text-sm">{item.title}</div>
-            <Badge variant={item.status === "pending" ? "secondary" : "outline"}>{item.status === "pending" ? "待处理" : "已读"}</Badge>
+            <Badge variant={item.status === INVITATION_STATUS_PENDING ? "secondary" : "outline"}>{item.status === INVITATION_STATUS_PENDING ? "待处理" : "已读"}</Badge>
           </div>
           <div className="mt-1 text-muted-foreground text-xs">{item.description}</div>
           {invitation?.expiresAt ? <div className="mt-1 text-amber-600 text-xs dark:text-amber-400">{new Date(invitation.expiresAt).toLocaleDateString()} 前处理</div> : null}

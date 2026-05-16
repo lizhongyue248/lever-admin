@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { INVITATION_STATUS_PENDING, ROUTE_DASHBOARD } from "@/lib/const"
 import { api, type RouterOutputs } from "@/trpc/react"
 
 type InvitationDetail = RouterOutputs["notification"]["invitation"]["getMine"]
@@ -24,7 +25,7 @@ export const InvitationConfirmationCard = ({ invitation }: { invitation: Invitat
   const router = useRouter()
   const utils = api.useUtils()
   const [hydrated, setHydrated] = useState(false)
-  const isProcessable = invitation.effectiveStatus === "pending"
+  const isProcessable = invitation.effectiveStatus === INVITATION_STATUS_PENDING
   const actionsDisabled = !hydrated || !isProcessable
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export const InvitationConfirmationCard = ({ invitation }: { invitation: Invitat
         utils.dashboard.getShell.invalidate(),
         utils.dashboard.getHome.invalidate()
       ])
-      router.replace("/dashboard")
+      router.replace(ROUTE_DASHBOARD)
       router.refresh()
     }
   })
