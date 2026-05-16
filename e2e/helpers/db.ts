@@ -417,7 +417,10 @@ export const assignOrganizationMemberToDepartmentByEmail = async ({ departmentId
     await sql`
       insert into "system_organization_department_member" ("id", "organization_id", "department_id", "member_id", "created_at", "updated_at")
       values (${`department-member-${departmentId}-${memberId}`}, ${organizationId}, ${departmentId}, ${memberId}, now(), now())
-      on conflict ("department_id", "member_id") do nothing
+      on conflict ("id") do update set
+        "deleted_at" = null,
+        "deleted_by" = null,
+        "updated_at" = now()
     `
   } finally {
     await sql.end()
@@ -591,6 +594,7 @@ export const getDepartmentByName = async ({ name, organizationId }: { name: stri
       from "system_organization_department"
       where "organization_id" = ${organizationId}
         and "name" = ${name}
+        and "deleted_at" is null
       limit 1
     `
 

@@ -214,7 +214,7 @@ test.describe("06 dashboard", () => {
 
     const viewportHeight = await page.evaluate(() => window.innerHeight)
 
-    await expect.poll(async () => page.locator("body").evaluate((element) => element.scrollHeight)).toBe(viewportHeight)
+    await expect.poll(async () => page.evaluate(() => Math.max(document.documentElement.scrollHeight, document.body.scrollHeight))).toBe(viewportHeight)
     await expect.poll(async () => page.locator("main").evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
 
     const sidebarTopBefore = await page.getByRole("navigation", { name: "主导航" }).boundingBox()

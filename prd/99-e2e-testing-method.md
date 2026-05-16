@@ -81,7 +81,7 @@ playwright.config.ts
 }
 ```
 
-Playwright 当前限制为 `workers: 4`。拆分为 PRD 一一对应的多个 spec 文件后，若完全按机器核心数并行，Next.js dev server 首次编译和 Better Auth 接口在本地容易出现非业务性的超时噪音；限制并发可以让 E2E 更稳定。
+Playwright 当前限制为 `workers: 2`，并将单用例 `timeout` 设置为 90 秒、`expect.timeout` 设置为 30 秒。拆分为 PRD 一一对应的多个 spec 文件后，若完全按机器核心数并行，Next.js dev server 首次编译和 Better Auth 接口在本地容易出现非业务性的超时噪音；限制并发并保留稍长的断言等待可以让 E2E 更稳定。
 
 ## Playwright 覆盖率
 
