@@ -95,7 +95,10 @@
 | --- | --- | --- |
 | `key` | text primary key | 配置键，例如 `email.provider` |
 | `value` | text | 配置值；敏感值可存加密后的字符串 |
+| `createdBy` | text nullable | 创建人 user id |
 | `updatedBy` | text nullable | 最后修改人 user id |
+| `deletedAt` | timestamp nullable | 软删除时间；第一版页面不展示已删除配置 |
+| `deletedBy` | text nullable | 软删除操作者 user id |
 | `createdAt` | timestamp | 创建时间 |
 | `updatedAt` | timestamp | 更新时间 |
 
@@ -132,8 +135,8 @@
 
 | 位置 | 当前状态 | 处理方式 |
 | --- | --- | --- |
-| `/dashboard/settings/profile` 个人头像 | 当前代码只支持填写头像 URL，PRD 明确“文件上传后置” | 改为支持上传头像文件；上传成功后把返回 URL 写入 `system_user.image`，保留手动 URL 作为可选高级输入 |
-| `/dashboard/orgs/[slug]/setting` 组织 Logo | 当前代码只支持填写 Logo URL，PRD 已要求设置页字段可使用上传入口 | 改为支持上传组织 Logo；上传成功后把返回 URL 写入 `system_organization.logo`，保留手动 URL 作为可选高级输入 |
+| `/dashboard/settings/profile` 个人头像 | 当前代码只支持填写头像 URL，PRD 明确“文件上传后置” | 改为支持上传头像文件；上传成功后把返回 URL 写入 `auth_user.image`，保留手动 URL 作为可选高级输入 |
+| `/dashboard/orgs/[slug]/setting` 组织 Logo | 当前代码只支持填写 Logo URL，PRD 已要求设置页字段可使用上传入口 | 改为支持上传组织 Logo；上传成功后把返回 URL 写入 `auth_organization.logo`，保留手动 URL 作为可选高级输入 |
 
 暂不接入上传配置的地方：
 
@@ -158,6 +161,7 @@
   - 返回 provider、from、非敏感字段和敏感字段是否已配置。
 - `adminPlatformSetting.updateEmailSettings`
   - `super_admin` 保存邮件配置。
+  - 新增或更新配置 key 时写入当前操作者到 `createdBy`、`updatedBy`；清除敏感 key 时使用 `deletedAt`、`deletedBy` 软删除，不做硬删除。
   - 使用 Zod 校验 provider 对应必填项：
     - `console`：需要 `email.from`；生产环境不可启用。
     - `resend`：需要 `email.from` 和已配置的 Resend API Key。
@@ -174,6 +178,7 @@
   - 返回 provider、非敏感字段和敏感字段是否已配置。
 - `adminPlatformSetting.updateStorageSettings`
   - `super_admin` 保存文件存储配置。
+  - 新增或更新配置 key 时写入当前操作者到 `createdBy`、`updatedBy`；清除敏感 key 时使用 `deletedAt`、`deletedBy` 软删除，不做硬删除。
   - 使用 Zod 校验 provider 对应必填项：
     - `local`：需要本地上传目录。
     - `s3`：需要 bucket、region 或 endpoint、access key、secret key；兼容服务可配置 `forcePathStyle`。

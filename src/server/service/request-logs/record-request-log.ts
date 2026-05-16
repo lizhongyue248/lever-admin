@@ -67,6 +67,7 @@ const insertRequestLog = async (input: InsertRequestLogInput) => {
 
   await db.insert(requestLog).values({
     apiKeyId: input.apiKeyId ?? null,
+    createdBy: input.user?.id ?? null,
     durationMs: input.durationMs ?? null,
     errorCode: input.errorCode ?? null,
     failureReason: input.failureReason ?? null,
@@ -88,6 +89,7 @@ const insertRequestLog = async (input: InsertRequestLogInput) => {
     source: input.source,
     statusCode: input.statusCode ?? null,
     success: input.success,
+    updatedBy: input.user?.id ?? null,
     userAgentHash: sha256(userAgentRaw),
     userAgentRaw,
     userAgentSummary: summarizeUserAgent(userAgentRaw),

@@ -3,7 +3,7 @@ import "server-only"
 import path from "node:path"
 
 import { TRPCError } from "@trpc/server"
-import { eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 
 import {
@@ -104,7 +104,10 @@ const toBoolean = (value: string | undefined, fallback: boolean): boolean => {
 }
 
 const getRows = async (db: PlatformSettingsDb) => {
-  const rows = await db.select().from(platformSetting).where(inArray(platformSetting.key, allowedKeys))
+  const rows = await db
+    .select()
+    .from(platformSetting)
+    .where(and(inArray(platformSetting.key, allowedKeys), isNull(platformSetting.deletedAt)))
   const values = new Map(rows.map((row) => [row.key, row.value]))
 
   return {
@@ -205,12 +208,17 @@ const upsertSetting = async (db: PlatformSettingsWriteDb, key: string, value: st
   await db
     .insert(platformSetting)
     .values({
+      createdBy: updatedBy,
+      deletedAt: null,
+      deletedBy: null,
       key,
       updatedBy,
       value: serializeSettingValue(key, value)
     })
     .onConflictDoUpdate({
       set: {
+        deletedAt: null,
+        deletedBy: null,
         updatedAt: new Date(),
         updatedBy,
         value: serializeSettingValue(key, value)
@@ -219,8 +227,16 @@ const upsertSetting = async (db: PlatformSettingsWriteDb, key: string, value: st
     })
 }
 
-const deleteSetting = async (db: PlatformSettingsWriteDb, key: string) => {
-  await db.delete(platformSetting).where(eq(platformSetting.key, key))
+const deleteSetting = async (db: PlatformSettingsWriteDb, key: string, updatedBy: string) => {
+  await db
+    .update(platformSetting)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: updatedBy,
+      updatedAt: new Date(),
+      updatedBy
+    })
+    .where(eq(platformSetting.key, key))
 }
 
 export const updateStorageSettings = async (db: PlatformSettingsDb, input: UpdateStorageSettingsInput, updatedBy: string) => {
@@ -248,11 +264,11 @@ export const updateStorageSettings = async (db: PlatformSettingsDb, input: Updat
     }
 
     if (input.clearS3AccessKeyId && !input.s3AccessKeyId) {
-      await deleteSetting(tx, keys.s3AccessKeyId)
+      await deleteSetting(tx, keys.s3AccessKeyId, updatedBy)
     }
 
     if (input.clearS3SecretAccessKey && !input.s3SecretAccessKey) {
-      await deleteSetting(tx, keys.s3SecretAccessKey)
+      await deleteSetting(tx, keys.s3SecretAccessKey, updatedBy)
     }
   })
 

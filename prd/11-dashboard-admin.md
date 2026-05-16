@@ -35,10 +35,10 @@
 
 管理概览页不得使用示例风险、固定异常会话数或静态快捷摘要。所有统计和风险列表必须由服务端从真实表聚合。
 
-- 用户总数、活跃用户来自 `system_user` 和最近 30 天 `system_session` / `system_request_log`。
-- 平台组织数、部门数、成员数和待处理邀请来自 `system_organization`、`system_organization_department`、`system_member`、`system_invitation`。
+- 用户总数、活跃用户来自 `auth_user` 和最近 30 天 `auth_session` / `system_request_log`。
+- 平台组织数、部门数、成员数和待处理邀请来自 `auth_organization`、`system_organization_department`、`auth_member`、`auth_invitation`。
 - 异常会话沿用 `09-dashboard-settings-sessions.md` 和 `10-dashboard-orgs-slug-settings.md` 的会话风险规则，按全平台去重统计。
-- API Key 数和风险 API Key 来自 `system_apikey` 与 `system_api_key_usage_log`，风险规则与 `14-dashboard-admin-api-keys.md` 保持一致。
+- API Key 数和风险 API Key 来自 `auth_apikey` 与 `system_api_key_usage_log`，风险规则与 `14-dashboard-admin-api-keys.md` 保持一致。
 - 风险列表只展示真实存在的待处理项；没有风险时展示空态，不展示固定“过期邀请”“异常登录”等示例条目。
 
 ## 实现要点

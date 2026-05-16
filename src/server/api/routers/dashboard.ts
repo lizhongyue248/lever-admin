@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, desc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm"
+import { and, desc, eq, gt, gte, inArray, isNull, lte, sql } from "drizzle-orm"
 import { z } from "zod"
 
 import {
@@ -175,11 +175,11 @@ export const dashboardRouter = createTRPCRouter({
       const departmentRows = await ctx.db
         .select({ id: organizationDepartment.id, name: organizationDepartment.name })
         .from(organizationDepartment)
-        .where(eq(organizationDepartment.organizationId, organizationId))
+        .where(and(eq(organizationDepartment.organizationId, organizationId), isNull(organizationDepartment.deletedAt)))
       const departmentMemberRows = await ctx.db
         .select({ departmentId: organizationDepartmentMember.departmentId, memberId: organizationDepartmentMember.memberId })
         .from(organizationDepartmentMember)
-        .where(eq(organizationDepartmentMember.organizationId, organizationId))
+        .where(and(eq(organizationDepartmentMember.organizationId, organizationId), isNull(organizationDepartmentMember.deletedAt)))
       const departmentMemberCounts = new Map<string, number>()
       const assignedMemberIds = new Set<string>()
 
@@ -237,13 +237,20 @@ export const dashboardRouter = createTRPCRouter({
       const requestEvents = await ctx.db
         .select({ createdAt: requestLog.createdAt, id: requestLog.id, method: requestLog.method, path: requestLog.path, success: requestLog.success })
         .from(requestLog)
-        .where(and(eq(requestLog.organizationId, organizationId), gte(requestLog.createdAt, recentWindowStart)))
+        .where(and(eq(requestLog.organizationId, organizationId), gte(requestLog.createdAt, recentWindowStart), isNull(requestLog.deletedAt)))
         .orderBy(desc(requestLog.createdAt))
         .limit(3)
       const apiKeyEvents = await ctx.db
         .select({ createdAt: apiKeyUsageLog.createdAt, id: apiKeyUsageLog.id, method: apiKeyUsageLog.method, path: apiKeyUsageLog.path, success: apiKeyUsageLog.success })
         .from(apiKeyUsageLog)
-        .where(and(eq(apiKeyUsageLog.configId, API_KEY_OWNER_ORGANIZATION), eq(apiKeyUsageLog.referenceId, organizationId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
+        .where(
+          and(
+            eq(apiKeyUsageLog.configId, API_KEY_OWNER_ORGANIZATION),
+            eq(apiKeyUsageLog.referenceId, organizationId),
+            gte(apiKeyUsageLog.createdAt, recentWindowStart),
+            isNull(apiKeyUsageLog.deletedAt)
+          )
+        )
         .orderBy(desc(apiKeyUsageLog.createdAt))
         .limit(3)
       const invitationEvents = await ctx.db
@@ -339,7 +346,14 @@ export const dashboardRouter = createTRPCRouter({
       ctx.db
         .select({ value: sql<number>`count(distinct ${apiKeyUsageLog.apiKeyId})::int` })
         .from(apiKeyUsageLog)
-        .where(and(eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, sessionUserId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
+        .where(
+          and(
+            eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER),
+            eq(apiKeyUsageLog.referenceId, sessionUserId),
+            gte(apiKeyUsageLog.createdAt, recentWindowStart),
+            isNull(apiKeyUsageLog.deletedAt)
+          )
+        )
     )
     const personalApiKeyExpiringSoonCount = await countRows(
       ctx.db
@@ -371,7 +385,7 @@ export const dashboardRouter = createTRPCRouter({
         userAgentSummary: requestLog.userAgentSummary
       })
       .from(requestLog)
-      .where(and(eq(requestLog.userId, sessionUserId), gte(requestLog.createdAt, recentWindowStart)))
+      .where(and(eq(requestLog.userId, sessionUserId), gte(requestLog.createdAt, recentWindowStart), isNull(requestLog.deletedAt)))
       .orderBy(desc(requestLog.createdAt))
       .limit(3)
     const invitationEvents = await ctx.db
@@ -390,7 +404,14 @@ export const dashboardRouter = createTRPCRouter({
         userAgentSummary: apiKeyUsageLog.userAgentSummary
       })
       .from(apiKeyUsageLog)
-      .where(and(eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, sessionUserId), gte(apiKeyUsageLog.createdAt, recentWindowStart)))
+      .where(
+        and(
+          eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER),
+          eq(apiKeyUsageLog.referenceId, sessionUserId),
+          gte(apiKeyUsageLog.createdAt, recentWindowStart),
+          isNull(apiKeyUsageLog.deletedAt)
+        )
+      )
       .orderBy(desc(apiKeyUsageLog.createdAt))
       .limit(3)
     const recentEvents = toReturnedEvents([

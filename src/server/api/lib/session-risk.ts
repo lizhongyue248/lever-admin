@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, inArray, sql } from "drizzle-orm"
+import { and, eq, gt, gte, inArray, isNull, sql } from "drizzle-orm"
 
 import { RISK_LEVEL_HIGH, SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER, SESSION_RISK_NORMAL, SESSION_RISK_RISK, SESSION_RISK_WINDOW_DAYS, type SessionRiskLevel } from "@/lib/const"
 import type { db } from "@/server/db"
@@ -72,7 +72,8 @@ export const getHighRiskUserIds = async ({ database, organizationId, userIds }: 
         inArray(requestLog.userId, userIds),
         organizationId ? eq(requestLog.organizationId, organizationId) : undefined,
         eq(requestLog.riskLevel, RISK_LEVEL_HIGH),
-        gte(requestLog.createdAt, getRiskWindowStart())
+        gte(requestLog.createdAt, getRiskWindowStart()),
+        isNull(requestLog.deletedAt)
       )
     )
 

@@ -15,7 +15,7 @@ export const markEmailVerified = async (email: string) => {
   const sql = createE2eSql()
 
   try {
-    await sql`update "system_user" set "email_verified" = true where "email" = ${email}`
+    await sql`update "auth_user" set "email_verified" = true where "email" = ${email}`
   } finally {
     await sql.end()
   }
@@ -25,7 +25,7 @@ export const setUserRole = async (email: string, role: string) => {
   const sql = createE2eSql()
 
   try {
-    await sql`update "system_user" set "role" = ${role} where "email" = ${email}`
+    await sql`update "auth_user" set "role" = ${role} where "email" = ${email}`
   } finally {
     await sql.end()
   }
@@ -37,7 +37,7 @@ export const createUserRecord = async ({ email, name, role = "user" }: { email: 
 
   try {
     await sql`
-      insert into "system_user" ("id", "name", "email", "email_verified", "role", "created_at", "updated_at")
+      insert into "auth_user" ("id", "name", "email", "email_verified", "role", "created_at", "updated_at")
       values (${id}, ${name}, ${email}, true, ${role}, now(), now())
       on conflict ("email") do update set
         "name" = excluded."name",
@@ -58,7 +58,7 @@ export const createAdminUserFixture = async ({ banned = false, email, name, role
 
   try {
     await sql`
-      insert into "system_user" ("id", "name", "email", "email_verified", "role", "banned", "created_at", "updated_at")
+      insert into "auth_user" ("id", "name", "email", "email_verified", "role", "banned", "created_at", "updated_at")
       values (${id}, ${name}, ${email}, true, ${role}, ${banned}, now(), now())
       on conflict ("email") do update set
         "name" = excluded."name",
@@ -80,7 +80,7 @@ export const createUserSessionFixture = async ({ email, userAgent = "E2E Chrome"
   try {
     const rows = await sql<{ id: string }[]>`
       select "id"
-      from "system_user"
+      from "auth_user"
       where "email" = ${email}
       limit 1
     `
@@ -93,7 +93,7 @@ export const createUserSessionFixture = async ({ email, userAgent = "E2E Chrome"
     const id = `session-${randomUUID()}`
     const token = `session-${randomUUID()}`
     await sql`
-      insert into "system_session" ("id", "token", "user_id", "expires_at", "ip_address", "user_agent", "created_at", "updated_at")
+      insert into "auth_session" ("id", "token", "user_id", "expires_at", "ip_address", "user_agent", "created_at", "updated_at")
       values (${id}, ${token}, ${userId}, now() + interval '7 days', '127.0.0.1', ${userAgent}, now(), now())
     `
 
@@ -109,7 +109,7 @@ export const getSessionById = async (sessionId: string) => {
   try {
     const rows = await sql<{ id: string; user_id: string }[]>`
       select "id", "user_id"
-      from "system_session"
+      from "auth_session"
       where "id" = ${sessionId}
       limit 1
     `
@@ -139,7 +139,7 @@ export const createApiKeyFixture = async ({
 
   try {
     await sql`
-      insert into "system_apikey" ("id", "config_id", "name", "start", "reference_id", "prefix", "key", "enabled", "expires_at", "permissions", "created_at", "updated_at")
+      insert into "auth_apikey" ("id", "config_id", "name", "start", "reference_id", "prefix", "key", "enabled", "expires_at", "permissions", "created_at", "updated_at")
       values (${id}, ${configId}, ${name}, ${prefix}, ${referenceId}, ${prefix}, ${`hash-${id}`}, ${enabled}, ${expiresAt ?? null}, ${JSON.stringify({})}, now(), now())
     `
 
@@ -352,8 +352,8 @@ export const assignOrganizationMemberToDepartmentByEmail = async ({ departmentId
   try {
     const rows = await sql<{ member_id: string }[]>`
       select member."id" as member_id
-      from "system_member" member
-      inner join "system_user" app_user on app_user."id" = member."user_id"
+      from "auth_member" member
+      inner join "auth_user" app_user on app_user."id" = member."user_id"
       where app_user."email" = ${email}
         and member."organization_id" = ${organizationId}
       limit 1
@@ -381,7 +381,7 @@ export const seedOrganizationWithDepartments = async ({ departmentName, rootName
 
   try {
     await sql`
-      insert into "system_organization" ("id", "name", "slug", "status", "created_at", "updated_at")
+      insert into "auth_organization" ("id", "name", "slug", "status", "created_at", "updated_at")
       values (${rootId}, ${rootName}, ${rootSlug}, 'active', now(), now())
       on conflict ("id") do update set
         "name" = excluded."name",
@@ -413,7 +413,7 @@ export const getUserByEmail = async (email: string) => {
   try {
     const rows = await sql<{ email: string; email_verified: boolean; id: string; name: string }[]>`
       select "id", "name", "email", "email_verified"
-      from "system_user"
+      from "auth_user"
       where "email" = ${email}
       limit 1
     `
@@ -430,7 +430,7 @@ export const countUsersByEmail = async (email: string) => {
   try {
     const rows = await sql<{ count: string }[]>`
       select count(*)::text as count
-      from "system_user"
+      from "auth_user"
       where "email" = ${email}
     `
 
@@ -451,7 +451,7 @@ export const createResetPasswordToken = async (email: string, token: string, exp
     }
 
     await sql`
-      insert into "system_verification" ("id", "identifier", "value", "expires_at", "created_at", "updated_at")
+      insert into "auth_verification" ("id", "identifier", "value", "expires_at", "created_at", "updated_at")
       values (${`reset-${token}`}, ${`reset-password:${token}`}, ${user.id}, ${expiresAt}, now(), now())
     `
   } finally {
@@ -476,7 +476,7 @@ export const addOrganizationMemberByEmail = async ({
   try {
     const rows = await sql<{ id: string }[]>`
       select "id"
-      from "system_user"
+      from "auth_user"
       where "email" = ${email}
       limit 1
     `
@@ -487,7 +487,7 @@ export const addOrganizationMemberByEmail = async ({
     }
 
     await sql`
-      insert into "system_member" ("id", "organization_id", "user_id", "role", "created_at")
+      insert into "auth_member" ("id", "organization_id", "user_id", "role", "created_at")
       values (${`member-${organizationId}-${userId}`}, ${organizationId}, ${userId}, ${role}, ${joinedAt})
       on conflict ("organization_id", "user_id") do update set "role" = excluded."role", "created_at" = excluded."created_at"
     `
@@ -502,8 +502,8 @@ export const getMemberByEmailAndOrganization = async ({ email, organizationId }:
   try {
     const rows = await sql<{ id: string; role: string }[]>`
       select member."id", member."role"
-      from "system_member" member
-      inner join "system_user" app_user on app_user."id" = member."user_id"
+      from "auth_member" member
+      inner join "auth_user" app_user on app_user."id" = member."user_id"
       where app_user."email" = ${email}
         and member."organization_id" = ${organizationId}
       limit 1
@@ -540,8 +540,8 @@ export const getDepartmentMembershipByEmail = async ({ email, organizationId }: 
     const rows = await sql<{ department_name: string; member_id: string }[]>`
       select department."name" as department_name, member."id" as member_id
       from "system_organization_department_member" department_member
-      inner join "system_member" member on member."id" = department_member."member_id"
-      inner join "system_user" app_user on app_user."id" = member."user_id"
+      inner join "auth_member" member on member."id" = department_member."member_id"
+      inner join "auth_user" app_user on app_user."id" = member."user_id"
       inner join "system_organization_department" department on department."id" = department_member."department_id"
       where app_user."email" = ${email}
         and member."organization_id" = ${organizationId}
@@ -560,7 +560,7 @@ export const getInvitationStatusByEmail = async ({ email, organizationId }: { em
   try {
     const rows = await sql<{ status: string }[]>`
       select "status"
-      from "system_invitation"
+      from "auth_invitation"
       where "email" = ${email}
         and "organization_id" = ${organizationId}
       order by "created_at" desc
@@ -579,7 +579,7 @@ export const getInvitationByEmail = async ({ email, organizationId }: { email: s
   try {
     const rows = await sql<{ id: string; status: string }[]>`
       select "id", "status"
-      from "system_invitation"
+      from "auth_invitation"
       where "email" = ${email}
         and "organization_id" = ${organizationId}
       order by "created_at" desc

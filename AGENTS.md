@@ -109,6 +109,7 @@ During dependency/configuration prep work, do not run `pnpm db:generate`, `pnpm 
 - Use Better Auth server APIs for session validation in Server Components, Route Handlers, and tRPC context.
 - Use official Better Auth plugins instead of custom auth logic.
 - When a plugin requires server and client configuration, configure both sides.
+- Better Auth-owned Drizzle tables must use the `auth_*` physical table prefix described in Database Table Prefixes.
 - After schema-affecting Better Auth changes, update Drizzle schema and migrations consistently.
 
 Expected plugins, depending on the PRD page:
@@ -128,6 +129,16 @@ Expected plugins, depending on the PRD page:
 - tRPC owns product-level aggregation, admin screens, dashboard data, and application-specific server procedures.
 - Prefer small, typed procedures over broad multi-purpose handlers.
 - Do not duplicate Better Auth internals in tRPC. Wrap or aggregate only when the UI needs product-specific behavior.
+
+### Database Table Prefixes
+
+- Better Auth-owned physical tables must use the `auth_*` prefix. This includes auth users, sessions, accounts, verification tokens, organizations, members, invitations, teams, team members, two-factor records, passkeys, and Better Auth API keys.
+- Product-owned extension tables must use the `system_*` prefix. This includes platform settings, request logs, API key usage logs, organization departments, and organization department members.
+- Keep Drizzle export/model names stable when possible, such as `user`, `session`, `organization`, `member`, and `apikey`; use table creators to control physical table names instead of renaming application-facing imports unnecessarily.
+- When changing Better Auth physical table names, explicitly pass the Drizzle schema mapping to the Better Auth Drizzle adapter so Better Auth model names resolve to the intended `auth_*` table objects.
+- `drizzle.config.ts` must include both `auth_*` and `system_*` in `tablesFilter` so migrations and schema pushes cover both namespaces.
+- Raw SQL, E2E helpers, and PRDs must reference the current physical table names. Do not use historical `system_user`, `system_session`, `system_account`, or other old Better Auth table names after the `auth_*` split.
+- Existing data migrations from old Better Auth table names to `auth_*` must use rename-style migrations where possible. Do not drop and recreate Better Auth tables when preserving users, sessions, organizations, invitations, and API keys matters.
 
 ### Authorization
 

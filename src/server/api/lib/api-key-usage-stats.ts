@@ -1,4 +1,4 @@
-import { and, eq, gte, sql } from "drizzle-orm"
+import { and, eq, gte, isNull, sql } from "drizzle-orm"
 
 import { API_KEY_USAGE_RECENT_DAYS, type ApiKeyOwnerType } from "@/lib/const"
 import { db } from "@/server/db"
@@ -78,6 +78,7 @@ const toNumber = (value: number | string | null | undefined) => Number(value ?? 
 
 const buildFilters = ({ apiKeyId, configId, referenceId }: UsageStatsScope, since: Date) =>
   and(
+    isNull(apiKeyUsageLog.deletedAt),
     eq(apiKeyUsageLog.apiKeyId, apiKeyId),
     gte(apiKeyUsageLog.createdAt, since),
     configId ? eq(apiKeyUsageLog.configId, configId) : undefined,

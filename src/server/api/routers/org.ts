@@ -190,7 +190,7 @@ const getDepartmentMemberUserIds = async (ctx: OrgContext, orgId: string, depart
     .select({ userId: member.userId })
     .from(organizationDepartmentMember)
     .innerJoin(member, eq(organizationDepartmentMember.memberId, member.id))
-    .where(and(eq(organizationDepartmentMember.organizationId, orgId), eq(organizationDepartmentMember.departmentId, departmentId)))
+    .where(and(eq(organizationDepartmentMember.organizationId, orgId), eq(organizationDepartmentMember.departmentId, departmentId), isNull(organizationDepartmentMember.deletedAt)))
 }
 
 const buildOrgRiskContext = async (ctx: OrgContext, organizationId: string) => {
@@ -216,7 +216,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
       status: organizationDepartment.status
     })
     .from(organizationDepartment)
-    .where(eq(organizationDepartment.organizationId, org.id))
+    .where(and(eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
     .orderBy(asc(organizationDepartment.depth), asc(organizationDepartment.sortOrder), asc(organizationDepartment.name))
 
   const rootMemberCount = await countRows(ctx.db.select({ value: count() }).from(member).where(eq(member.organizationId, org.id)))
@@ -228,7 +228,10 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
   )
   const departmentStats = await Promise.all(
     departmentRows.map(async (department) => {
-      const [memberCountRow] = await ctx.db.select({ value: count() }).from(organizationDepartmentMember).where(eq(organizationDepartmentMember.departmentId, department.id))
+      const [memberCountRow] = await ctx.db
+        .select({ value: count() })
+        .from(organizationDepartmentMember)
+        .where(and(eq(organizationDepartmentMember.departmentId, department.id), isNull(organizationDepartmentMember.deletedAt)))
       const [invitationCountRow] = await ctx.db
         .select({ value: count() })
         .from(invitation)
@@ -248,7 +251,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
     })
     .from(organizationDepartmentMember)
     .innerJoin(member, eq(organizationDepartmentMember.memberId, member.id))
-    .where(eq(organizationDepartmentMember.organizationId, org.id))
+    .where(and(eq(organizationDepartmentMember.organizationId, org.id), isNull(organizationDepartmentMember.deletedAt)))
   const departmentRiskCountById = new Map<string, number>()
 
   for (const row of departmentMemberRows) {
@@ -312,7 +315,9 @@ const listDepartmentMembers = async (
       ? ctx.db
           .select({ memberId: organizationDepartmentMember.memberId })
           .from(organizationDepartmentMember)
-          .where(and(eq(organizationDepartmentMember.organizationId, org.id), eq(organizationDepartmentMember.departmentId, selectedId)))
+          .where(
+            and(eq(organizationDepartmentMember.organizationId, org.id), eq(organizationDepartmentMember.departmentId, selectedId), isNull(organizationDepartmentMember.deletedAt))
+          )
       : undefined
 
   const where = and(
@@ -335,8 +340,8 @@ const listDepartmentMembers = async (
     .from(member)
     .innerJoin(user, eq(member.userId, user.id))
     .leftJoin(session, eq(session.userId, user.id))
-    .leftJoin(organizationDepartmentMember, eq(organizationDepartmentMember.memberId, member.id))
-    .leftJoin(organizationDepartment, eq(organizationDepartmentMember.departmentId, organizationDepartment.id))
+    .leftJoin(organizationDepartmentMember, and(eq(organizationDepartmentMember.memberId, member.id), isNull(organizationDepartmentMember.deletedAt)))
+    .leftJoin(organizationDepartment, and(eq(organizationDepartmentMember.departmentId, organizationDepartment.id), isNull(organizationDepartment.deletedAt)))
     .where(where)
     .groupBy(member.id, user.id)
     .orderBy(desc(member.createdAt))
@@ -370,7 +375,12 @@ const departmentMemberListInput = slugInput
 export const orgRouter = createTRPCRouter({
   getBySlug: protectedProcedure.input(slugInput).query(async ({ ctx, input }) => {
     const access = await requireOrgAccess(ctx, input.slug)
-    const departmentCount = await countRows(ctx.db.select({ value: count() }).from(organizationDepartment).where(eq(organizationDepartment.organizationId, access.org.id)))
+    const departmentCount = await countRows(
+      ctx.db
+        .select({ value: count() })
+        .from(organizationDepartment)
+        .where(and(eq(organizationDepartment.organizationId, access.org.id), isNull(organizationDepartment.deletedAt)))
+    )
 
     return {
       canManage: access.canManage,
@@ -395,7 +405,12 @@ export const orgRouter = createTRPCRouter({
           .where(and(eq(invitation.organizationId, org.id), eq(invitation.status, INVITATION_STATUS_PENDING)))
       )
       const activeSessionCount = Array.from(activeSessionCounts.values()).reduce((sum, value) => sum + value, 0)
-      const departmentCount = await countRows(ctx.db.select({ value: count() }).from(organizationDepartment).where(eq(organizationDepartment.organizationId, org.id)))
+      const departmentCount = await countRows(
+        ctx.db
+          .select({ value: count() })
+          .from(organizationDepartment)
+          .where(and(eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
+      )
       const riskyUserIds = new Set(
         memberUserIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > SESSION_RISK_MAX_ACTIVE_SESSIONS_PER_USER)
       )
@@ -446,7 +461,7 @@ export const orgRouter = createTRPCRouter({
           ? await ctx.db
               .select()
               .from(organizationDepartment)
-              .where(and(eq(organizationDepartment.id, parentId), eq(organizationDepartment.organizationId, org.id)))
+              .where(and(eq(organizationDepartment.id, parentId), eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
               .limit(1)
           : []
 
@@ -460,6 +475,7 @@ export const orgRouter = createTRPCRouter({
           .where(
             and(
               eq(organizationDepartment.organizationId, org.id),
+              isNull(organizationDepartment.deletedAt),
               parentId ? eq(organizationDepartment.parentDepartmentId, parentId) : isNull(organizationDepartment.parentDepartmentId),
               sql`lower(${organizationDepartment.name}) = ${trimmedName.toLowerCase()}`
             )
@@ -488,6 +504,7 @@ export const orgRouter = createTRPCRouter({
           .where(
             and(
               eq(organizationDepartment.organizationId, org.id),
+              isNull(organizationDepartment.deletedAt),
               parentId ? eq(organizationDepartment.parentDepartmentId, parentId) : isNull(organizationDepartment.parentDepartmentId)
             )
           )
@@ -499,6 +516,7 @@ export const orgRouter = createTRPCRouter({
           .values({
             depth,
             description: input.description || null,
+            createdBy: ctx.session.user.id,
             id,
             managerUserId: input.managerUserId || null,
             name: trimmedName,
@@ -506,7 +524,8 @@ export const orgRouter = createTRPCRouter({
             parentDepartmentId: parentId,
             path,
             sortOrder: (sortRow?.value ?? -1) + 1,
-            status: ORGANIZATION_STATUS_ACTIVE
+            status: ORGANIZATION_STATUS_ACTIVE,
+            updatedBy: ctx.session.user.id
           })
           .returning()
 
@@ -526,7 +545,7 @@ export const orgRouter = createTRPCRouter({
         const [target] = await ctx.db
           .select()
           .from(organizationDepartment)
-          .where(and(eq(organizationDepartment.id, input.departmentId), eq(organizationDepartment.organizationId, org.id)))
+          .where(and(eq(organizationDepartment.id, input.departmentId), eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
           .limit(1)
 
         if (!target) {
@@ -539,6 +558,7 @@ export const orgRouter = createTRPCRouter({
           .where(
             and(
               eq(organizationDepartment.organizationId, org.id),
+              isNull(organizationDepartment.deletedAt),
               target.parentDepartmentId ? eq(organizationDepartment.parentDepartmentId, target.parentDepartmentId) : isNull(organizationDepartment.parentDepartmentId),
               ne(organizationDepartment.id, target.id),
               sql`lower(${organizationDepartment.name}) = ${trimmedName.toLowerCase()}`
@@ -550,7 +570,11 @@ export const orgRouter = createTRPCRouter({
           throw new TRPCError({ code: "CONFLICT", message: "同级部门名称已存在。" })
         }
 
-        const [department] = await ctx.db.update(organizationDepartment).set({ name: trimmedName }).where(eq(organizationDepartment.id, target.id)).returning()
+        const [department] = await ctx.db
+          .update(organizationDepartment)
+          .set({ name: trimmedName, updatedAt: new Date(), updatedBy: ctx.session.user.id })
+          .where(eq(organizationDepartment.id, target.id))
+          .returning()
 
         return { department }
       }),
@@ -560,21 +584,39 @@ export const orgRouter = createTRPCRouter({
       const [target] = await ctx.db
         .select({ id: organizationDepartment.id })
         .from(organizationDepartment)
-        .where(and(eq(organizationDepartment.id, input.departmentId), eq(organizationDepartment.organizationId, org.id)))
+        .where(and(eq(organizationDepartment.id, input.departmentId), eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
         .limit(1)
 
       if (!target) {
         throw new TRPCError({ code: "NOT_FOUND", message: "部门不存在。" })
       }
 
-      const childCount = await countRows(ctx.db.select({ value: count() }).from(organizationDepartment).where(eq(organizationDepartment.parentDepartmentId, target.id)))
-      const memberCount = await countRows(ctx.db.select({ value: count() }).from(organizationDepartmentMember).where(eq(organizationDepartmentMember.departmentId, target.id)))
+      const childCount = await countRows(
+        ctx.db
+          .select({ value: count() })
+          .from(organizationDepartment)
+          .where(and(eq(organizationDepartment.parentDepartmentId, target.id), isNull(organizationDepartment.deletedAt)))
+      )
+      const memberCount = await countRows(
+        ctx.db
+          .select({ value: count() })
+          .from(organizationDepartmentMember)
+          .where(and(eq(organizationDepartmentMember.departmentId, target.id), isNull(organizationDepartmentMember.deletedAt)))
+      )
 
       if (childCount > 0 || memberCount > 0) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "该部门存在子部门或成员归属，请先处理后再删除。" })
       }
 
-      await ctx.db.delete(organizationDepartment).where(eq(organizationDepartment.id, target.id))
+      await ctx.db
+        .update(organizationDepartment)
+        .set({
+          deletedAt: new Date(),
+          deletedBy: ctx.session.user.id,
+          updatedAt: new Date(),
+          updatedBy: ctx.session.user.id
+        })
+        .where(eq(organizationDepartment.id, target.id))
 
       return { deleted: true }
     }),
@@ -595,7 +637,7 @@ export const orgRouter = createTRPCRouter({
         const [targetDepartment] = await ctx.db
           .select({ id: organizationDepartment.id })
           .from(organizationDepartment)
-          .where(and(eq(organizationDepartment.id, input.departmentId), eq(organizationDepartment.organizationId, org.id)))
+          .where(and(eq(organizationDepartment.id, input.departmentId), eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
           .limit(1)
 
         if (!targetDepartment) {
@@ -606,7 +648,13 @@ export const orgRouter = createTRPCRouter({
           ctx.db
             .select({ value: count() })
             .from(organizationDepartmentMember)
-            .where(and(eq(organizationDepartmentMember.organizationId, org.id), eq(organizationDepartmentMember.memberId, targetMember.id)))
+            .where(
+              and(
+                eq(organizationDepartmentMember.organizationId, org.id),
+                eq(organizationDepartmentMember.memberId, targetMember.id),
+                isNull(organizationDepartmentMember.deletedAt)
+              )
+            )
         )
 
         if (existingCount > 0) {
@@ -616,10 +664,12 @@ export const orgRouter = createTRPCRouter({
         const [departmentMember] = await ctx.db
           .insert(organizationDepartmentMember)
           .values({
+            createdBy: ctx.session.user.id,
             departmentId: targetDepartment.id,
             id: crypto.randomUUID(),
             memberId: targetMember.id,
-            organizationId: org.id
+            organizationId: org.id,
+            updatedBy: ctx.session.user.id
           })
           .returning()
 
@@ -652,7 +702,7 @@ export const orgRouter = createTRPCRouter({
           const [targetDepartment] = await ctx.db
             .select({ id: organizationDepartment.id })
             .from(organizationDepartment)
-            .where(and(eq(organizationDepartment.id, targetDepartmentId), eq(organizationDepartment.organizationId, org.id)))
+            .where(and(eq(organizationDepartment.id, targetDepartmentId), eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
             .limit(1)
 
           if (!targetDepartment) {
@@ -713,10 +763,12 @@ export const orgRouter = createTRPCRouter({
 
         if (targetDepartmentId) {
           await ctx.db.insert(organizationDepartmentMember).values({
+            createdBy: ctx.session.user.id,
             departmentId: targetDepartmentId,
             id: crypto.randomUUID(),
             memberId: createdMember.id,
-            organizationId: org.id
+            organizationId: org.id,
+            updatedBy: ctx.session.user.id
           })
         }
 
@@ -749,8 +801,16 @@ export const orgRouter = createTRPCRouter({
       }
 
       await ctx.db
-        .delete(organizationDepartmentMember)
-        .where(and(eq(organizationDepartmentMember.organizationId, org.id), eq(organizationDepartmentMember.memberId, targetMember.id)))
+        .update(organizationDepartmentMember)
+        .set({
+          deletedAt: new Date(),
+          deletedBy: ctx.session.user.id,
+          updatedAt: new Date(),
+          updatedBy: ctx.session.user.id
+        })
+        .where(
+          and(eq(organizationDepartmentMember.organizationId, org.id), eq(organizationDepartmentMember.memberId, targetMember.id), isNull(organizationDepartmentMember.deletedAt))
+        )
       await ctx.db.delete(member).where(eq(member.id, targetMember.id))
 
       return { removed: true }
@@ -805,7 +865,7 @@ export const orgRouter = createTRPCRouter({
           })
           .from(invitation)
           .innerJoin(user, eq(invitation.inviterId, user.id))
-          .leftJoin(organizationDepartment, eq(invitation.departmentId, organizationDepartment.id))
+          .leftJoin(organizationDepartment, and(eq(invitation.departmentId, organizationDepartment.id), isNull(organizationDepartment.deletedAt)))
           .where(
             and(
               eq(invitation.organizationId, org.id),
@@ -822,7 +882,7 @@ export const orgRouter = createTRPCRouter({
             .select({ value: sql<number>`count(*)::int` })
             .from(invitation)
             .innerJoin(user, eq(invitation.inviterId, user.id))
-            .leftJoin(organizationDepartment, eq(invitation.departmentId, organizationDepartment.id))
+            .leftJoin(organizationDepartment, and(eq(invitation.departmentId, organizationDepartment.id), isNull(organizationDepartment.deletedAt)))
             .where(
               and(
                 eq(invitation.organizationId, org.id),
@@ -856,7 +916,7 @@ export const orgRouter = createTRPCRouter({
           const [department] = await ctx.db
             .select({ id: organizationDepartment.id, name: organizationDepartment.name })
             .from(organizationDepartment)
-            .where(and(eq(organizationDepartment.id, targetDepartmentId), eq(organizationDepartment.organizationId, org.id)))
+            .where(and(eq(organizationDepartment.id, targetDepartmentId), eq(organizationDepartment.organizationId, org.id), isNull(organizationDepartment.deletedAt)))
             .limit(1)
 
           if (!department) {

@@ -1,7 +1,7 @@
 import "server-only"
 
 import { TRPCError } from "@trpc/server"
-import { eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 
 import { env } from "@/env"
@@ -79,7 +79,10 @@ const toBoolean = (value: string | undefined, fallback: boolean): boolean => {
 }
 
 const getRows = async (db: PlatformSettingsDb) => {
-  const rows = await db.select().from(platformSetting).where(inArray(platformSetting.key, allowedKeys))
+  const rows = await db
+    .select()
+    .from(platformSetting)
+    .where(and(inArray(platformSetting.key, allowedKeys), isNull(platformSetting.deletedAt)))
   const values = new Map(rows.map((row) => [row.key, row.value]))
 
   return {
@@ -173,12 +176,17 @@ const upsertSetting = async (db: PlatformSettingsWriteDb, key: string, value: st
   await db
     .insert(platformSetting)
     .values({
+      createdBy: updatedBy,
+      deletedAt: null,
+      deletedBy: null,
       key,
       updatedBy,
       value: serializeSettingValue(key, value)
     })
     .onConflictDoUpdate({
       set: {
+        deletedAt: null,
+        deletedBy: null,
         updatedAt: new Date(),
         updatedBy,
         value: serializeSettingValue(key, value)
@@ -187,8 +195,16 @@ const upsertSetting = async (db: PlatformSettingsWriteDb, key: string, value: st
     })
 }
 
-const deleteSetting = async (db: PlatformSettingsWriteDb, key: string) => {
-  await db.delete(platformSetting).where(eq(platformSetting.key, key))
+const deleteSetting = async (db: PlatformSettingsWriteDb, key: string, updatedBy: string) => {
+  await db
+    .update(platformSetting)
+    .set({
+      deletedAt: new Date(),
+      deletedBy: updatedBy,
+      updatedAt: new Date(),
+      updatedBy
+    })
+    .where(eq(platformSetting.key, key))
 }
 
 export const updateEmailSettings = async (db: PlatformSettingsDb, input: UpdateEmailSettingsInput, updatedBy: string) => {
@@ -214,11 +230,11 @@ export const updateEmailSettings = async (db: PlatformSettingsDb, input: UpdateE
     }
 
     if (input.clearResendApiKey && !input.resendApiKey) {
-      await deleteSetting(tx, keys.resendApiKey)
+      await deleteSetting(tx, keys.resendApiKey, updatedBy)
     }
 
     if (input.clearSmtpPassword && !input.smtpPassword) {
-      await deleteSetting(tx, keys.smtpPassword)
+      await deleteSetting(tx, keys.smtpPassword, updatedBy)
     }
   })
 

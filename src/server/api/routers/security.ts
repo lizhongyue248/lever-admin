@@ -106,31 +106,31 @@ export const securityRouter = createTRPCRouter({
       {
         key: "password" as const,
         label: "密码强度",
-        source: "system_account.password/provider_id",
+        source: "auth_account.password/provider_id",
         value: getDimensionValue(hasPassword)
       },
       {
         key: "twoFactor" as const,
         label: "双因素",
-        source: "system_user.two_factor_enabled + system_two_factor.verified",
+        source: "auth_user.two_factor_enabled + auth_two_factor.verified",
         value: getDimensionValue(hasTwoFactor)
       },
       {
         key: "passkey" as const,
         label: "Passkey",
-        source: "system_passkey",
+        source: "auth_passkey",
         value: getDimensionValue(hasPasskey)
       },
       {
         key: "oauth" as const,
         label: "第三方账号",
-        source: "system_account.provider_id",
+        source: "auth_account.provider_id",
         value: getDimensionValue(hasGithub || hasGoogle)
       },
       {
         key: "session" as const,
         label: "会话风险",
-        source: "system_session count",
+        source: "auth_session count",
         value: sessionDimensionValue
       }
     ]

@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 
 import { INVITATION_STATUS_ACCEPTED, INVITATION_STATUS_EXPIRED, INVITATION_STATUS_PENDING, INVITATION_STATUS_REJECTED, ORGANIZATION_ROLES } from "@/lib/const"
 import { invitation, member, organization, organizationDepartment, organizationDepartmentMember, session, user } from "@/server/db/schema"
@@ -48,7 +48,7 @@ export const getInvitationForCurrentUser = async (ctx: InvitationContext, invita
     .from(invitation)
     .innerJoin(organization, eq(invitation.organizationId, organization.id))
     .innerJoin(user, eq(invitation.inviterId, user.id))
-    .leftJoin(organizationDepartment, eq(invitation.departmentId, organizationDepartment.id))
+    .leftJoin(organizationDepartment, and(eq(invitation.departmentId, organizationDepartment.id), isNull(organizationDepartment.deletedAt)))
     .where(eq(invitation.id, invitationId))
     .limit(1)
 
@@ -100,15 +100,19 @@ export const acceptInvitationForCurrentUser = async (ctx: InvitationContext, inv
     const [existingDepartmentMembership] = await ctx.db
       .select({ id: organizationDepartmentMember.id })
       .from(organizationDepartmentMember)
-      .where(and(eq(organizationDepartmentMember.departmentId, target.departmentId), eq(organizationDepartmentMember.memberId, memberId)))
+      .where(
+        and(eq(organizationDepartmentMember.departmentId, target.departmentId), eq(organizationDepartmentMember.memberId, memberId), isNull(organizationDepartmentMember.deletedAt))
+      )
       .limit(1)
 
     if (!existingDepartmentMembership) {
       await ctx.db.insert(organizationDepartmentMember).values({
+        createdBy: ctx.session.user.id,
         departmentId: target.departmentId,
         id: crypto.randomUUID(),
         memberId,
-        organizationId: target.organizationId
+        organizationId: target.organizationId,
+        updatedBy: ctx.session.user.id
       })
     }
   }

@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm"
+import { and, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm"
 import { z } from "zod"
 
 import {
@@ -80,6 +80,7 @@ const buildListFilters = (input: RequestLogListInput) => {
   const since = getSinceDate(input.timeRange)
 
   return and(
+    isNull(requestLog.deletedAt),
     since ? gte(requestLog.createdAt, since) : undefined,
     input.result === REQUEST_LOG_RESULT_SUCCESS ? eq(requestLog.success, true) : undefined,
     input.result === REQUEST_LOG_RESULT_FAILED ? eq(requestLog.success, false) : undefined,
@@ -250,7 +251,11 @@ export const adminRequestLogRouter = createTRPCRouter({
   }),
 
   get: adminProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ ctx, input }) => {
-    const [row] = await ctx.db.select().from(requestLog).where(eq(requestLog.id, input.id)).limit(1)
+    const [row] = await ctx.db
+      .select()
+      .from(requestLog)
+      .where(and(eq(requestLog.id, input.id), isNull(requestLog.deletedAt)))
+      .limit(1)
 
     if (!row) {
       throw new TRPCError({ code: "NOT_FOUND", message: "请求日志不存在。" })
@@ -272,7 +277,7 @@ export const adminRequestLogRouter = createTRPCRouter({
         total24h: sql<number>`count(*)::int`
       })
       .from(requestLog)
-      .where(gte(requestLog.createdAt, since))
+      .where(and(gte(requestLog.createdAt, since), isNull(requestLog.deletedAt)))
       .catch(() => [])
 
     return {

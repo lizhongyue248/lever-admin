@@ -1,11 +1,40 @@
-import { relations } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import { boolean, foreignKey, index, integer, pgTableCreator, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
 import { API_KEY_OWNER_USER, INVITATION_STATUS_PENDING, ORGANIZATION_ROLE_MEMBER, ORGANIZATION_STATUS_ACTIVE, RISK_LEVEL_LOW } from "@/lib/const"
 
+export const createAuthTable = pgTableCreator((name) => `auth_${name}`)
 export const createSystemTable = pgTableCreator((name) => `system_${name}`)
 
-export const user = createSystemTable("user", {
+export const auditColumns = () => ({
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  createdBy: text("created_by"),
+  updatedBy: text("updated_by")
+})
+
+export const softDeleteColumns = () => ({
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: text("deleted_by")
+})
+
+export const entityColumns = () => ({
+  id: text("id").primaryKey(),
+  ...auditColumns(),
+  ...softDeleteColumns()
+})
+
+export const namedEntityColumns = () => ({
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  ...auditColumns(),
+  ...softDeleteColumns()
+})
+
+export const user = createAuthTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
@@ -20,7 +49,7 @@ export const user = createSystemTable("user", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 })
 
-export const session = createSystemTable(
+export const session = createAuthTable(
   "session",
   {
     id: text("id").primaryKey(),
@@ -39,10 +68,10 @@ export const session = createSystemTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" })
   },
-  (table) => [index("system_session_user_id_idx").on(table.userId)]
+  (table) => [index("auth_session_user_id_idx").on(table.userId)]
 )
 
-export const account = createSystemTable(
+export const account = createAuthTable(
   "account",
   {
     id: text("id").primaryKey(),
@@ -63,10 +92,10 @@ export const account = createSystemTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull()
   },
-  (table) => [index("system_account_user_id_idx").on(table.userId)]
+  (table) => [index("auth_account_user_id_idx").on(table.userId)]
 )
 
-export const verification = createSystemTable(
+export const verification = createAuthTable(
   "verification",
   {
     id: text("id").primaryKey(),
@@ -79,10 +108,10 @@ export const verification = createSystemTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull()
   },
-  (table) => [index("system_verification_identifier_idx").on(table.identifier)]
+  (table) => [index("auth_verification_identifier_idx").on(table.identifier)]
 )
 
-export const organization = createSystemTable(
+export const organization = createAuthTable(
   "organization",
   {
     id: text("id").primaryKey(),
@@ -96,26 +125,21 @@ export const organization = createSystemTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull()
   },
-  (table) => [uniqueIndex("system_organization_slug_idx").on(table.slug), index("system_organization_status_idx").on(table.status)]
+  (table) => [uniqueIndex("auth_organization_slug_idx").on(table.slug), index("auth_organization_status_idx").on(table.status)]
 )
 
 export const organizationDepartment = createSystemTable(
   "organization_department",
   {
-    id: text("id").primaryKey(),
+    ...namedEntityColumns(),
     organizationId: text("organization_id").notNull(),
     parentDepartmentId: text("parent_department_id"),
-    name: text("name").notNull(),
     path: text("path").notNull(),
     depth: integer("depth").default(0).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     status: text("status").default(ORGANIZATION_STATUS_ACTIVE).notNull(),
     managerUserId: text("manager_user_id"),
-    description: text("description"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull()
+    description: text("description")
   },
   (table) => [
     foreignKey({
@@ -137,11 +161,11 @@ export const organizationDepartment = createSystemTable(
     index("system_organization_department_parent_idx").on(table.parentDepartmentId),
     index("system_organization_department_path_idx").on(table.path),
     index("system_organization_department_status_idx").on(table.status),
-    uniqueIndex("system_organization_department_sibling_name_idx").on(table.organizationId, table.parentDepartmentId, table.name)
+    uniqueIndex("system_organization_department_sibling_name_idx").on(table.organizationId, table.parentDepartmentId, table.name).where(sql`${table.deletedAt} is null`)
   ]
 )
 
-export const member = createSystemTable(
+export const member = createAuthTable(
   "member",
   {
     id: text("id").primaryKey(),
@@ -155,23 +179,19 @@ export const member = createSystemTable(
     createdAt: timestamp("created_at").defaultNow().notNull()
   },
   (table) => [
-    index("system_member_organization_id_idx").on(table.organizationId),
-    index("system_member_user_id_idx").on(table.userId),
-    uniqueIndex("system_member_organization_user_idx").on(table.organizationId, table.userId)
+    index("auth_member_organization_id_idx").on(table.organizationId),
+    index("auth_member_user_id_idx").on(table.userId),
+    uniqueIndex("auth_member_organization_user_idx").on(table.organizationId, table.userId)
   ]
 )
 
 export const organizationDepartmentMember = createSystemTable(
   "organization_department_member",
   {
-    id: text("id").primaryKey(),
+    ...entityColumns(),
     organizationId: text("organization_id").notNull(),
     departmentId: text("department_id").notNull(),
-    memberId: text("member_id").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull()
+    memberId: text("member_id").notNull()
   },
   (table) => [
     foreignKey({
@@ -192,11 +212,11 @@ export const organizationDepartmentMember = createSystemTable(
     index("system_organization_department_member_org_idx").on(table.organizationId),
     index("system_organization_department_member_department_idx").on(table.departmentId),
     index("system_organization_department_member_member_idx").on(table.memberId),
-    uniqueIndex("system_organization_department_member_unique_idx").on(table.departmentId, table.memberId)
+    uniqueIndex("system_organization_department_member_unique_idx").on(table.departmentId, table.memberId).where(sql`${table.deletedAt} is null`)
   ]
 )
 
-export const invitation = createSystemTable(
+export const invitation = createAuthTable(
   "invitation",
   {
     id: text("id").primaryKey(),
@@ -220,15 +240,15 @@ export const invitation = createSystemTable(
       foreignColumns: [organizationDepartment.id],
       name: "invitation_department_fk"
     }).onDelete("set null"),
-    index("system_invitation_organization_id_idx").on(table.organizationId),
-    index("system_invitation_email_idx").on(table.email),
-    index("system_invitation_status_idx").on(table.status),
-    index("system_invitation_department_id_idx").on(table.departmentId),
-    index("system_invitation_team_id_idx").on(table.teamId)
+    index("auth_invitation_organization_id_idx").on(table.organizationId),
+    index("auth_invitation_email_idx").on(table.email),
+    index("auth_invitation_status_idx").on(table.status),
+    index("auth_invitation_department_id_idx").on(table.departmentId),
+    index("auth_invitation_team_id_idx").on(table.teamId)
   ]
 )
 
-export const team = createSystemTable(
+export const team = createAuthTable(
   "team",
   {
     id: text("id").primaryKey(),
@@ -239,10 +259,10 @@ export const team = createSystemTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").$onUpdate(() => /* @__PURE__ */ new Date())
   },
-  (table) => [index("system_team_organization_id_idx").on(table.organizationId)]
+  (table) => [index("auth_team_organization_id_idx").on(table.organizationId)]
 )
 
-export const teamMember = createSystemTable(
+export const teamMember = createAuthTable(
   "team_member",
   {
     id: text("id").primaryKey(),
@@ -255,13 +275,13 @@ export const teamMember = createSystemTable(
     createdAt: timestamp("created_at").defaultNow()
   },
   (table) => [
-    index("system_team_member_team_id_idx").on(table.teamId),
-    index("system_team_member_user_id_idx").on(table.userId),
-    uniqueIndex("system_team_member_team_user_idx").on(table.teamId, table.userId)
+    index("auth_team_member_team_id_idx").on(table.teamId),
+    index("auth_team_member_user_id_idx").on(table.userId),
+    uniqueIndex("auth_team_member_team_user_idx").on(table.teamId, table.userId)
   ]
 )
 
-export const twoFactor = createSystemTable(
+export const twoFactor = createAuthTable(
   "two_factor",
   {
     id: text("id").primaryKey(),
@@ -272,10 +292,10 @@ export const twoFactor = createSystemTable(
       .references(() => user.id, { onDelete: "cascade" }),
     verified: boolean("verified").default(true)
   },
-  (table) => [index("system_two_factor_secret_idx").on(table.secret), index("system_two_factor_user_id_idx").on(table.userId)]
+  (table) => [index("auth_two_factor_secret_idx").on(table.secret), index("auth_two_factor_user_id_idx").on(table.userId)]
 )
 
-export const passkey = createSystemTable(
+export const passkey = createAuthTable(
   "passkey",
   {
     id: text("id").primaryKey(),
@@ -292,21 +312,17 @@ export const passkey = createSystemTable(
     createdAt: timestamp("created_at").defaultNow(),
     aaguid: text("aaguid")
   },
-  (table) => [index("system_passkey_user_id_idx").on(table.userId), index("system_passkey_credential_id_idx").on(table.credentialID)]
+  (table) => [index("auth_passkey_user_id_idx").on(table.userId), index("auth_passkey_credential_id_idx").on(table.credentialID)]
 )
 
 export const platformSetting = createSystemTable("platform_setting", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
-  updatedBy: text("updated_by"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull()
+  ...auditColumns(),
+  ...softDeleteColumns()
 })
 
-export const apikey = createSystemTable(
+export const apikey = createAuthTable(
   "apikey",
   {
     id: text("id").primaryKey(),
@@ -335,13 +351,13 @@ export const apikey = createSystemTable(
     permissions: text("permissions"),
     metadata: text("metadata")
   },
-  (table) => [index("system_apikey_config_id_idx").on(table.configId), index("system_apikey_reference_id_idx").on(table.referenceId), index("system_apikey_key_idx").on(table.key)]
+  (table) => [index("auth_apikey_config_id_idx").on(table.configId), index("auth_apikey_reference_id_idx").on(table.referenceId), index("auth_apikey_key_idx").on(table.key)]
 )
 
 export const apiKeyUsageLog = createSystemTable(
   "api_key_usage_log",
   {
-    id: text("id").primaryKey(),
+    ...entityColumns(),
     apiKeyId: text("api_key_id"),
     configId: text("config_id").notNull(),
     referenceId: text("reference_id").notNull(),
@@ -359,8 +375,7 @@ export const apiKeyUsageLog = createSystemTable(
     ipRegion: text("ip_region"),
     userAgentHash: text("user_agent_hash"),
     userAgentSummary: text("user_agent_summary"),
-    durationMs: integer("duration_ms"),
-    createdAt: timestamp("created_at").defaultNow().notNull()
+    durationMs: integer("duration_ms")
   },
   (table) => [
     index("system_api_key_usage_log_api_key_created_at_idx").on(table.apiKeyId, table.createdAt),
@@ -377,7 +392,7 @@ export const apiKeyUsageLog = createSystemTable(
 export const requestLog = createSystemTable(
   "request_log",
   {
-    id: text("id").primaryKey(),
+    ...entityColumns(),
     requestId: text("request_id").notNull(),
     source: text("source").notNull(),
     method: text("method").notNull(),
@@ -409,8 +424,7 @@ export const requestLog = createSystemTable(
     userAgentSummary: text("user_agent_summary"),
     riskLevel: text("risk_level").default(RISK_LEVEL_LOW).notNull(),
     riskReasons: text("risk_reasons"),
-    metadata: text("metadata"),
-    createdAt: timestamp("created_at").defaultNow().notNull()
+    metadata: text("metadata")
   },
   (table) => [
     index("system_request_log_created_at_idx").on(table.createdAt),

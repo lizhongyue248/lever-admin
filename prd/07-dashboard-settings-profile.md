@@ -23,7 +23,7 @@
 - 修改名称。
 - 修改头像：
   - 支持上传头像文件，上传走 `18-dashboard-admin-platform-settings.md` 中定义的统一文件存储配置。
-  - 上传成功后把返回 URL 写入 `system_user.image`。
+  - 上传成功后把返回 URL 写入 `auth_user.image`。
   - 保留头像 URL 输入作为可选高级方式，便于使用外部公开图片。
 - 查看邮箱和用户 ID。
 - 保存资料。
@@ -32,8 +32,8 @@
 
 - `profile.get`：tRPC 读取当前 session user 和扩展 profile。
 - `profile.update`：校验当前用户身份后更新 name/image 等字段。
-- `profile.uploadAvatar` 或受控上传接口：校验当前用户身份后上传头像文件，只允许图片 MIME 类型，成功后返回 URL 或对象引用，再由资料保存流程写入 `system_user.image`。
-- 本页通过服务端 tRPC procedure 更新 Better Auth 的 `system_user` 基础字段，不开放 email、role 等敏感字段修改。
+- `profile.uploadAvatar` 或受控上传接口：校验当前用户身份后上传头像文件，只允许图片 MIME 类型，成功后返回 URL 或对象引用，再由资料保存流程写入 `auth_user.image`。
+- 本页通过服务端 tRPC procedure 更新 Better Auth 的 `auth_user` 基础字段，不开放 email、role 等敏感字段修改。
 
 ## 实现要点
 
@@ -45,13 +45,13 @@
 - API 位于 `src/server/api/routers/profile.ts`，包含 `profile.get` 与 `profile.update`。
 - 资料完整度统计来源：
   - 资料完整度由服务端按字段权重计算，不使用固定基础分。
-  - 名称完整：来自 `system_user.name`，名称长度满足校验规则记 35 分。
-  - 邮箱验证：来自 `system_user.email_verified`，已验证记 35 分。
-  - 头像 URL：来自 `system_user.image`，存在有效头像 URL 记 30 分。
+  - 名称完整：来自 `auth_user.name`，名称长度满足校验规则记 35 分。
+  - 邮箱验证：来自 `auth_user.email_verified`，已验证记 35 分。
+  - 头像 URL：来自 `auth_user.image`，存在有效头像 URL 记 30 分。
   - 总分为上述真实字段得分之和，范围为 0-100；未设置头像或未验证邮箱时按实际缺失扣分。
 - 页面右侧统计来源：
-  - 所属组织：统计 `system_member` 中当前用户的成员关系数量。
-  - 活跃会话：统计 `system_session` 中当前用户未过期会话数量。
+  - 所属组织：统计 `auth_member` 中当前用户的成员关系数量。
+  - 活跃会话：统计 `auth_session` 中当前用户未过期会话数量。
 - Pencil 原型包含四个画板：
   - `07 / Profile / Light / Desktop`
   - `07 / Profile / Dark / Desktop`

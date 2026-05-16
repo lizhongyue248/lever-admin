@@ -111,7 +111,7 @@ const getUsageSummary = async (apiKeyId: string) => {
       total24h: sql<number>`count(*)::int`
     })
     .from(apiKeyUsageLog)
-    .where(and(eq(apiKeyUsageLog.apiKeyId, apiKeyId), gte(apiKeyUsageLog.createdAt, since)))
+    .where(and(isNull(apiKeyUsageLog.deletedAt), eq(apiKeyUsageLog.apiKeyId, apiKeyId), gte(apiKeyUsageLog.createdAt, since)))
     .catch(() => [])
 
   return {
@@ -249,7 +249,7 @@ export const adminApiKeyRouter = createTRPCRouter({
         userAgentSummary: apiKeyUsageLog.userAgentSummary
       })
       .from(apiKeyUsageLog)
-      .where(and(eq(apiKeyUsageLog.apiKeyId, input.id), gte(apiKeyUsageLog.createdAt, since)))
+      .where(and(isNull(apiKeyUsageLog.deletedAt), eq(apiKeyUsageLog.apiKeyId, input.id), gte(apiKeyUsageLog.createdAt, since)))
       .orderBy(desc(apiKeyUsageLog.createdAt))
       .limit(5)
       .catch(() => [])
@@ -292,7 +292,7 @@ export const adminApiKeyRouter = createTRPCRouter({
     const [recentRow] = await ctx.db
       .select({ value: sql<number>`count(*)::int` })
       .from(apiKeyUsageLog)
-      .where(gte(apiKeyUsageLog.createdAt, recentSince))
+      .where(and(gte(apiKeyUsageLog.createdAt, recentSince), isNull(apiKeyUsageLog.deletedAt)))
       .catch(() => [])
 
     return {
@@ -389,6 +389,7 @@ export const adminApiKeyRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const since = new Date(Date.now() - API_KEY_STALE_REQUEST_DAYS * secondsPerDay * 1000)
       const filters = and(
+        isNull(apiKeyUsageLog.deletedAt),
         eq(apiKeyUsageLog.apiKeyId, input.id),
         gte(apiKeyUsageLog.createdAt, since),
         input.result === REQUEST_LOG_RESULT_SUCCESS ? eq(apiKeyUsageLog.success, true) : undefined,

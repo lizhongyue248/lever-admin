@@ -18,6 +18,7 @@ import {
   PLATFORM_ROLE_USER
 } from "@/lib/const"
 import { db } from "@/server/db"
+import * as schema from "@/server/db/schema"
 import { user as userTable } from "@/server/db/schema"
 import { renderOrganizationInvitationEmail, renderResetPasswordEmail, renderVerifyEmail, sendEmail } from "@/server/service/email"
 
@@ -53,7 +54,8 @@ export const auth = betterAuth({
   appName: "Lever Admin",
   baseURL: authBaseUrl,
   database: drizzleAdapter(db, {
-    provider: "pg"
+    provider: "pg",
+    schema
   }),
   trustedOrigins,
   session: {

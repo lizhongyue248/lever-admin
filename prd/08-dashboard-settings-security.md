@@ -39,11 +39,11 @@
 
 账号安全维度：
 
-- 密码：来自 `system_account` 中 credential/email provider 记录或 `password is not null` 的账号记录。
-- 2FA：来自 `system_user.two_factor_enabled` 和 `system_two_factor.verified`。
-- Passkey：来自 `system_passkey` 当前用户记录数。
-- OAuth：来自 `system_account.provider_id` 中非 credential provider 的绑定记录。
-- 会话风险：来自 `system_session` 和 `system_request_log`，与 `09-dashboard-settings-sessions.md` 的会话风险口径保持一致。
+- 密码：来自 `auth_account` 中 credential/email provider 记录或 `password is not null` 的账号记录。
+- 2FA：来自 `auth_user.two_factor_enabled` 和 `auth_two_factor.verified`。
+- Passkey：来自 `auth_passkey` 当前用户记录数。
+- OAuth：来自 `auth_account.provider_id` 中非 credential provider 的绑定记录。
+- 会话风险：来自 `auth_session` 和 `system_request_log`，与 `09-dashboard-settings-sessions.md` 的会话风险口径保持一致。
 
 安全分规则：
 
@@ -57,7 +57,7 @@ OAuth provider 配置：
 - `security.getOverview` 必须根据服务端可用 provider registry 返回 provider 列表。
 - 第一版 provider registry 至少包含 GitHub；Google 只有在 Better Auth 服务端和客户端均配置完成时才显示为可绑定。
 - 未配置 provider 可以显示为“未配置”但必须来自配置检测结果，不能在接口中固定 `configured: false`。
-- 已绑定状态来自 `system_account.provider_id`，解绑操作必须校验当前账号仍保留至少一种可用登录方式。
+- 已绑定状态来自 `auth_account.provider_id`，解绑操作必须校验当前账号仍保留至少一种可用登录方式。
 
 ## 实现要点
 

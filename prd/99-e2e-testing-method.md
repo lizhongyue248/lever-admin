@@ -106,19 +106,23 @@ Playwright 不使用内置 `webServer` 启动 Next.js，因为 `DATABASE_URL` �
 
 - 每个测试文件或测试用例使用唯一邮箱，例如 `e2e-${Date.now()}-${workerIndex}@example.com`。
 - 测试 helper 可以直接写入 Better Auth 相关表：
-  - `system_user`
-  - `system_account`
-  - `system_session`
-  - `system_verification`
-- 直接 SQL 访问 `system_user` 时必须使用双引号引用表名，例如 `"system_user"`，避免 PostgreSQL 将 `system_user` 当作关键字/系统标识解析。
+  - `auth_user`
+  - `auth_account`
+  - `auth_session`
+  - `auth_verification`
+- 数据库物理表前缀分层：
+  - Better Auth 拥有的认证、会话、组织、成员、邀请、团队、2FA、Passkey 和 API Key 表使用 `auth_*`。
+  - 平台自有扩展表使用 `system_*`。
+  - 测试 helper 直接 SQL 必须使用当前物理表名，不能继续引用旧的认证表名前缀。
+- 直接 SQL 访问 `auth_user` 时必须使用双引号引用表名，例如 `"auth_user"`，避免 PostgreSQL 将 `auth_user` 当作关键字/系统标识解析。
 - 已验证用户 seed：
-  - `system_user.email_verified=true`
-  - `system_account.provider_id="credential"`
-  - `system_account.password` 使用 Better Auth 兼容的密码哈希或通过 Better Auth API 创建。
+  - `auth_user.email_verified=true`
+  - `auth_account.provider_id="credential"`
+  - `auth_account.password` 使用 Better Auth 兼容的密码哈希或通过 Better Auth API 创建。
 - 未验证用户 seed：
-  - `system_user.email_verified=false`
+  - `auth_user.email_verified=false`
   - 用于验证登录后跳转 `/verify-email?status=pending&email=<encoded-email>`。
-- reset password 和 verify email token 优先通过 Better Auth API 或服务端行为生成；如果直接写 `system_verification`，必须保持 token 字段、过期时间和 Better Auth 校验逻辑一致。
+- reset password 和 verify email token 优先通过 Better Auth API 或服务端行为生成；如果直接写 `auth_verification`，必须保持 token 字段、过期时间和 Better Auth 校验逻辑一致。
 
 ## 测试分组
 

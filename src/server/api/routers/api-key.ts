@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm"
+import { and, desc, eq, gte, ilike, isNull, lte, or, sql } from "drizzle-orm"
 import { headers } from "next/headers"
 import { z } from "zod"
 
@@ -53,7 +53,13 @@ const getUsageSummary = async ({ apiKeyId, referenceId }: { apiKeyId: string; re
     })
     .from(apiKeyUsageLog)
     .where(
-      and(eq(apiKeyUsageLog.apiKeyId, apiKeyId), eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, referenceId), gte(apiKeyUsageLog.createdAt, since))
+      and(
+        isNull(apiKeyUsageLog.deletedAt),
+        eq(apiKeyUsageLog.apiKeyId, apiKeyId),
+        eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER),
+        eq(apiKeyUsageLog.referenceId, referenceId),
+        gte(apiKeyUsageLog.createdAt, since)
+      )
     )
     .catch(() => [])
 
@@ -234,7 +240,14 @@ export const apiKeyRouter = createTRPCRouter({
         userAgentSummary: apiKeyUsageLog.userAgentSummary
       })
       .from(apiKeyUsageLog)
-      .where(and(eq(apiKeyUsageLog.apiKeyId, input.id), eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER), eq(apiKeyUsageLog.referenceId, ctx.session.user.id)))
+      .where(
+        and(
+          isNull(apiKeyUsageLog.deletedAt),
+          eq(apiKeyUsageLog.apiKeyId, input.id),
+          eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER),
+          eq(apiKeyUsageLog.referenceId, ctx.session.user.id)
+        )
+      )
       .orderBy(desc(apiKeyUsageLog.createdAt))
       .limit(5)
       .catch(() => [])
@@ -338,6 +351,7 @@ export const apiKeyRouter = createTRPCRouter({
 
       const since = new Date(Date.now() - API_KEY_STALE_REQUEST_DAYS * secondsPerDay * 1000)
       const filters = and(
+        isNull(apiKeyUsageLog.deletedAt),
         eq(apiKeyUsageLog.apiKeyId, input.id),
         eq(apiKeyUsageLog.configId, API_KEY_OWNER_USER),
         eq(apiKeyUsageLog.referenceId, ctx.session.user.id),

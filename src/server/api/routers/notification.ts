@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, asc, eq, gt, sql } from "drizzle-orm"
+import { and, asc, eq, gt, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 
 import {
@@ -102,7 +102,7 @@ export const notificationRouter = createTRPCRouter({
             .from(invitation)
             .innerJoin(organization, eq(invitation.organizationId, organization.id))
             .innerJoin(user, eq(invitation.inviterId, user.id))
-            .leftJoin(organizationDepartment, eq(invitation.departmentId, organizationDepartment.id))
+            .leftJoin(organizationDepartment, and(eq(invitation.departmentId, organizationDepartment.id), isNull(organizationDepartment.deletedAt)))
             .where(where)
             .orderBy(asc(invitation.expiresAt))
             .limit(input.pageSize)

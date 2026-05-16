@@ -72,7 +72,7 @@
 - v1 权限策略：
   - 第一版暂不启用 API Key 级 permissions 管理，不在创建表单或平台页维护权限模板、权限勾选或自定义 scope。
   - API Key 只作为调用方身份凭据；开放接口允许 API Key 进入后，必须在接口层按创建者用户身份、平台角色、组织成员角色、资源归属和业务规则做授权限制。
-  - 如 Better Auth `system_apikey.permissions` 字段存在，可保持为空对象或最小默认值；平台风险、日志和授权判断不得依赖该字段。
+  - 如 Better Auth `auth_apikey.permissions` 字段存在，可保持为空对象或最小默认值；平台风险、日志和授权判断不得依赖该字段。
   - `metadata` 可保存备注、用途和创建来源，但不得作为鉴权依据。
 - Key 创建：
   - 个人 Key 创建入口由 `16-dashboard-settings-api-keys.md` 管理；普通用户只能创建自己的用户级 Key。
@@ -90,10 +90,10 @@
 
 ## API Key 调用日志实现规划
 
-- 数据表：新增产品扩展表 `system_api_key_usage_log`，不改写 Better Auth `system_apikey` 的 secret 存储语义。
+- 数据表：新增产品扩展表 `system_api_key_usage_log`，不改写 Better Auth `auth_apikey` 的 secret 存储语义。
 - 建议字段：
   - `id`：日志 ID。
-  - `apiKeyId`：关联 `system_apikey.id`，用于查询某个 Key 的日志。
+  - `apiKeyId`：关联 `auth_apikey.id`，用于查询某个 Key 的日志。
   - `configId`、`referenceId`：冗余保存 Key 所属类型和主体，便于平台筛选和接口层角色校验。
   - `keyPrefix`：保存安全前缀或 masked key 片段，方便删除 Key 后仍能审计，不保存完整 key 或 hash。
   - `method`、`path`、`routeName`：记录接口方法、路径和可选业务路由名。
@@ -102,7 +102,11 @@
   - `ipHash`、`ipCountry`、`ipRegion`：记录 IP 摘要和可选地域；不直接展示完整 IP，除非后续明确合规策略。
   - `userAgentHash`、`userAgentSummary`：记录 User-Agent 摘要。
   - `durationMs`：请求耗时。
+  - `createdBy`、`updatedBy`：审计操作者字段，API Key 自动调用日志可为空。
+  - `deletedAt`、`deletedBy`：软删除字段；日志查询默认排除已软删除记录。
   - `createdAt`：调用时间。
+  - `updatedAt`：更新时间；调用日志正常不更新。
+- API Key 使用日志的列表、详情、统计、风险计算和 Dashboard 聚合默认只查询 `deletedAt is null` 的记录。
 - 写入链路：
   - 在 API Key 鉴权入口增加统一包装层，例如 `validateApiKeyAndLog` 或 route handler/middleware 级 helper。
   - 统一包装层必须调用 Better Auth `auth.api.verifyApiKey` 校验 Key 有效性；接口层授权失败也必须进入同一日志链路。

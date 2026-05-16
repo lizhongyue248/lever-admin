@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm"
+import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm"
 import { z } from "zod"
 
 import {
@@ -68,7 +68,7 @@ export const adminOrgRouter = createTRPCRouter({
 
   getOverview: adminProcedure.query(async ({ ctx }) => {
     const [orgCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(organization)
-    const [departmentCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(organizationDepartment)
+    const [departmentCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(organizationDepartment).where(isNull(organizationDepartment.deletedAt))
     const [memberCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(member)
     const [pendingInvitationCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(invitation).where(eq(invitation.status, INVITATION_STATUS_PENDING))
     const [riskySessionCount] = await ctx.db
@@ -77,11 +77,11 @@ export const adminOrgRouter = createTRPCRouter({
         select sum(user_sessions."session_count")::int
         from (
           select count(active_session."id")::int as "session_count"
-          from "system_session" active_session
+          from "auth_session" active_session
           where active_session."expires_at" > now()
             and exists (
               select 1
-              from "system_member" active_member
+              from "auth_member" active_member
               where active_member."user_id" = active_session."user_id"
             )
           group by active_session."user_id"
@@ -121,8 +121,8 @@ export const adminOrgRouter = createTRPCRouter({
         .select({
           activeSessionCount: sql<number>`(
             select count(distinct active_session."id")::int
-            from "system_session" active_session
-            inner join "system_member" active_member on active_member."user_id" = active_session."user_id"
+            from "auth_session" active_session
+            inner join "auth_member" active_member on active_member."user_id" = active_session."user_id"
             where active_member."organization_id" = ${organization.id}
               and active_session."expires_at" > now()
           )`,
@@ -131,6 +131,7 @@ export const adminOrgRouter = createTRPCRouter({
             select count(*)::int
             from "system_organization_department" department
             where department."organization_id" = ${organization.id}
+              and department."deleted_at" is null
           )`,
           id: organization.id,
           logo: organization.logo,
@@ -138,7 +139,7 @@ export const adminOrgRouter = createTRPCRouter({
           name: organization.name,
           pendingInvitationCount: sql<number>`(
             select count(*)::int
-            from "system_invitation" pending_invitation
+            from "auth_invitation" pending_invitation
             where pending_invitation."organization_id" = ${organization.id}
               and pending_invitation."status" = ${INVITATION_STATUS_PENDING}
           )`,
@@ -146,17 +147,18 @@ export const adminOrgRouter = createTRPCRouter({
             select count(distinct risky_users."user_id")::int
             from (
               select risk_member."user_id"
-              from "system_member" risk_member
+              from "auth_member" risk_member
               inner join "system_request_log" risk_log
                 on risk_log."user_id" = risk_member."user_id"
                and risk_log."organization_id" = ${organization.id}
                and risk_log."risk_level" = ${RISK_LEVEL_HIGH}
                and risk_log."created_at" >= now() - ${SESSION_RISK_WINDOW_DAYS} * interval '1 day'
+               and risk_log."deleted_at" is null
               where risk_member."organization_id" = ${organization.id}
               union
               select active_member."user_id"
-              from "system_member" active_member
-              inner join "system_session" active_session on active_session."user_id" = active_member."user_id"
+              from "auth_member" active_member
+              inner join "auth_session" active_session on active_session."user_id" = active_member."user_id"
               where active_member."organization_id" = ${organization.id}
                 and active_session."expires_at" > now()
               group by active_member."user_id"

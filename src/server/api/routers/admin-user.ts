@@ -180,7 +180,7 @@ export const adminUserRouter = createTRPCRouter({
           role: user.role,
           sessionCount: sql<number>`(
             select count(*)::int
-            from "system_session" active_session
+            from "auth_session" active_session
             where active_session."user_id" = ${user.id}
               and active_session."expires_at" > now()
           )`

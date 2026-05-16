@@ -151,7 +151,12 @@
 | `riskLevel` | text | `low`、`medium`、`high` |
 | `riskReasons` | text nullable | JSON 字符串，保存风险原因数组 |
 | `metadata` | text nullable | 安全扩展信息 JSON，不保存敏感值 |
+| `createdBy` | text nullable | 创建人 user id；系统采集可为空 |
+| `updatedBy` | text nullable | 最后修改人 user id；日志正常不更新 |
+| `deletedAt` | timestamp nullable | 软删除时间；审计查询默认排除已软删除记录 |
+| `deletedBy` | text nullable | 软删除操作者 user id |
 | `createdAt` | timestamp | 请求时间 |
+| `updatedAt` | timestamp | 更新时间；日志正常与创建时间一致 |
 
 建议索引：
 
@@ -240,6 +245,8 @@
 - `recordRequestLog`
   - 服务端内部 helper，不暴露给客户端。
   - 负责标准化、请求体脱敏、计算风险等级并写入 `system_request_log`。
+  - 当日志存在当前用户上下文时，写入 `createdBy` 和 `updatedBy` 为当前用户 ID；系统请求或匿名请求没有用户上下文时允许为空。
+  - 请求日志列表、详情、概览、导出、会话风险和 Dashboard 聚合默认只查询 `deletedAt is null` 的记录。
 
 ## 页面状态
 

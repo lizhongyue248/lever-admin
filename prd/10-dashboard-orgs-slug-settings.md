@@ -38,7 +38,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
   - 共享的根级 loading 只保留 Dashboard 壳层内的最小兜底，不作为五个 tab 的最终骨架。
 - `/dashboard/orgs/[slug]` 概览：
   - 作为公司治理统计页，展示当前公司整体统计、成员增长、安全覆盖、邀请处理、登录风险、部门治理和最近组织事件。
-  - 成员增长图表必须来自 `system_member.created_at` 的真实成员加入时间，默认展示最近 6 个月截至每月末的累计成员数；没有成员时展示 0 值趋势，不使用示例月份或固定假数据。
+  - 成员增长图表必须来自 `auth_member.created_at` 的真实成员加入时间，默认展示最近 6 个月截至每月末的累计成员数；没有成员时展示 0 值趋势，不使用示例月份或固定假数据。
   - 成员增长图表使用 shadcn/ui Chart 与 Recharts 呈现，必须包含坐标轴、网格线和 tooltip，不使用手写 div 柱状图。
   - 不展示部门树节点管理区；部门树管理统一放在组织架构页。
 - `/dashboard/orgs/[slug]/information` 组织架构：
@@ -73,7 +73,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
   - 展示邀请列表、邀请状态、目标部门、邀请角色、邀请人、过期时间和操作。
   - 邀请状态必须使用 badge 展示：待接受、已接受、已拒绝、已取消和已过期使用不同视觉状态。
   - 发送邀请成功后必须关闭弹窗、清空邮箱输入、展示成功 toast，并刷新邀请列表表格。
-  - 发送邀请必须使用 Better Auth organization invitation 能力或与其语义完全一致的服务端封装，不允许仅手动插入 `system_invitation` 而绕过过期时间、权限校验和邀请邮件回调。
+  - 发送邀请必须使用 Better Auth organization invitation 能力或与其语义完全一致的服务端封装，不允许仅手动插入 `auth_invitation` 而绕过过期时间、权限校验和邀请邮件回调。
   - 邀请创建成功后必须生成 `expiresAt`，默认遵循 Better Auth organization plugin 的邀请过期配置。
   - 邀请创建成功后必须触发邀请通知；邀请邮件通过 `src/server/service/email` 统一发送服务发送，开发环境可使用 `EMAIL_PROVIDER=console` 输出邀请 URL，生产环境使用 Resend 或 SMTP provider 发送接受链接。
   - 邀请链接指向 `10A-organization-invitation-accept.md` 定义的邀请接受页。
@@ -86,7 +86,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
   - 支持按部门节点、成员、设备类型和风险状态筛选。
 - `/dashboard/orgs/[slug]/setting` 设置：
   - 组织信息使用表单呈现，包含公司名称、slug、logo、组织 ID、创建时间和成员数量。
-  - Logo 支持上传文件，上传走 `18-dashboard-admin-platform-settings.md` 中定义的统一文件存储配置；上传成功后把返回 URL 写入 `system_organization.logo`。
+  - Logo 支持上传文件，上传走 `18-dashboard-admin-platform-settings.md` 中定义的统一文件存储配置；上传成功后把返回 URL 写入 `auth_organization.logo`。
   - Logo URL 输入保留为可选高级方式，便于使用外部公开图片。
   - 可编辑字段使用输入框、选择器或上传入口；只读字段使用禁用输入框或只读文本域，避免纯详情列表样式。
   - 表单底部展示保存按钮和重置按钮，保存成功后展示 toast。
@@ -172,7 +172,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 - `org.session.list`：读取当前公司范围内成员会话，只返回必要设备、IP、最近活跃时间和风险状态，并支持按部门筛选。
 - `org.session.revoke`：校验 owner/admin 或平台管理员权限后撤销成员会话。
 - `org.update`：校验 owner/admin 权限后更新 organization。
-- `org.uploadLogo` 或受控上传接口：校验 owner/admin 或平台管理员权限后上传组织 Logo，只允许图片 MIME 类型，成功后返回 URL 或对象引用，再由组织设置保存流程写入 `system_organization.logo`。
+- `org.uploadLogo` 或受控上传接口：校验 owner/admin 或平台管理员权限后上传组织 Logo，只允许图片 MIME 类型，成功后返回 URL 或对象引用，再由组织设置保存流程写入 `auth_organization.logo`。
 - `org.delete`：校验 owner 或平台超级管理员权限，二次确认后删除组织。
 
 ### 组织风险与安全状态数据口径
@@ -186,7 +186,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
   - `risk_level='high'` 视为高风险。
   - `risk_level='medium'` 可在详情中展示原因，但部门树第一版只用高风险计数，避免过度告警。
   - 请求日志中的 `user_id`、`organization_id`、`created_at`、`risk_level`、`risk_reasons` 用于关联成员、部门和组织。
-- `system_session`：
+- `auth_session`：
   - 统计当前组织成员未过期会话。
   - 同一成员活跃会话数超过 5 个，标记该成员存在会话风险。
   - 未记录 IP 或 User-Agent 的活跃会话标记为中风险，仅在成员详情或登录情况中展示，不纳入部门树高风险计数。
@@ -210,8 +210,8 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 组织概览风险数据：
 
 - `riskySessionCount`：当前组织成员中满足会话风险规则的未过期会话数。
-- “最近组织事件”来自 `system_request_log`、`system_invitation`、`system_member.created_at`、`system_organization_department.created_at` 和组织级 API Key 使用日志；无事件时显示空态，不使用固定文案。
-- 成员增长图表保持使用 `system_member.created_at` 最近 6 个月累计值；没有成员时展示 0 值趋势。
+- “最近组织事件”来自 `system_request_log`、`auth_invitation`、`auth_member.created_at`、`system_organization_department.created_at` 和组织级 API Key 使用日志；无事件时显示空态，不使用固定文案。
+- 成员增长图表保持使用 `auth_member.created_at` 最近 6 个月累计值；没有成员时展示 0 值趋势。
 
 登录情况页数据处理：
 
@@ -223,11 +223,13 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 
 - 仅启用组织、成员、邀请和活跃组织能力；不提供额外分组管理入口。
 - Better Auth organization 只表示公司；部门不是 organization，不拥有 slug，不影响 activeOrganizationId。
-- 部门树需要产品层字段，例如 `organizationId`、`parentDepartmentId`、`name`、`path`、`depth`、`sortOrder`、`status`、`managerUserId` 和 `description`。
+- 部门树需要产品层字段，例如 `organizationId`、`parentDepartmentId`、`name`、`path`、`depth`、`sortOrder`、`status`、`managerUserId`、`description`、`createdBy`、`updatedBy`、`deletedAt` 和 `deletedBy`。
 - 部门创建必须写入 `system_organization_department`，`path` 使用父级 path 拼接新部门 id，`depth` 为父级 depth + 1，`status` 初始为 `active`。
 - 部门重命名只更新部门 `name`，不改变组织 slug、activeOrganizationId 或成员组织身份。
-- 部门删除第一版采用保守策略：存在子部门或部门成员时禁止删除，并在确认弹窗和错误 toast 中提示先迁移或移除归属；后续如需要级联删除或迁移删除需单独设计。
-- 成员属于 organization；部门归属通过产品扩展表 `system_organization_department_member` 表达。用户接受邀请后先成为组织成员，再按邀请中的默认部门建立部门成员关系。
+- 部门删除第一版采用保守策略：存在子部门或部门成员时禁止删除，并在确认弹窗和错误 toast 中提示先迁移或移除归属；删除通过 `deletedAt`、`deletedBy` 软删除标记完成。
+- 成员属于 organization；部门归属通过产品扩展表 `system_organization_department_member` 表达。该表使用公共审计和软删除字段，用户接受邀请后先成为组织成员，再按邀请中的默认部门建立部门成员关系。
+- 创建部门、重命名部门、删除部门和创建部门成员归属时，产品扩展表必须写入当前登录用户到 `createdBy`、`updatedBy`、`deletedBy` 等审计字段；Better Auth 自有 member 表仍保持插件原有字段语义。
+- 部门、部门成员归属的列表、详情、统计、搜索、邀请关联展示和风险聚合默认只查询 `deletedAt is null` 的记录；已软删除数据仅供后续审计或恢复能力使用。
 - 第一版成员分配部门仅处理「未分配 -> 单个部门」；跨部门调动、一个成员多部门归属和批量分配后续单独设计。
 - 成员、邀请和会话查询必须明确作用于公司整体还是某个部门节点。
 - 部门树 UI 第一版可基于 shadcn/ui `Collapsible`、`ScrollArea`、`Button` 和 `Badge` 自组；如引入第三方 registry TreeView，必须先评估依赖、可访问性、键盘导航和代码可维护性。

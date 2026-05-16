@@ -148,7 +148,7 @@
 
 - `dashboard.getOverview`：tRPC 聚合当前用户、活跃组织、当前组织角色，并返回当前工作台视角。
 - `dashboard.getShell`：返回 Dashboard 壳层所需用户、通知、组织和导航权限数据。返回用户平台角色用于 Sidebar 菜单过滤；返回组织列表和当前组织角色用于判断是否展示「当前组织」入口。
-- `notification.list`：读取当前登录用户的通知列表，支持 `type`、`status`、`page` 和 `pageSize`；第一版通知可由真实业务表聚合生成，组织邀请通知从 `system_invitation` 派生，不额外复制邀请数据。
+- `notification.list`：读取当前登录用户的通知列表，支持 `type`、`status`、`page` 和 `pageSize`；第一版通知可由真实业务表聚合生成，组织邀请通知从 `auth_invitation` 派生，不额外复制邀请数据。
 - `notification.getUnreadCount` 或 `dashboard.getShell` 内聚合：返回当前用户未读通知数和待处理通知数，用于 Topbar 通知图标 badge；不得暴露其他用户通知。
 - `notification.markRead`：第一版仅有派生邀请通知时返回不支持标记已读；新增可持久化普通通知模型后用于将普通通知标记为已读。组织邀请这类待处理通知在接受或拒绝后自动从待处理列表移除。
 - `notification.markAllRead`：第一版仅有派生邀请通知时返回不支持标记已读；新增可持久化普通通知模型后用于批量标记当前用户的非待处理普通通知。不能把 pending 邀请直接标记为已处理。
@@ -171,19 +171,19 @@
 个人视角数据来源：
 
 - 健康分雷达图：
-  - 邮箱维度来自 `system_user.email_verified`，已验证为 `100`，未验证为 `20`。
-  - 2FA 维度来自 `system_user.two_factor_enabled` 与 `system_two_factor.verified`，已启用且已验证为 `100`，否则为 `0`。
-  - Passkey 维度来自 `system_passkey` 当前用户记录数，大于 0 为 `100`，否则为 `0`。
-  - 会话维度来自 `system_session` 当前用户未过期会话数，`<= 3` 为 `100`，每超出一个会话扣 `10`，最低 `20`。
-  - 第三方账号维度来自 `system_account.provider_id` 中非 credential provider 的绑定数量，大于 0 为 `100`，否则为 `0`；不得使用固定 `80`。
-- 登录方式画像改为“可用登录方式”。数据来自 `system_account`、`system_passkey` 和 `system_user.two_factor_enabled`，按真实可用方式计数展示：邮箱密码、OAuth provider、Passkey。没有任何可统计方式时展示空态，不显示固定 `58/31/11`。
-- 设备足迹或登录趋势优先来自 `system_request_log` 中当前用户最近 30 天的登录、会话和 Dashboard 访问审计记录；如果请求日志尚未采集或为空，则展示真实空态和当前 `system_session` 活跃会话数量，不使用固定柱状图高度。
-- 个人 API Key 状态来自 `system_apikey` 和 `system_api_key_usage_log`：
+  - 邮箱维度来自 `auth_user.email_verified`，已验证为 `100`，未验证为 `20`。
+  - 2FA 维度来自 `auth_user.two_factor_enabled` 与 `auth_two_factor.verified`，已启用且已验证为 `100`，否则为 `0`。
+  - Passkey 维度来自 `auth_passkey` 当前用户记录数，大于 0 为 `100`，否则为 `0`。
+  - 会话维度来自 `auth_session` 当前用户未过期会话数，`<= 3` 为 `100`，每超出一个会话扣 `10`，最低 `20`。
+  - 第三方账号维度来自 `auth_account.provider_id` 中非 credential provider 的绑定数量，大于 0 为 `100`，否则为 `0`；不得使用固定 `80`。
+- 登录方式画像改为“可用登录方式”。数据来自 `auth_account`、`auth_passkey` 和 `auth_user.two_factor_enabled`，按真实可用方式计数展示：邮箱密码、OAuth provider、Passkey。没有任何可统计方式时展示空态，不显示固定 `58/31/11`。
+- 设备足迹或登录趋势优先来自 `system_request_log` 中当前用户最近 30 天的登录、会话和 Dashboard 访问审计记录；如果请求日志尚未采集或为空，则展示真实空态和当前 `auth_session` 活跃会话数量，不使用固定柱状图高度。
+- 个人 API Key 状态来自 `auth_apikey` 和 `system_api_key_usage_log`：
   - 总数：当前用户 `config_id='user'`、`reference_id=当前用户 ID` 的 key 数。
   - 30 天内使用：最近 30 天存在使用日志的 key 数。
   - 即将过期：`expires_at` 在未来 30 天内的启用 key 数。
   - 高风险 Scope：第一版如 API Key scope 尚未结构化定义，则不展示该行；不得写死 `0 个高权限 Scope`。
-- 最近身份事件来自 `system_request_log`、`system_invitation` 和 `system_api_key_usage_log` 的真实记录聚合：
+- 最近身份事件来自 `system_request_log`、`auth_invitation` 和 `system_api_key_usage_log` 的真实记录聚合：
   - 登录/会话事件来自请求日志或 session 更新时间。
   - 邀请事件来自当前用户邮箱对应的 invitation。
   - API Key 事件来自当前用户 key 的使用日志。
@@ -192,14 +192,14 @@
 组织管理员视角数据来源：
 
 - 组织治理健康分：
-  - 成员安全覆盖率来自组织成员对应 `system_user.email_verified`、`system_user.two_factor_enabled`、`system_two_factor.verified` 和 `system_passkey` 覆盖率。
-  - 邀请处理来自 `system_invitation` 当前组织 pending/expired 数量；无待处理和过期邀请为 `100`，有待处理时按数量扣分，最低 `20`。
-  - 部门治理来自 `system_organization_department`、`system_member` 和 `system_organization_department_member`：有部门且未分配成员占比越低分数越高；无部门但有成员时显示需要完善组织架构，不使用固定 `82`。
-  - 会话维度来自组织成员未过期 `system_session` 数量和 `system_request_log` 风险请求；无高风险且会话数量不异常为高分，存在高风险请求或超量会话按规则扣分。
-  - API Key 风险来自组织级 `system_apikey` 与 `system_api_key_usage_log`，统计禁用、即将过期、失败率高或高风险使用记录。
-- 权限分布来自 `system_member.role` 按 `owner`、`admin`、`member` 真实计数展示；当前没有 viewer 角色时不得展示 viewer 固定占比。
+  - 成员安全覆盖率来自组织成员对应 `auth_user.email_verified`、`auth_user.two_factor_enabled`、`auth_two_factor.verified` 和 `auth_passkey` 覆盖率。
+  - 邀请处理来自 `auth_invitation` 当前组织 pending/expired 数量；无待处理和过期邀请为 `100`，有待处理时按数量扣分，最低 `20`。
+  - 部门治理来自 `system_organization_department`、`auth_member` 和 `system_organization_department_member`：有部门且未分配成员占比越低分数越高；无部门但有成员时显示需要完善组织架构，不使用固定 `82`。
+  - 会话维度来自组织成员未过期 `auth_session` 数量和 `system_request_log` 风险请求；无高风险且会话数量不异常为高分，存在高风险请求或超量会话按规则扣分。
+  - API Key 风险来自组织级 `auth_apikey` 与 `system_api_key_usage_log`，统计禁用、即将过期、失败率高或高风险使用记录。
+- 权限分布来自 `auth_member.role` 按 `owner`、`admin`、`member` 真实计数展示；当前没有 viewer 角色时不得展示 viewer 固定占比。
 - 团队/部门结构卡片来自 `system_organization_department` 与 `system_organization_department_member`，展示最大部门、空部门、未分配成员等真实摘要；无部门时展示空态和进入组织架构页的入口，不使用固定气泡和“研发团队偏大”文案。
-- 最近组织事件来自 `system_request_log`、`system_invitation`、`system_member.created_at`、`system_organization_department.created_at` 和组织级 API Key 使用日志聚合；无记录时展示空态。
+- 最近组织事件来自 `system_request_log`、`auth_invitation`、`auth_member.created_at`、`system_organization_department.created_at` 和组织级 API Key 使用日志聚合；无记录时展示空态。
 - 风险行动队列的每一项都必须带真实 `count` 和来源。若某项当前数据源不可用，应隐藏该项或显示“暂无可评估数据”，不得使用序号 `1/2` 作为 count。
 
 根路由数据处理：

@@ -50,18 +50,18 @@
 
 组织列表数据来源：
 
-- 组织基础信息来自 `system_organization`。
-- 成员数来自 `system_member` 按 `organization_id` 去重统计。
+- 组织基础信息来自 `auth_organization`。
+- 成员数来自 `auth_member` 按 `organization_id` 去重统计。
 - 部门数来自 `system_organization_department`。
-- 待处理邀请数来自 `system_invitation` 中 `status='pending'` 且未过期的记录。
-- 活跃会话数来自组织成员对应 `system_session` 中未过期记录。
-- owner 信息来自 `system_member.role='owner'` 关联 `system_user`，第一版最多展示 2 个 owner，更多显示 `+N`。
+- 待处理邀请数来自 `auth_invitation` 中 `status='pending'` 且未过期的记录。
+- 活跃会话数来自组织成员对应 `auth_session` 中未过期记录。
+- owner 信息来自 `auth_member.role='owner'` 关联 `auth_user`，第一版最多展示 2 个 owner，更多显示 `+N`。
 - 风险数 `riskCount` 使用 `10-dashboard-orgs-slug-settings.md` 中定义的组织风险口径，按组织成员最近 30 天高风险请求、超量活跃会话和长期会话风险计算。
 - 平台总览 `riskySessionCount` 为所有组织范围内满足会话风险规则的未过期会话数；同一个会话只计一次。
 
 组织状态设计：
 
-- 第一版必须新增或使用可持久化状态字段，推荐在 `system_organization` 增加 `status`，取值为 `active`、`disabled`。
+- 第一版必须新增或使用可持久化状态字段，推荐在 `auth_organization` 增加 `status`，取值为 `active`、`disabled`。
 - 如短期内不增加字段，则页面不得展示“状态筛选”“停用组织”和“已停用”状态；只能展示真实可用的组织列表。
 - `admin.org.updateStatus` 必须落库更新组织状态，并写入系统请求日志或审计事件；不能只返回 `{ organizationId, status }`。
 - `status='disabled'` 的组织：
