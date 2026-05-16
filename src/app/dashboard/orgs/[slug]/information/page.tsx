@@ -17,7 +17,7 @@ const OrgInformationPage = async ({ params }: { params: Promise<{ slug: string }
   const selectedNodeId = tree.selectedNodeId ?? tree.nodes[0]?.id ?? null
   const members = selectedNodeId
     ? await api.org.department.member.list({ departmentId: selectedNodeId, page: 1, pageSize: 10, search: "", securityStatus: "all", slug })
-    : { items: [], page: 1, pageCount: 1 }
+    : { items: [], page: 1, pageCount: 1, total: 0 }
 
   return <OrgInformationContent canManage={orgAccess.canManage} initialMembers={members} isPlatformAdmin={orgAccess.isPlatformAdmin} slug={slug} tree={tree} />
 }

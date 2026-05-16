@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import { env } from "@/env"
 import { ORGANIZATION_ADMIN_ROLES, ORGANIZATION_ROLES, PLATFORM_ADMIN_ROLES, PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
+import { getActiveSessionCountsByUser, getHighRiskUserIds, getSessionRisk } from "@/server/api/lib/session-risk"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { invitation, member, organization, organizationDepartment, organizationDepartmentMember, session, user } from "@/server/db/schema"
 import { renderOrganizationInvitationEmail, sendEmail } from "@/server/service/email"
@@ -28,6 +29,12 @@ type OrgContext = {
 
 const isOrgAdminRole = (role: string | null | undefined) => ORGANIZATION_ADMIN_ROLES.some((item) => item === role)
 const isPlatformAdminRole = (role: string | null | undefined) => PLATFORM_ADMIN_ROLES.some((item) => item === role)
+
+const assertOrgActive = (org: Pick<typeof organization.$inferSelect, "status">) => {
+  if (org.status === "disabled") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "该组织已停用。" })
+  }
+}
 
 const countRows = async (query: Promise<{ value: number }[]>) => {
   const [row] = await query
@@ -55,6 +62,8 @@ const requireOrgAccess = async (ctx: OrgContext, slug: string) => {
   if (!membership) {
     throw new TRPCError({ code: "FORBIDDEN", message: "无权访问该组织。" })
   }
+
+  assertOrgActive(org)
 
   return { canManage: isOrgAdminRole(membership.role), isPlatformAdmin: false, org, role: membership.role }
 }
@@ -163,8 +172,19 @@ const getDepartmentMemberUserIds = async (ctx: OrgContext, orgId: string, depart
     .where(and(eq(organizationDepartmentMember.organizationId, orgId), eq(organizationDepartmentMember.departmentId, departmentId)))
 }
 
+const buildOrgRiskContext = async (ctx: OrgContext, organizationId: string) => {
+  const memberRows = await ctx.db.select({ memberId: member.id, userId: member.userId }).from(member).where(eq(member.organizationId, organizationId))
+  const userIds = Array.from(new Set(memberRows.map((row) => row.userId)))
+  const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, organizationId, userIds })
+  const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds })
+  const riskyUserIds = new Set(userIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > 5))
+
+  return { activeSessionCounts, highRiskUserIds, memberRows, riskyUserIds }
+}
+
 const listDepartments = async (ctx: OrgContext, slug: string) => {
   const { org } = await requireOrgAccess(ctx, slug)
+  const riskContext = await buildOrgRiskContext(ctx, org.id)
   const departmentRows = await ctx.db
     .select({
       depth: organizationDepartment.depth,
@@ -200,6 +220,23 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
       }
     })
   )
+  const departmentMemberRows = await ctx.db
+    .select({
+      departmentId: organizationDepartmentMember.departmentId,
+      userId: member.userId
+    })
+    .from(organizationDepartmentMember)
+    .innerJoin(member, eq(organizationDepartmentMember.memberId, member.id))
+    .where(eq(organizationDepartmentMember.organizationId, org.id))
+  const departmentRiskCountById = new Map<string, number>()
+
+  for (const row of departmentMemberRows) {
+    if (!riskContext.riskyUserIds.has(row.userId)) {
+      continue
+    }
+
+    departmentRiskCountById.set(row.departmentId, (departmentRiskCountById.get(row.departmentId) ?? 0) + 1)
+  }
 
   const statsByDepartment = new Map(departmentStats.map((item) => [item.departmentId, item]))
   const nodes = [
@@ -210,7 +247,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
       memberCount: rootMemberCount,
       name: org.name,
       parentId: null,
-      riskCount: 0,
+      riskCount: riskContext.riskyUserIds.size,
       slug: org.slug,
       status: "active",
       type: "organization" as const
@@ -225,7 +262,7 @@ const listDepartments = async (ctx: OrgContext, slug: string) => {
         memberCount: stats?.memberCount ?? 0,
         name: department.name,
         parentId: department.parentId ?? org.id,
-        riskCount: 0,
+        riskCount: departmentRiskCountById.get(department.id) ?? 0,
         slug: org.slug,
         status: department.status,
         type: "department" as const
@@ -245,6 +282,7 @@ const listDepartmentMembers = async (
     z.infer<typeof pageInput> & { departmentId?: string; nodeId?: string; role?: z.infer<typeof roleInput>; search: string; securityStatus: "all" | "normal" | "risk" }
 ) => {
   const { org } = await requireOrgAccess(ctx, input.slug)
+  const riskContext = await buildOrgRiskContext(ctx, org.id)
   const selectedId = input.departmentId ?? input.nodeId
   const offset = (input.page - 1) * input.pageSize
   const search = `%${input.search.trim()}%`
@@ -281,14 +319,20 @@ const listDepartmentMembers = async (
     .where(where)
     .groupBy(member.id, user.id)
     .orderBy(desc(member.createdAt))
-    .limit(input.pageSize)
-    .offset(offset)
-  const total = await countRows(ctx.db.select({ value: sql<number>`count(*)::int` }).from(member).innerJoin(user, eq(member.userId, user.id)).where(where))
+  const filteredRows = rows
+    .map((row) => ({
+      ...row,
+      departmentNames: row.departmentNames ?? "未分配",
+      securityStatus: riskContext.riskyUserIds.has(row.userId) ? ("risk" as const) : ("normal" as const)
+    }))
+    .filter((row) => input.securityStatus === "all" || row.securityStatus === input.securityStatus)
+  const total = filteredRows.length
 
   return {
-    items: rows.map((row) => ({ ...row, departmentNames: row.departmentNames ?? "未分配", securityStatus: "normal" as const })),
+    items: filteredRows.slice(offset, offset + input.pageSize),
     page: input.page,
-    pageCount: Math.max(1, Math.ceil(total / input.pageSize))
+    pageCount: Math.max(1, Math.ceil(total / input.pageSize)),
+    total
   }
 }
 
@@ -321,28 +365,29 @@ export const orgRouter = createTRPCRouter({
       const { org } = await requireOrgAccess(ctx, input.slug)
       const memberRows = await ctx.db.select({ createdAt: member.createdAt, userId: member.userId }).from(member).where(eq(member.organizationId, org.id))
       const memberUserIds = Array.from(new Set(memberRows.map((item) => item.userId)))
+      const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, organizationId: org.id, userIds: memberUserIds })
+      const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds: memberUserIds })
       const pendingInvitationCount = await countRows(
         ctx.db
           .select({ value: sql<number>`count(*)::int` })
           .from(invitation)
           .where(and(eq(invitation.organizationId, org.id), eq(invitation.status, "pending")))
       )
-      const activeSessionCount =
-        memberUserIds.length > 0
-          ? await countRows(
-              ctx.db
-                .select({ value: sql<number>`count(*)::int` })
-                .from(session)
-                .where(and(inArray(session.userId, memberUserIds), gt(session.expiresAt, new Date())))
-            )
-          : 0
+      const activeSessionCount = Array.from(activeSessionCounts.values()).reduce((sum, value) => sum + value, 0)
       const departmentCount = await countRows(ctx.db.select({ value: count() }).from(organizationDepartment).where(eq(organizationDepartment.organizationId, org.id)))
+      const riskyUserIds = new Set(memberUserIds.filter((userId) => highRiskUserIds.has(userId) || (activeSessionCounts.get(userId) ?? 0) > 5))
+      const riskySessionCount = Array.from(riskyUserIds).reduce((sum, userId) => {
+        const activeCount = activeSessionCounts.get(userId) ?? 0
+
+        return sum + activeCount
+      }, 0)
 
       return {
         events: [
           { id: "invitation-review", label: `${pendingInvitationCount} 个邀请等待处理`, tone: "warning" as const },
           { id: "department-review", label: `${departmentCount} 个部门纳入组织架构`, tone: "default" as const },
-          { id: "session-review", label: `${activeSessionCount} 个活跃会话可复核`, tone: "default" as const }
+          { id: "session-review", label: `${activeSessionCount} 个活跃会话可复核`, tone: "default" as const },
+          { id: "risk-review", label: `${riskyUserIds.size} 个成员存在登录风险`, tone: riskyUserIds.size > 0 ? ("warning" as const) : ("default" as const) }
         ],
         growth: buildMemberGrowth(memberRows),
         organization: org,
@@ -351,7 +396,7 @@ export const orgRouter = createTRPCRouter({
           departmentCount,
           memberCount: memberRows.length,
           pendingInvitationCount,
-          riskySessionCount: 0
+          riskySessionCount
         }
       }
     })
@@ -371,6 +416,7 @@ export const orgRouter = createTRPCRouter({
       )
       .mutation(async ({ ctx, input }) => {
         const { org } = await requireOrgAdmin(ctx, input.slug)
+        assertOrgActive(org)
         const trimmedName = input.name.trim()
         const parentId = input.parentDepartmentId && input.parentDepartmentId !== org.id ? input.parentDepartmentId : null
         const [parentDepartment] = parentId
@@ -574,6 +620,7 @@ export const orgRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         requirePlatformSuperAdmin(ctx)
         const { org } = await requireOrgAccess(ctx, input.slug)
+        assertOrgActive(org)
         const normalizedEmail = input.email.trim().toLowerCase()
         const trimmedName = input.name?.trim() ?? ""
         const targetDepartmentId = input.departmentId && input.departmentId !== org.id ? input.departmentId : null
@@ -776,6 +823,7 @@ export const orgRouter = createTRPCRouter({
       .input(slugInput.extend({ departmentId: z.string().min(1).optional(), email: z.string().email(), nodeId: z.string().min(1).optional(), role: roleInput }))
       .mutation(async ({ ctx, input }) => {
         const { org } = await requireOrgAdmin(ctx, input.slug)
+        assertOrgActive(org)
         const departmentId = input.departmentId ?? input.nodeId
         const targetDepartmentId = departmentId && departmentId !== org.id ? departmentId : null
         let targetDepartment: { id: string; name: string } | null = null
@@ -857,14 +905,17 @@ export const orgRouter = createTRPCRouter({
         const selectedDepartmentId = input.departmentId ?? input.nodeId
         const memberRows = await getDepartmentMemberUserIds(ctx, org.id, selectedDepartmentId)
         const memberUserIds = memberRows.map((item) => item.userId)
+        const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, organizationId: org.id, userIds: memberUserIds })
+        const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds: memberUserIds })
 
         if (memberUserIds.length === 0) {
-          return { items: [], page: input.page, pageCount: 1 }
+          return { items: [], page: input.page, pageCount: 1, total: 0 }
         }
 
         const search = `%${input.search.trim()}%`
         const rows = await ctx.db
           .select({
+            createdAt: session.createdAt,
             email: user.email,
             id: session.id,
             ipAddress: session.ipAddress,
@@ -883,24 +934,58 @@ export const orgRouter = createTRPCRouter({
             )
           )
           .orderBy(desc(session.updatedAt))
-          .limit(input.pageSize)
-          .offset((input.page - 1) * input.pageSize)
+        const sessionRows = rows
+          .map((row) => {
+            const risk = getSessionRisk({
+              activeSessionCountForUser: activeSessionCounts.get(row.userId) ?? 0,
+              hasHighRiskRequest: highRiskUserIds.has(row.userId),
+              sessionRow: {
+                createdAt: row.createdAt,
+                id: row.id,
+                ipAddress: row.ipAddress,
+                updatedAt: row.lastActiveAt,
+                userAgent: row.userAgent,
+                userId: row.userId
+              }
+            })
+
+            return {
+              ...row,
+              browserLabel: getBrowserLabel(row.userAgent),
+              deviceLabel: getDeviceLabel(row.userAgent),
+              riskLevel: risk.level,
+              riskReasons: risk.reasons,
+              riskStatus: risk.level
+            }
+          })
+          .filter((row) => input.riskStatus === "all" || row.riskStatus === input.riskStatus)
+        const offset = (input.page - 1) * input.pageSize
 
         return {
-          items: rows.map((row) => ({
-            ...row,
-            browserLabel: getBrowserLabel(row.userAgent),
-            deviceLabel: getDeviceLabel(row.userAgent),
-            riskStatus: "normal" as const
-          })),
+          items: sessionRows.slice(offset, offset + input.pageSize),
           page: input.page,
-          pageCount: 1
+          pageCount: Math.max(1, Math.ceil(sessionRows.length / input.pageSize)),
+          total: sessionRows.length
         }
       }),
 
     revoke: protectedProcedure.input(slugInput.extend({ sessionId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
-      await requireOrgAdmin(ctx, input.slug)
-      const deleted = await ctx.db.delete(session).where(eq(session.id, input.sessionId)).returning({ id: session.id })
+      const { org } = await requireOrgAdmin(ctx, input.slug)
+      const [targetSession] = await ctx.db
+        .select({ id: session.id, userId: session.userId })
+        .from(session)
+        .innerJoin(member, and(eq(member.userId, session.userId), eq(member.organizationId, org.id)))
+        .where(eq(session.id, input.sessionId))
+        .limit(1)
+
+      if (!targetSession) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在或已失效。" })
+      }
+
+      const deleted = await ctx.db
+        .delete(session)
+        .where(and(eq(session.id, targetSession.id), eq(session.userId, targetSession.userId)))
+        .returning({ id: session.id })
 
       if (deleted.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND", message: "会话不存在或已失效。" })

@@ -20,7 +20,7 @@
   - 统计区展示四个卡片：组织总数、部门总数、成员总数和待处理邀请数，避免桌面端统计卡片换行。
   - 工具栏展示搜索、状态筛选、成员规模筛选、创建时间排序和创建组织入口。
   - 创建组织入口打开创建组织弹窗，不跳转独立创建组织页面。
-  - 组织列表可使用卡片或表格，第一版优先使用卡片网格，展示组织名称、slug、owner、成员数、部门数、待处理邀请数、活跃会话数、创建时间、状态和风险提示。
+- 组织列表可使用卡片或表格，第一版优先使用卡片网格，展示组织名称、slug、owner、成员数、部门数、待处理邀请数、活跃会话数、创建时间、状态和风险提示。状态和风险提示必须来自数据库或服务端计算，不允许固定显示正常或固定风险为 0。
   - 列表分页控件使用共享 `DataPagination`；首页、上一页、下一页、末页为图标按钮，页码输入框支持输入后按 Enter 跳转。
   - 点击组织卡片或列表项进入 `/dashboard/orgs/[slug]`，复用当前组织管理页面和五个 tab。
   - 卡片操作区提供进入详情、停用或删除组织入口；删除等高危操作只对 super_admin 展示。
@@ -44,6 +44,38 @@
 - `admin.org.updateStatus`：校验平台管理员权限后更新组织状态，可选。
 - `admin.org.delete`：校验 super_admin 权限，二次确认后删除组织，可选。
 
+### 平台组织真实数据口径
+
+平台组织管理页不得使用静态状态、静态风险或空操作。
+
+组织列表数据来源：
+
+- 组织基础信息来自 `system_organization`。
+- 成员数来自 `system_member` 按 `organization_id` 去重统计。
+- 部门数来自 `system_organization_department`。
+- 待处理邀请数来自 `system_invitation` 中 `status='pending'` 且未过期的记录。
+- 活跃会话数来自组织成员对应 `system_session` 中未过期记录。
+- owner 信息来自 `system_member.role='owner'` 关联 `system_user`，第一版最多展示 2 个 owner，更多显示 `+N`。
+- 风险数 `riskCount` 使用 `10-dashboard-orgs-slug-settings.md` 中定义的组织风险口径，按组织成员最近 30 天高风险请求、超量活跃会话和长期会话风险计算。
+- 平台总览 `riskySessionCount` 为所有组织范围内满足会话风险规则的未过期会话数；同一个会话只计一次。
+
+组织状态设计：
+
+- 第一版必须新增或使用可持久化状态字段，推荐在 `system_organization` 增加 `status`，取值为 `active`、`disabled`。
+- 如短期内不增加字段，则页面不得展示“状态筛选”“停用组织”和“已停用”状态；只能展示真实可用的组织列表。
+- `admin.org.updateStatus` 必须落库更新组织状态，并写入系统请求日志或审计事件；不能只返回 `{ organizationId, status }`。
+- `status='disabled'` 的组织：
+  - 普通组织成员不能进入该组织治理页。
+  - 平台管理员仍可进入查看和恢复。
+  - 该组织不能继续发送新邀请。
+  - 已有活跃会话不因停用组织自动删除，但组织相关操作应被服务端拒绝。
+
+风险与状态展示处理：
+
+- 风险为 0 时展示“暂无风险”或隐藏风险 badge；风险为正数时展示风险 badge，并可跳转该组织登录情况页或组织架构页的风险筛选。
+- 状态筛选必须在服务端查询中生效，不能先分页后在内存中过滤，否则会导致总数和分页错误。
+- 删除、停用、恢复组织均属于高危或准高危操作，必须二次确认并记录到 `system_request_log`。
+
 ## 实现要点
 
 - 本页必须使用 adminProcedure 校验平台管理员角色。
@@ -60,6 +92,12 @@
 - Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + Zod: forms, tables, dialogs, validation
+
+## 公共组件使用
+
+- 组织列表第一版优先使用卡片网格，不使用共享 `DataTable`；如果后续切换为表格视图，必须使用 `src/components/data-table.tsx` 的共享 `DataTable`。
+- 分页控件使用 `src/components/data-pagination.tsx` 的共享 `DataPagination`，页面负责维护 `page`、筛选条件和刷新状态。
+- 创建组织、停用、恢复和删除弹窗属于页面业务组件，不放入公共组件。
 
 ## 验收标准
 

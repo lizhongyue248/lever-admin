@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
-import { addOrganizationMemberByEmail, seedOrganizationWithDepartments, setUserRole } from "../helpers/db"
+import { addOrganizationMemberByEmail, createApiKeyFixture, createApiKeyUsageLogFixture, getUserByEmail, seedOrganizationWithDepartments, setUserRole } from "../helpers/db"
 
 const waitForDashboardReady = async (page: Page) => {
   await expect(page.getByRole("banner")).toBeVisible()
@@ -10,6 +10,13 @@ const waitForDashboardReady = async (page: Page) => {
 }
 
 test.describe("06 dashboard", () => {
+  test("redirects anonymous root visits to sign in and hides the development test page", async ({ page }) => {
+    await page.goto("/")
+
+    await expect(page).toHaveURL(/\/sign-in/)
+    await expect(page.getByText("首页访问测试成功")).toHaveCount(0)
+  })
+
   test("redirects anonymous users to sign in with dashboard redirect target", async ({ page }) => {
     await page.goto("/dashboard")
 
@@ -21,6 +28,35 @@ test.describe("06 dashboard", () => {
     test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
 
     const email = await createVerifiedUser(page, "dashboard")
+    const user = await getUserByEmail(email)
+
+    if (!user) {
+      throw new Error(`Expected seeded dashboard user for ${email}`)
+    }
+
+    const apiKey = await createApiKeyFixture({
+      name: "Dashboard real usage",
+      referenceId: user.id
+    })
+    const expiringApiKey = await createApiKeyFixture({
+      expiresAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      name: "Dashboard expiring usage",
+      referenceId: user.id
+    })
+    await createApiKeyUsageLogFixture({
+      apiKeyId: apiKey.id,
+      createdAt: new Date(Date.now() + 2 * 60 * 1000),
+      path: "/v1/e2e-dashboard",
+      referenceId: user.id,
+      userAgentSummary: "E2E dashboard client"
+    })
+    await createApiKeyUsageLogFixture({
+      apiKeyId: expiringApiKey.id,
+      createdAt: new Date(Date.now() + 60 * 1000),
+      path: "/v1/e2e-dashboard-expiring",
+      referenceId: user.id,
+      userAgentSummary: "E2E dashboard expiring client"
+    })
 
     await page.goto("/sign-in")
     await signInViaUi(page, { email })
@@ -40,6 +76,15 @@ test.describe("06 dashboard", () => {
     await expect(page.getByText("登录方式画像")).toBeVisible()
     await expect(page.getByText("个人 API Key 状态")).toBeVisible()
     await expect(page.getByText("最近身份事件")).toBeVisible()
+    await expect(page.getByText("GET /v1/e2e-dashboard", { exact: true })).toBeVisible()
+    await expect(page.getByText("2 个 30 天内使用")).toBeVisible()
+    await expect(page.getByText("1 个即将过期")).toBeVisible()
+    await expect(page.getByText("Chrome · 上海 · 12 分钟前")).toHaveCount(0)
+    await expect(page.getByText("密码 58%")).toHaveCount(0)
+    await expect(page.getByText("cli-prod")).toHaveCount(0)
+    await expect(page.getByText("1 个 30 天内使用")).toHaveCount(0)
+    await expect(page.getByText("0 个即将过期")).toHaveCount(0)
+    await expect(page.getByText("0 个高权限 Scope")).toHaveCount(0)
     await expect(page.getByText("登录与会话趋势")).toHaveCount(0)
     await expect(page.getByText("认证方式覆盖")).toHaveCount(0)
   })
@@ -94,6 +139,7 @@ test.describe("06 dashboard", () => {
     const ownerNav = page.getByRole("navigation", { name: "主导航" })
     await expect(ownerNav.getByRole("link", { name: "当前组织" })).toHaveAttribute("href", `/dashboard/orgs/${ownerOrg.rootId.replace(/^org-/, "")}`)
     await expect(ownerNav.getByRole("link", { name: "用户管理" })).toHaveCount(0)
+    await expect(page.getByText("研发团队偏大")).toHaveCount(0)
   })
 
   test("limits platform management sidebar items by admin level", async ({ page }, testInfo) => {

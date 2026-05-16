@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
-import { addOrganizationMemberByEmail, getInvitationStatusByEmail, getMemberByEmailAndOrganization, seedOrganizationWithDepartments } from "../helpers/db"
+import { addOrganizationMemberByEmail, getInvitationByEmail, getInvitationStatusByEmail, getMemberByEmailAndOrganization, seedOrganizationWithDepartments } from "../helpers/db"
 
 test.describe("10A organization invitation accept", () => {
   test("invited user can see and accept an organization invitation from the Topbar notification menu", async ({ page }, testInfo) => {
@@ -37,6 +37,7 @@ test.describe("10A organization invitation accept", () => {
     await expect(notificationButton).toBeEnabled()
     await notificationButton.click()
     await expect(page.getByText("Notification Org E2E 邀请你加入")).toBeVisible()
+    await expect(page.getByRole("button", { name: "全部标为已读" })).toHaveCount(0)
     await page.getByRole("button", { name: "接受" }).click()
     await expect(page).toHaveURL(new RegExp(`/dashboard/orgs/${slug}`), { timeout: 15_000 })
 
@@ -67,14 +68,16 @@ test.describe("10A organization invitation accept", () => {
 
     const invitationRow = page.getByRole("row").filter({ hasText: invitedEmail })
     await expect(invitationRow.getByText("待接受")).toBeVisible()
-    const invitationId = await invitationRow.getAttribute("data-invitation-id")
-    expect(invitationId).toBeTruthy()
+    const invitation = await getInvitationByEmail({ email: invitedEmail, organizationId: rootId })
+    if (!invitation) {
+      throw new Error(`Expected pending invitation for ${invitedEmail}`)
+    }
 
     await page.context().clearCookies()
-    await page.goto(`/invite/${invitationId}`)
+    await page.goto(`/invite/${invitation.id}`)
     await expect(page).toHaveURL(/\/sign-in\?redirectTo=/)
     await signInViaUi(page, { email: invitedEmail })
-    await expect(page).toHaveURL(new RegExp(`/invite/${invitationId}`))
+    await expect(page).toHaveURL(new RegExp(`/invite/${invitation.id}`))
     await page.getByRole("button", { name: "拒绝邀请" }).click()
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect.poll(() => getInvitationStatusByEmail({ email: invitedEmail, organizationId: rootId })).toBe("rejected")

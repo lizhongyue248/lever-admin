@@ -28,6 +28,10 @@ type OrganizationRole = "admin" | "member" | "owner"
 const selectClassName =
   "h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
+const SecurityStatusBadge = ({ status }: { status: MemberItem["securityStatus"] }) => (
+  <Badge variant={status === "risk" ? "destructive" : "secondary"}>{status === "risk" ? "风险" : "正常"}</Badge>
+)
+
 export const OrgInformationContent = ({
   canManage,
   initialMembers,
@@ -162,7 +166,7 @@ export const OrgInformationContent = ({
     { cell: ({ row }) => row.original.departmentNames, header: "所属部门", size: 160 },
     { cell: ({ row }) => formatDate(row.original.joinedAt), header: "加入时间", size: 130 },
     { cell: ({ row }) => formatRelativeTime(row.original.lastLoginAt), header: "最后登录", size: 130 },
-    { cell: () => "正常", header: "安全状态", size: 110 },
+    { cell: ({ row }) => <SecurityStatusBadge status={row.original.securityStatus} />, header: "安全状态", size: 110 },
     {
       cell: ({ row }) => <MemberRowActions canManage={canManage} item={row.original} onAssign={openAssignDialog} onRemove={setRemoveMember} />,
       header: "操作",
@@ -226,7 +230,10 @@ export const OrgInformationContent = ({
                         <span>部门：{item.departmentNames}</span>
                         <span>加入：{formatDate(item.joinedAt)}</span>
                         <span>登录：{formatRelativeTime(item.lastLoginAt)}</span>
-                        <span>状态：正常</span>
+                        <span className="flex items-center gap-1">
+                          状态：
+                          <SecurityStatusBadge status={item.securityStatus} />
+                        </span>
                       </div>
                       {canManage ? (
                         <div className="mt-4 flex justify-end gap-2">
@@ -255,7 +262,7 @@ export const OrgInformationContent = ({
               page={memberData.page}
               pageCount={memberData.pageCount}
               pageSize={10}
-              total={memberData.items.length}
+              total={memberData.total}
             />
           </CardContent>
         </Card>

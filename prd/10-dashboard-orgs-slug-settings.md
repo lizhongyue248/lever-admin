@@ -151,7 +151,7 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 
 - `org.getBySlug`：读取组织详情，并校验当前用户为组织成员或平台管理员。
 - `org.management.getOverview`：聚合公司成员数、部门数、邀请数、活跃会话、风险事项和最近事件。
-- `org.department.list`：读取当前组织的部门树，返回部门节点层级、成员数、邀请数和风险状态；根节点代表公司本身，不是部门记录。
+- `org.department.list`：读取当前组织的部门树，返回部门节点层级、成员数、邀请数和风险状态；根节点代表公司本身，不是部门记录。风险状态必须由真实会话或请求日志计算，不允许固定返回 `0`。
 - `org.department.create`：在当前组织内指定上级部门下创建部门；输入包含 `parentDepartmentId`、`name`、可选 `managerUserId` 和可选 `description`；服务端校验当前用户是组织 owner/admin 或平台管理员、上级部门属于当前组织、同级部门名称不重复。
 - `org.department.rename`：重命名部门；服务端校验当前用户是组织 owner/admin 或平台管理员、部门属于当前组织、同级部门名称不重复。
 - `org.department.delete`：删除部门；服务端校验当前用户是组织 owner/admin 或平台管理员、部门属于当前组织；根节点不是部门记录不能删除；删除前按实现策略处理子部门和部门成员归属。
@@ -172,6 +172,50 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 - `org.update`：校验 owner/admin 权限后更新 organization。
 - `org.delete`：校验 owner 或平台超级管理员权限，二次确认后删除组织。
 
+### 组织风险与安全状态数据口径
+
+组织页中所有“异常”“风险”“安全状态”必须由服务端统一计算，不能在部门树、成员表格、概览卡片或登录情况页中写死 `0` 或 `normal`。
+
+第一版风险来源：
+
+- `system_request_log`：
+  - 统计当前组织成员最近 30 天的请求日志。
+  - `risk_level='high'` 视为高风险。
+  - `risk_level='medium'` 可在详情中展示原因，但部门树第一版只用高风险计数，避免过度告警。
+  - 请求日志中的 `user_id`、`organization_id`、`created_at`、`risk_level`、`risk_reasons` 用于关联成员、部门和组织。
+- `system_session`：
+  - 统计当前组织成员未过期会话。
+  - 同一成员活跃会话数超过 5 个，标记该成员存在会话风险。
+  - 未记录 IP 或 User-Agent 的活跃会话标记为中风险，仅在成员详情或登录情况中展示，不纳入部门树高风险计数。
+  - 会话存在 30 天以上且最近 30 天没有活跃更新时间时，标记为长期会话风险。
+- `system_api_key_usage_log`：
+  - 组织级 API Key 最近 7 天失败率超过 20%、存在 5xx、429 激增或失败原因属于高危时，进入组织治理行动队列，不直接计入部门成员风险。
+
+节点风险计算：
+
+- 公司根节点 `riskCount`：最近 30 天存在高风险请求、超量活跃会话或长期会话风险的去重成员数。
+- 部门节点 `riskCount`：该部门成员范围内满足上述风险条件的去重成员数。
+- 没有风险数据时返回真实 `0`；但该 `0` 必须来自计算结果，不允许作为占位常量。
+- 部门树默认展开公司根节点和 `riskCount > 0` 的分支。
+
+成员安全状态：
+
+- `normal`：最近 30 天无高风险请求，活跃会话数未超过阈值，无长期会话风险。
+- `risk`：最近 30 天存在高风险请求、活跃会话数超过阈值或长期会话风险。
+- 筛选 `securityStatus=risk` 时，服务端必须按上述规则过滤；不能先返回全部成员再在前端模拟筛选。
+
+组织概览风险数据：
+
+- `riskySessionCount`：当前组织成员中满足会话风险规则的未过期会话数。
+- “最近组织事件”来自 `system_request_log`、`system_invitation`、`system_member.created_at`、`system_organization_department.created_at` 和组织级 API Key 使用日志；无事件时显示空态，不使用固定文案。
+- 成员增长图表保持使用 `system_member.created_at` 最近 6 个月累计值；没有成员时展示 0 值趋势。
+
+登录情况页数据处理：
+
+- `org.session.list` 返回成员、部门、设备、浏览器、完整 IP、User-Agent 摘要、创建时间、最近活跃时间、风险等级和风险原因。
+- 完整 User-Agent 仅在详情或展开区域展示；列表默认展示摘要，避免表格过宽。
+- 撤销会话后重新计算部门树风险、组织概览风险和登录情况列表。
+
 ## 实现要点
 
 - 仅启用组织、成员、邀请和活跃组织能力；不提供额外分组管理入口。
@@ -191,6 +235,12 @@ Better Auth organization plugin 负责基础 organization、member、invitation 
 - 成员表格最大高度固定，超出后在表格区域内滚动；分页按钮即使只有一页也展示禁用态。
 - 删除组织前要求输入 slug，并明确对部门、成员、邀请和会话的影响。
 - 删除当前活跃组织后跳转 `/dashboard` 并清理 activeOrganizationId。
+
+## 公共组件使用
+
+- 组织成员、邀请和登录情况的桌面表格使用 `src/components/data-table.tsx` 的共享 `DataTable`，页面负责定义业务列、风险 badge、行内图标操作和移动端卡片列表。
+- 组织成员、邀请和登录情况的分页控件使用 `src/components/data-pagination.tsx` 的共享 `DataPagination`，页面负责维护 `page`、`pageSize`、搜索和筛选状态。
+- 部门树、组织设置表单、邀请弹窗、成员分配弹窗和危险操作确认属于页面业务组件，不放入公共组件。
 
 ## 通用工程约束
 

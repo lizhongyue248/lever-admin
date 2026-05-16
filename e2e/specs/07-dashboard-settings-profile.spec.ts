@@ -39,11 +39,13 @@ test.describe("07 dashboard settings profile", () => {
     await expect(page).toHaveURL(/\/dashboard$/)
     await page.goto("/dashboard/settings/profile")
 
+    await expect(page.getByText("70%")).toBeVisible()
     await page.getByLabel("名称").fill("李明 E2E")
     await page.getByLabel("头像 URL").fill("https://example.com/avatar.png")
     await page.getByRole("button", { name: "保存资料" }).click()
 
     await expect(page.getByText("个人资料已更新。")).toBeVisible()
+    await expect(page.getByText("100%")).toBeVisible()
 
     await page.reload()
 

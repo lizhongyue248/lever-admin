@@ -11,7 +11,7 @@
 - 组织管理员：展示活跃组织（公司）的身份治理、安全覆盖、成员增长、邀请处理、部门治理和组织 API Key 风险等管理数据。
 - 平台管理员进入 `/dashboard` 时默认仍优先展示个人或活跃组织视角；平台级统计放在 `/dashboard/admin`，避免工作台承载过多平台治理能力。
 
-当前阶段先提供临时测试页，用于验证登录后 `/dashboard` 可访问、服务端 session 可读取，以及退出登录流程可用。完整工作台聚合能力后续再按本 PRD 扩展。
+当前阶段不再保留静态测试页或示例数据。`/dashboard` 必须读取真实 session 和数据库聚合结果；没有数据时展示 0 值、空态或隐藏对应模块，不使用固定人物、固定事件、固定百分比或示例趋势。
 
 ## 页面布局
 
@@ -52,7 +52,7 @@
   - 右侧展示全局通知图标按钮和主题切换图标按钮，通知图标位于主题切换左侧，二者尺寸保持一致。
   - 通知图标使用 Bell 类图标按钮；存在未读或待处理通知时，在图标右上角展示小型计数 badge，计数上限显示为 `99+`。
   - 点击通知图标后打开通知面板。桌面端使用右上角 Popover/Dropdown 面板，宽度约 `360px - 400px`；移动端使用从右侧或底部打开的 Sheet，避免窄屏遮挡内容。
-  - 通知面板顶部展示「通知」标题、未读/待处理数量和「全部标为已读」轻量操作。
+  - 通知面板顶部展示「通知」标题和待处理状态；在第一版仅有派生邀请通知时，不展示「全部标为已读」。
   - 通知面板支持按类型分组或筛选，第一版至少包含「全部」「邀请」「安全」三个筛选项；未实现类型可以显示空态，不展示无功能入口。
   - 通知面板列表项展示通知类型、标题、简短描述、时间、状态 badge 和可用操作。
   - 组织邀请通知属于可操作通知，列表项必须展示组织名称、默认部门（可选）、邀请角色、邀请人、过期时间，并提供「接受」「拒绝」「详情」操作。
@@ -103,7 +103,7 @@
   - 中部洞察区使用 2 到 3 张图表卡片，避免一屏堆满传统 KPI。
   - 卡片风格参考 shadcn dashboard shell：`Card` 细边框、低阴影、紧凑 header、`primary/10` 图标底色、表格行清晰分隔。
   - 主内容卡片必须保留轻微外阴影，用于区分内容层级；阴影应克制，不使用强投影或漂浮感。
-  - 图表用于解释身份治理状态，不做纯装饰；第一版可使用简化折线图、环形图、柱状图或静态占位。
+  - 图表用于解释身份治理状态，不做纯装饰；第一版可使用简化折线图、环形图或柱状图，但数据必须来自真实接口。暂无数据时展示 0 值趋势或空态，不使用静态占位数据。
 - 主题与设计稿：
   - 工作台配色必须基于 `src/styles/globals.css` 中定义的语义 token，不单独发明脱离系统的配色。
   - 明亮主题使用 `:root` 下的 `background`、`foreground`、`card`、`muted`、`muted-foreground`、`accent`、`border`、`primary`、`chart-*`、`sidebar-*`。
@@ -139,7 +139,7 @@
 - 查看当前用户收到的通知，包括待处理组织邀请、安全提醒和系统状态。
 - 在通知面板中接受或拒绝组织邀请。
 - 从通知面板进入邀请详情页。
-- 将普通通知标记为已读。
+- 将普通通知标记为已读；仅在新增可持久化普通通知模型后启用。
 - 有创建权限时通过弹窗创建组织。
 
 ## 接口与逻辑
@@ -148,8 +148,8 @@
 - `dashboard.getShell`：返回 Dashboard 壳层所需用户、通知、组织和导航权限数据。返回用户平台角色用于 Sidebar 菜单过滤；返回组织列表和当前组织角色用于判断是否展示「当前组织」入口。
 - `notification.list`：读取当前登录用户的通知列表，支持 `type`、`status`、`page` 和 `pageSize`；第一版通知可由真实业务表聚合生成，组织邀请通知从 `system_invitation` 派生，不额外复制邀请数据。
 - `notification.getUnreadCount` 或 `dashboard.getShell` 内聚合：返回当前用户未读通知数和待处理通知数，用于 Topbar 通知图标 badge；不得暴露其他用户通知。
-- `notification.markRead`：将普通通知标记为已读；组织邀请这类待处理通知在接受或拒绝后自动从待处理列表移除。
-- `notification.markAllRead`：将当前用户的非待处理普通通知批量标记为已读；不能把 pending 邀请直接标记为已处理。
+- `notification.markRead`：第一版仅有派生邀请通知时返回不支持标记已读；新增可持久化普通通知模型后用于将普通通知标记为已读。组织邀请这类待处理通知在接受或拒绝后自动从待处理列表移除。
+- `notification.markAllRead`：第一版仅有派生邀请通知时返回不支持标记已读；新增可持久化普通通知模型后用于批量标记当前用户的非待处理普通通知。不能把 pending 邀请直接标记为已处理。
 - `notification.invitation.accept`：从通知面板接受组织邀请，服务端校验邀请邮箱与当前登录邮箱一致；接受后创建组织成员关系，若邀请包含默认部门则创建部门成员归属，刷新 dashboard shell 并跳转 `/dashboard/orgs/[slug]`。
 - `notification.invitation.reject`：从通知面板拒绝组织邀请，服务端校验邀请邮箱与当前登录邮箱一致；拒绝后更新邀请状态为 `rejected`，刷新通知列表。
 - `dashboard.getPersonalOverview`：tRPC 聚合个人安全健康、个人会话、个人邀请、个人 API Key 和最近账号事件。
@@ -161,6 +161,51 @@
 - Dashboard 内 client-side tRPC query 失败时，通过全局 QueryClient 错误处理展示 toast，toast 内容优先使用后端 `TRPCError.message`。
 - Dashboard 内 client-side tRPC mutation 失败且调用方没有提供本地 `onError` 时，通过全局 MutationCache 错误处理展示 toast；已有本地 `onError` 的 mutation 继续使用页面内定制提示，避免重复 toast。
 - Dashboard 内 Server Component 调用 tRPC 失败时，通过路由段 `error.tsx` 展示可见错误卡片，并在客户端挂载后弹出同内容 toast。
+
+### 工作台真实数据口径
+
+工作台首页所有数字、图表、事件和行动队列必须来自真实数据源。第一版允许使用简化评分规则，但评分规则必须在服务端集中定义，并在 PRD 中可解释；不允许在前端写死展示百分比、固定柱状图高度、固定最近事件或固定“风险为 0”。
+
+个人视角数据来源：
+
+- 健康分雷达图：
+  - 邮箱维度来自 `system_user.email_verified`，已验证为 `100`，未验证为 `20`。
+  - 2FA 维度来自 `system_user.two_factor_enabled` 与 `system_two_factor.verified`，已启用且已验证为 `100`，否则为 `0`。
+  - Passkey 维度来自 `system_passkey` 当前用户记录数，大于 0 为 `100`，否则为 `0`。
+  - 会话维度来自 `system_session` 当前用户未过期会话数，`<= 3` 为 `100`，每超出一个会话扣 `10`，最低 `20`。
+  - 第三方账号维度来自 `system_account.provider_id` 中非 credential provider 的绑定数量，大于 0 为 `100`，否则为 `0`；不得使用固定 `80`。
+- 登录方式画像改为“可用登录方式”。数据来自 `system_account`、`system_passkey` 和 `system_user.two_factor_enabled`，按真实可用方式计数展示：邮箱密码、OAuth provider、Passkey。没有任何可统计方式时展示空态，不显示固定 `58/31/11`。
+- 设备足迹或登录趋势优先来自 `system_request_log` 中当前用户最近 30 天的登录、会话和 Dashboard 访问审计记录；如果请求日志尚未采集或为空，则展示真实空态和当前 `system_session` 活跃会话数量，不使用固定柱状图高度。
+- 个人 API Key 状态来自 `system_apikey` 和 `system_api_key_usage_log`：
+  - 总数：当前用户 `config_id='user'`、`reference_id=当前用户 ID` 的 key 数。
+  - 30 天内使用：最近 30 天存在使用日志的 key 数。
+  - 即将过期：`expires_at` 在未来 30 天内的启用 key 数。
+  - 高风险 Scope：第一版如 API Key scope 尚未结构化定义，则不展示该行；不得写死 `0 个高权限 Scope`。
+- 最近身份事件来自 `system_request_log`、`system_invitation` 和 `system_api_key_usage_log` 的真实记录聚合：
+  - 登录/会话事件来自请求日志或 session 更新时间。
+  - 邀请事件来自当前用户邮箱对应的 invitation。
+  - API Key 事件来自当前用户 key 的使用日志。
+  - 无记录时展示“暂无最近身份事件”空态，不展示固定 “Chrome · 上海 · 12 分钟前” 等示例事件。
+
+组织管理员视角数据来源：
+
+- 组织治理健康分：
+  - 成员安全覆盖率来自组织成员对应 `system_user.email_verified`、`system_user.two_factor_enabled`、`system_two_factor.verified` 和 `system_passkey` 覆盖率。
+  - 邀请处理来自 `system_invitation` 当前组织 pending/expired 数量；无待处理和过期邀请为 `100`，有待处理时按数量扣分，最低 `20`。
+  - 部门治理来自 `system_organization_department`、`system_member` 和 `system_organization_department_member`：有部门且未分配成员占比越低分数越高；无部门但有成员时显示需要完善组织架构，不使用固定 `82`。
+  - 会话维度来自组织成员未过期 `system_session` 数量和 `system_request_log` 风险请求；无高风险且会话数量不异常为高分，存在高风险请求或超量会话按规则扣分。
+  - API Key 风险来自组织级 `system_apikey` 与 `system_api_key_usage_log`，统计禁用、即将过期、失败率高或高风险使用记录。
+- 权限分布来自 `system_member.role` 按 `owner`、`admin`、`member` 真实计数展示；当前没有 viewer 角色时不得展示 viewer 固定占比。
+- 团队/部门结构卡片来自 `system_organization_department` 与 `system_organization_department_member`，展示最大部门、空部门、未分配成员等真实摘要；无部门时展示空态和进入组织架构页的入口，不使用固定气泡和“研发团队偏大”文案。
+- 最近组织事件来自 `system_request_log`、`system_invitation`、`system_member.created_at`、`system_organization_department.created_at` 和组织级 API Key 使用日志聚合；无记录时展示空态。
+- 风险行动队列的每一项都必须带真实 `count` 和来源。若某项当前数据源不可用，应隐藏该项或显示“暂无可评估数据”，不得使用序号 `1/2` 作为 count。
+
+根路由数据处理：
+
+- `/` 不允许继续展示“首页访问测试成功”开发期页面。
+- 未登录访问 `/` 时进入 `/sign-in` 或公开介绍页；第一版推荐重定向 `/sign-in`。
+- 已登录访问 `/` 时重定向 `/dashboard`。
+- 旧 `/app` 路由继续重定向 `/dashboard`，不展示单独测试内容。
 
 ## 实现要点
 
@@ -179,7 +224,7 @@
   - `src/app/dashboard/_components/dashboard-home-content.tsx`：个人/组织管理员首页内容。
   - `src/app/dashboard/_components/health-radar-chart.tsx`：雷达图组件，图表中心不放置文字或卡片。
   - `src/server/api/routers/dashboard.ts`：工作台聚合 API 和组织切换 mutation。
-  - `src/server/api/routers/notification.ts`：当前用户通知聚合、标记已读、组织邀请通知接受/拒绝。
+  - `src/server/api/routers/notification.ts`：当前用户通知聚合、组织邀请通知接受/拒绝；在仅有派生邀请通知时，标记已读接口返回不支持。
 - 该页使用 Server Component 获取初始数据。
 - 未登录 redirect('/sign-in')。
 - 登录后的默认入口从 `/app` 调整为 `/dashboard`，旧 `/app` 路由保留并重定向到 `/dashboard`。
@@ -194,7 +239,8 @@
 - 全局通知系统第一版优先支持业务聚合通知，不强制新增通用通知表；组织邀请通知从 invitation 表派生，后续需要站内消息、公告或审计通知时再新增 `system_notification` 表。
 - 组织邀请通知与 `/invite/[id]` 使用同一套服务端接受/拒绝逻辑；通知面板是快捷入口，不另建独立邀请处理模型。
 - 邀请通知只展示当前登录用户邮箱对应的 pending 邀请；过期、已取消、已接受、已拒绝的邀请不进入待处理通知列表，但可在邀请接受页展示对应终态。
-- 通知面板中的普通通知可标记已读；待处理邀请不能仅标记已读来替代业务处理，必须接受、拒绝、过期或取消后才离开待处理集合。
+- 通知面板中的普通通知只有在新增可持久化 `system_notification` 表后才展示“标记已读”或“全部标为已读”；如果第一版仅包含从业务表派生的邀请通知，则不展示这两个操作，也不实现只返回成功但不落库的占位 mutation。
+- 待处理邀请不能仅标记已读来替代业务处理，必须接受、拒绝、过期或取消后才离开待处理集合。
 - 个人 API Key 自助创建与管理由 `16-dashboard-settings-api-keys.md` 承载；平台级 API Key 统一治理由 `14-dashboard-admin-api-keys.md` 承载，工作台首页只展示摘要和跳转。
 - `apiKey` 插件按当前安装版本使用默认数据库存储；`enableSessionForAPIKeys` 仅属于单个 API Key 配置项且带生产安全风险，06 首版不启用 API Key 模拟 session 能力。
 - `src/server/db/schema.ts` 维护 Better Auth 插件表：`organization`、`member`、`invitation`、`twoFactor`、`passkey`、`apikey`，实际数据库表名继续使用 `system_*` 前缀；公司内部部门层级使用产品扩展表维护。
@@ -206,6 +252,11 @@
 - Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + @tanstack/react-form + Zod: forms, tables, dialogs, validation
+
+## 公共组件使用
+
+- 本页第一版不使用共享 `DataTable` 或 `DataPagination`，因为工作台首页以概览卡片、图表和短列表为主，没有标准分页表格。
+- 如后续最近事件或风险队列扩展为可分页表格，应优先使用 `98-common-components.md` 中定义的共享表格和分页组件。
 
 ## 验收标准
 

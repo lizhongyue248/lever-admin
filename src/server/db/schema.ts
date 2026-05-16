@@ -90,12 +90,13 @@ export const organization = createSystemTable(
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
     metadata: text("metadata"),
+    status: text("status").default("active").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull()
   },
-  (table) => [uniqueIndex("system_organization_slug_idx").on(table.slug)]
+  (table) => [uniqueIndex("system_organization_slug_idx").on(table.slug), index("system_organization_status_idx").on(table.status)]
 )
 
 export const organizationDepartment = createSystemTable(

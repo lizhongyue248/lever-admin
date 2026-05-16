@@ -5,6 +5,7 @@ import { z } from "zod"
 import { PLATFORM_ROLE_SUPER_ADMIN } from "@/lib/const"
 import { adminProcedure, createTRPCRouter } from "@/server/api/trpc"
 import { invitation, member, organization, organizationDepartment } from "@/server/db/schema"
+import { recordRequestLogSafely } from "@/server/service/request-logs"
 
 export const adminOrgRouter = createTRPCRouter({
   create: adminProcedure
@@ -56,13 +57,33 @@ export const adminOrgRouter = createTRPCRouter({
     const [departmentCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(organizationDepartment)
     const [memberCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(member)
     const [pendingInvitationCount] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(invitation).where(eq(invitation.status, "pending"))
+    const [riskySessionCount] = await ctx.db
+      .select({
+        value: sql<number>`coalesce((
+        select sum(user_sessions."session_count")::int
+        from (
+          select count(active_session."id")::int as "session_count"
+          from "system_session" active_session
+          where active_session."expires_at" > now()
+            and exists (
+              select 1
+              from "system_member" active_member
+              where active_member."user_id" = active_session."user_id"
+            )
+          group by active_session."user_id"
+          having count(active_session."id") > 5
+        ) user_sessions
+      ), 0)::int`
+      })
+      .from(organization)
+      .limit(1)
 
     return {
       departmentCount: departmentCount?.value ?? 0,
       memberCount: memberCount?.value ?? 0,
       organizationCount: orgCount?.value ?? 0,
       pendingInvitationCount: pendingInvitationCount?.value ?? 0,
-      riskySessionCount: 0
+      riskySessionCount: riskySessionCount?.value ?? 0
     }
   }),
 
@@ -77,7 +98,10 @@ export const adminOrgRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const search = `%${input.search.trim()}%`
-      const filters = and(input.search.trim() ? or(ilike(organization.name, search), ilike(organization.slug, search)) : undefined)
+      const filters = and(
+        input.search.trim() ? or(ilike(organization.name, search), ilike(organization.slug, search)) : undefined,
+        input.status === "all" ? undefined : eq(organization.status, input.status)
+      )
       const [totalRow] = await ctx.db.select({ value: sql<number>`count(*)::int` }).from(organization).where(filters)
       const rows = await ctx.db
         .select({
@@ -104,8 +128,29 @@ export const adminOrgRouter = createTRPCRouter({
             where pending_invitation."organization_id" = ${organization.id}
               and pending_invitation."status" = 'pending'
           )`,
+          riskCount: sql<number>`(
+            select count(distinct risky_users."user_id")::int
+            from (
+              select risk_member."user_id"
+              from "system_member" risk_member
+              inner join "system_request_log" risk_log
+                on risk_log."user_id" = risk_member."user_id"
+               and risk_log."organization_id" = ${organization.id}
+               and risk_log."risk_level" = 'high'
+               and risk_log."created_at" >= now() - interval '30 days'
+              where risk_member."organization_id" = ${organization.id}
+              union
+              select active_member."user_id"
+              from "system_member" active_member
+              inner join "system_session" active_session on active_session."user_id" = active_member."user_id"
+              where active_member."organization_id" = ${organization.id}
+                and active_session."expires_at" > now()
+              group by active_member."user_id"
+              having count(active_session."id") > 5
+            ) risky_users
+          )`,
           slug: organization.slug,
-          status: sql<"active" | "disabled">`'active'`
+          status: organization.status
         })
         .from(organization)
         .leftJoin(member, eq(member.organizationId, organization.id))
@@ -114,18 +159,58 @@ export const adminOrgRouter = createTRPCRouter({
         .orderBy(desc(organization.createdAt))
         .limit(input.pageSize)
         .offset((input.page - 1) * input.pageSize)
-      const filteredRows = input.status === "all" ? rows : rows.filter((row) => row.status === input.status)
       const total = totalRow?.value ?? 0
 
       return {
-        items: filteredRows.map((row) => ({ ...row, riskCount: 0 })),
+        items: rows,
         page: input.page,
         pageCount: Math.max(1, Math.ceil(total / input.pageSize)),
         total
       }
     }),
 
-  updateStatus: adminProcedure.input(z.object({ organizationId: z.string().min(1), status: z.enum(["active", "disabled"]) })).mutation(async ({ input }) => {
-    return { organizationId: input.organizationId, status: input.status }
+  updateStatus: adminProcedure.input(z.object({ organizationId: z.string().min(1), status: z.enum(["active", "disabled"]) })).mutation(async ({ ctx, input }) => {
+    const [target] = await ctx.db
+      .select({ id: organization.id, name: organization.name, status: organization.status })
+      .from(organization)
+      .where(eq(organization.id, input.organizationId))
+      .limit(1)
+
+    if (!target) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "组织不存在。" })
+    }
+
+    const [updated] = await ctx.db
+      .update(organization)
+      .set({ status: input.status, updatedAt: new Date() })
+      .where(eq(organization.id, target.id))
+      .returning({ id: organization.id, status: organization.status })
+
+    if (!updated) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "组织不存在。" })
+    }
+
+    recordRequestLogSafely({
+      metadata: {
+        newStatus: updated.status,
+        previousStatus: target.status
+      },
+      method: "PATCH",
+      organizationId: updated.id,
+      organizationName: target.name,
+      path: "/api/trpc/adminOrg.updateStatus",
+      routeName: "adminOrg.updateStatus",
+      source: "trpc",
+      statusCode: 200,
+      success: true,
+      user: {
+        email: ctx.session.user.email,
+        id: ctx.session.user.id,
+        name: ctx.session.user.name,
+        role: ctx.session.user.role
+      }
+    })
+
+    return { organizationId: updated.id, status: updated.status }
   })
 })

@@ -36,6 +36,35 @@
 - `session.revoke`：撤销指定 sessionId，服务端要求该会话属于当前用户。
 - `session.revokeOthers`：撤销当前 session 之外的全部 session。
 
+### 会话健康真实数据口径
+
+我的会话页不得固定返回 `highRiskCount: 0`。会话健康由服务端基于当前用户真实 session 和请求日志计算。
+
+第一版会话风险来源：
+
+- `system_session`：
+  - 只统计当前用户未过期会话。
+  - 同一用户活跃会话数超过 5 个时，超出阈值的非当前会话标记为风险。
+  - 会话缺少 IP 或 User-Agent 时标记为中风险。
+  - 会话创建超过 30 天且最近活跃时间早于 30 天前时标记为长期会话风险。
+- `system_request_log`：
+  - 统计当前用户最近 30 天 `risk_level='high'` 的请求。
+  - 如果高风险请求能关联到当前 session，则对应 session 标记为高风险。
+  - 无法关联具体 session 时，只进入页面健康摘要，不错误标记某个具体设备。
+
+返回字段要求：
+
+- `sessions[]` 每项返回 `riskLevel`、`riskReasons` 和 `isCurrent`。
+- `health.highRiskCount` 为高风险 session 数；没有高风险时返回真实计算后的 `0`。
+- `health.latestActivityLabel` 和 `health.longestOnlineLabel` 来自真实 `updatedAt`、`createdAt`。
+- 页面没有任何会话时展示空态；不得展示示例设备。
+
+风险展示处理：
+
+- 当前会话如被判定为风险，只展示风险原因和“退出当前账号”引导，不展示普通撤销按钮。
+- 非当前风险会话可使用撤销操作。
+- 撤销会话后重新计算健康摘要和风险数量。
+
 ## 实现要点
 
 - 当前会话不显示普通撤销按钮，改为退出登录。
@@ -52,6 +81,11 @@
 - Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + Zod: forms, tables, dialogs, validation
+
+## 公共组件使用
+
+- 会话列表分页使用 `src/components/data-pagination.tsx` 的共享 `DataPagination`，页面负责维护页码和刷新状态。
+- 第一版会话列表可使用页面专属设备列表布局；如改为桌面标准表格，应使用 `src/components/data-table.tsx` 的共享 `DataTable`，页面只负责定义会话字段、风险 badge 和撤销操作。
 
 ## 验收标准
 

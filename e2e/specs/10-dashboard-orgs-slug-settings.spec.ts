@@ -3,10 +3,14 @@ import { expect, test } from "@playwright/test"
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
 import {
   addOrganizationMemberByEmail,
+  assignOrganizationMemberToDepartmentByEmail,
+  createRequestLogFixture,
   createUserRecord,
+  createUserSessionFixture,
   getDepartmentByName,
   getDepartmentMembershipByEmail,
   getMemberByEmailAndOrganization,
+  getSessionById,
   seedOrganizationWithDepartments,
   setUserRole
 } from "../helpers/db"
@@ -70,6 +74,90 @@ test.describe("10 dashboard orgs slug settings", () => {
     await page.getByRole("button", { name: "确认添加" }).click()
 
     await expect(page.getByRole("tree")).toContainText("Growth Department E2E")
+  })
+
+  test("shows organization member risk from high-risk request logs", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed organization flow only needs one browser project")
+
+    const adminEmail = await createVerifiedUser(page, "dashboard-org-risk-admin")
+    const riskyMemberEmail = uniqueEmail("dashboard-org-risk-member")
+    const slug = `department-risk-root-${Date.now()}`
+    const rootName = `Department Risk Root ${Date.now()} E2E`
+    const departmentName = `Risk Department ${Date.now()} E2E`
+    const { departmentId, rootId } = await seedOrganizationWithDepartments({
+      departmentName,
+      rootName,
+      rootSlug: slug
+    })
+    const riskyUser = await createUserRecord({ email: riskyMemberEmail, name: "Risky Member E2E" })
+
+    await addOrganizationMemberByEmail({ email: adminEmail, organizationId: rootId, role: "owner" })
+    await addOrganizationMemberByEmail({ email: riskyMemberEmail, organizationId: rootId, role: "member" })
+    await assignOrganizationMemberToDepartmentByEmail({ departmentId, email: riskyMemberEmail, organizationId: rootId })
+    await createRequestLogFixture({
+      organizationId: rootId,
+      organizationName: rootName,
+      userEmail: riskyMemberEmail,
+      userId: riskyUser.id,
+      userName: "Risky Member E2E",
+      userRole: "member"
+    })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: adminEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+
+    await page.goto(`/dashboard/orgs/${slug}`)
+    const riskySessionCard = page.locator(".rounded-lg").filter({ hasText: "登录风险" }).first()
+
+    await expect(riskySessionCard.getByText("0", { exact: true })).toBeVisible()
+
+    await page.goto(`/dashboard/orgs/${slug}/information`)
+
+    await expect(page.getByText(/1 异常登录/)).toBeVisible()
+    await expect(page.getByRole("table").getByText("Risky Member E2E")).toBeVisible()
+    await expect(page.getByRole("table").getByText("风险")).toBeVisible()
+  })
+
+  test("does not revoke sessions outside the current organization", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed organization flow only needs one browser project")
+
+    const adminEmail = await createVerifiedUser(page, "dashboard-org-revoke-admin")
+    const outsiderEmail = await createVerifiedUser(page, "dashboard-org-revoke-outsider")
+    const slug = `session-revoke-root-${Date.now()}`
+    const otherSlug = `session-revoke-other-${Date.now()}`
+    const { rootId } = await seedOrganizationWithDepartments({
+      departmentName: `Revoke Department ${Date.now()} E2E`,
+      rootName: `Session Revoke Root ${Date.now()} E2E`,
+      rootSlug: slug
+    })
+    const { rootId: otherRootId } = await seedOrganizationWithDepartments({
+      departmentName: `Other Revoke Department ${Date.now()} E2E`,
+      rootName: `Other Session Revoke Root ${Date.now()} E2E`,
+      rootSlug: otherSlug
+    })
+    const outsiderSession = await createUserSessionFixture({ email: outsiderEmail, userAgent: "E2E Chrome Cross Org" })
+
+    await addOrganizationMemberByEmail({ email: adminEmail, organizationId: rootId, role: "owner" })
+    await addOrganizationMemberByEmail({ email: outsiderEmail, organizationId: otherRootId, role: "member" })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: adminEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+
+    const response = await page.request.post("/api/trpc/org.session.revoke?batch=1", {
+      data: {
+        0: {
+          json: {
+            sessionId: outsiderSession.id,
+            slug
+          }
+        }
+      }
+    })
+
+    expect(response.ok()).toBe(false)
+    await expect.poll(async () => getSessionById(outsiderSession.id)).not.toBeNull()
   })
 
   test("renames and deletes a department from the tree context menu", async ({ page }, testInfo) => {

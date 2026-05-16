@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
+import { createUserSessionFixture } from "../helpers/db"
 
 test.describe("09 dashboard settings sessions", () => {
   test("redirects anonymous users to sign in with sessions redirect target", async ({ page }) => {
@@ -147,5 +148,20 @@ test.describe("09 dashboard settings sessions", () => {
     } finally {
       await otherContext.close()
     }
+  })
+
+  test("marks accounts with too many active sessions as risky", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed auth flow only needs one browser project")
+
+    const email = await createVerifiedUser(page, "sessions-risk")
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email })
+    await expect(page).toHaveURL(/\/dashboard$/)
+
+    await Promise.all(Array.from({ length: 6 }, () => createUserSessionFixture({ email, userAgent: "E2E Chrome Risk" })))
+    await page.goto("/dashboard/settings/sessions")
+
+    await expect(page.getByText("活跃会话数量超过阈值").first()).toBeVisible()
   })
 })

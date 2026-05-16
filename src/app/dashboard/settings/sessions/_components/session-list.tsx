@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { DataPagination } from "@/components/data-pagination"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -72,7 +73,10 @@ export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }:
                         <p className="truncate font-medium text-sm">
                           {item.deviceLabel} · {item.browserLabel}
                         </p>
-                        <p className="mt-1 text-muted-foreground text-xs">创建于 {formatDate(item.createdAt)}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p className="text-muted-foreground text-xs">创建于 {formatDate(item.createdAt)}</p>
+                          {item.riskLevel === "risk" ? <Badge variant="destructive">{item.riskReasons[0] ?? "风险会话"}</Badge> : null}
+                        </div>
                       </div>
                     </div>
                     <span className="min-w-0 break-all pr-3 text-xs">{item.ipAddress ?? "未知 IP"}</span>
@@ -109,6 +113,7 @@ export const SessionList = ({ isSigningOut, onOpenRevoke, onSignOut, sessions }:
                     <p>
                       {item.lastActiveLabel} · 创建于 {formatDate(item.createdAt)}
                     </p>
+                    {item.riskLevel === "risk" ? <Badge variant="destructive">{item.riskReasons[0] ?? "风险会话"}</Badge> : null}
                   </div>
                   <div className="mt-3 flex justify-end">
                     {item.isCurrent ? (

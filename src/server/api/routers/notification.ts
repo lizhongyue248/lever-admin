@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server"
 import { and, asc, eq, gt, sql } from "drizzle-orm"
 import { z } from "zod"
 
@@ -109,8 +110,12 @@ export const notificationRouter = createTRPCRouter({
       }
     }),
 
-  markAllRead: protectedProcedure.mutation(async () => ({ marked: true })),
-  markRead: protectedProcedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ input }) => ({ id: input.id, marked: true })),
+  markAllRead: protectedProcedure.mutation(() => {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "当前通知来源不支持标记已读。" })
+  }),
+  markRead: protectedProcedure.input(z.object({ id: z.string().min(1) })).mutation(() => {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "当前通知来源不支持标记已读。" })
+  }),
 
   invitation: createTRPCRouter({
     accept: protectedProcedure.input(z.object({ invitationId: z.string().min(1) })).mutation(async ({ ctx, input }) => acceptInvitationForCurrentUser(ctx, input.invitationId)),

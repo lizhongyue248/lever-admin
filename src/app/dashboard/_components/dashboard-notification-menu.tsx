@@ -92,12 +92,6 @@ const NotificationPanel = ({
   onFilterChange: (type: NotificationType) => void
   selectedType: NotificationType
 }) => {
-  const markAllRead = api.notification.markAllRead.useMutation({
-    onSuccess: async () => {
-      toast.success("已标记普通通知为已读。")
-    }
-  })
-
   return (
     <div className="flex max-h-[520px] flex-col">
       <div className="flex items-center justify-between border-b px-4 py-3">
@@ -105,9 +99,6 @@ const NotificationPanel = ({
           <div className="font-semibold text-sm">通知</div>
           <div className="text-muted-foreground text-xs">处理邀请、安全和系统提醒</div>
         </div>
-        <Button disabled={markAllRead.isPending} onClick={() => markAllRead.mutate()} size="sm" type="button" variant="ghost">
-          全部标为已读
-        </Button>
       </div>
       <div className="flex gap-2 border-b px-4 py-3">
         {filters.map((filter) => (

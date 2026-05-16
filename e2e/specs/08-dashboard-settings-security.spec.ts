@@ -32,6 +32,9 @@ test.describe("08 dashboard settings security", () => {
     await expect(breadcrumbs.getByText("首页", { exact: true })).toBeVisible()
     await expect(breadcrumbs.getByText("设置", { exact: true })).toBeVisible()
     await expect(breadcrumbs.getByText("安全设置", { exact: true })).toBeVisible()
+
+    const scoreCard = page.getByText("安全雷达", { exact: true }).locator("xpath=ancestor::div[contains(@class, 'rounded-lg')][1]")
+    await expect(scoreCard.getByText("35", { exact: true })).toHaveCount(0)
   })
 
   test("validates password confirmation", async ({ page }, testInfo) => {

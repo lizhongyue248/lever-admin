@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server"
 import { and, desc, eq, gt, ne } from "drizzle-orm"
 import { z } from "zod"
 
+import { getActiveSessionCountsByUser, getHighRiskUserIds, getSessionRisk } from "@/server/api/lib/session-risk"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { session } from "@/server/db/schema"
 
@@ -101,11 +102,15 @@ export const sessionRouter = createTRPCRouter({
         id: session.id,
         ipAddress: session.ipAddress,
         updatedAt: session.updatedAt,
-        userAgent: session.userAgent
+        userAgent: session.userAgent,
+        userId: session.userId
       })
       .from(session)
       .where(and(eq(session.userId, userId), gt(session.expiresAt, new Date())))
       .orderBy(desc(session.createdAt))
+
+    const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds: [userId] })
+    const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, userIds: [userId] })
 
     const sortedRows = rows.sort((left, right) => {
       if (left.id === currentSessionId) {
@@ -122,6 +127,11 @@ export const sessionRouter = createTRPCRouter({
     const sessions = sortedRows.map((row) => {
       const browser = getBrowser(row.userAgent)
       const lastActiveAt = row.updatedAt ?? row.createdAt
+      const risk = getSessionRisk({
+        activeSessionCountForUser: activeSessionCounts.get(row.userId) ?? rows.length,
+        hasHighRiskRequest: highRiskUserIds.has(row.userId),
+        sessionRow: row
+      })
 
       return {
         ...browser,
@@ -133,6 +143,8 @@ export const sessionRouter = createTRPCRouter({
         isCurrent: row.id === currentSessionId,
         lastActiveAt,
         lastActiveLabel: formatRelativeActivity(lastActiveAt),
+        riskLevel: risk.level,
+        riskReasons: risk.reasons,
         userAgent: row.userAgent
       }
     })
@@ -157,7 +169,7 @@ export const sessionRouter = createTRPCRouter({
       health: {
         activeCount: sessions.length,
         currentCount,
-        highRiskCount: 0,
+        highRiskCount: sessions.filter((item) => item.riskLevel === "risk").length,
         latestActivityLabel: latestActivity ? formatRelativeActivity(latestActivity) : "暂无",
         longestOnlineLabel: longestSession ? formatOnlineDuration(longestSession) : "暂无",
         revocableCount: sessions.filter((item) => !item.isCurrent).length

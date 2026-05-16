@@ -1,19 +1,14 @@
 import { TRPCError } from "@trpc/server"
 import { and, desc, eq, sql } from "drizzle-orm"
 
-import { env } from "@/env"
+import { getOAuthProviderConfigs } from "@/server/api/lib/oauth-providers"
+import { getActiveSessionCountsByUser, getHighRiskUserIds } from "@/server/api/lib/session-risk"
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
 import { account, passkey, session, twoFactor, user } from "@/server/db/schema"
 
 const credentialProviderIds = new Set(["credential", "email", "email-password"])
 
-const countRows = async (query: Promise<{ value: number }[]>) => {
-  const [row] = await query
-
-  return row?.value ?? 0
-}
-
-const getDimensionValue = (enabled: boolean) => (enabled ? 100 : 35)
+const getDimensionValue = (enabled: boolean) => (enabled ? 100 : 0)
 
 const getStatusValue = (enabled: boolean) => (enabled ? ("active" as const) : ("available" as const))
 
@@ -69,7 +64,11 @@ export const securityRouter = createTRPCRouter({
       .where(eq(twoFactor.userId, userId))
       .limit(1)
 
-    const activeSessionCount = await countRows(ctx.db.select({ value: sql<number>`count(*)::int` }).from(session).where(eq(session.userId, userId)))
+    const activeSessionCounts = await getActiveSessionCountsByUser({ database: ctx.db, userIds: [userId] })
+    const highRiskUserIds = await getHighRiskUserIds({ database: ctx.db, userIds: [userId] })
+    const activeSessionCount = activeSessionCounts.get(userId) ?? 0
+    const hasSessionRisk = highRiskUserIds.has(userId) || activeSessionCount > 5
+    const sessionDimensionValue = hasSessionRisk ? 40 : 100
 
     const [currentSession] = await ctx.db
       .select({
@@ -83,11 +82,16 @@ export const securityRouter = createTRPCRouter({
 
     const passwordAccount = accountRows.find((row) => row.hasPassword || credentialProviderIds.has(row.providerId))
     const githubAccount = accountRows.find((row) => row.providerId === "github") ?? null
+    const googleAccount = accountRows.find((row) => row.providerId === "google") ?? null
+    const providers = getOAuthProviderConfigs()
+    const providerById = new Map(providers.map((provider) => [provider.id, provider]))
+    const googleConfigured = providerById.get("google")?.configured ?? false
     const hasPassword = Boolean(passwordAccount)
     const hasPasskey = passkeyRows.length > 0
     const hasGithub = Boolean(githubAccount)
+    const hasGoogle = Boolean(googleAccount)
     const hasTwoFactor = Boolean(currentUser.twoFactorEnabled && twoFactorRow?.verified)
-    const loginMethodCount = [hasPassword, hasPasskey, hasGithub].filter(Boolean).length
+    const loginMethodCount = [hasPassword, hasPasskey, hasGithub, hasGoogle].filter(Boolean).length
     const canUnlinkGithub = hasGithub && loginMethodCount > 1
 
     const dimensions = [
@@ -113,13 +117,13 @@ export const securityRouter = createTRPCRouter({
         key: "oauth" as const,
         label: "第三方账号",
         source: "system_account.provider_id",
-        value: getDimensionValue(hasGithub)
+        value: getDimensionValue(hasGithub || hasGoogle)
       },
       {
         key: "session" as const,
         label: "会话风险",
         source: "system_session count",
-        value: activeSessionCount <= 3 ? 100 : 65
+        value: sessionDimensionValue
       }
     ]
     const total = Math.round(dimensions.reduce((sum, item) => sum + item.value, 0) / dimensions.length)
@@ -129,16 +133,16 @@ export const securityRouter = createTRPCRouter({
         github: {
           accountId: githubAccount?.accountId ?? null,
           canUnlink: canUnlinkGithub,
-          configured: Boolean(env.BETTER_AUTH_GITHUB_CLIENT_ID && env.BETTER_AUTH_GITHUB_CLIENT_SECRET),
+          configured: providerById.get("github")?.configured ?? false,
           connectedAt: githubAccount?.createdAt ?? null,
           linked: hasGithub
         },
         google: {
-          accountId: null,
+          accountId: googleAccount?.accountId ?? null,
           canUnlink: false,
-          configured: false,
-          connectedAt: null,
-          linked: false
+          configured: providerById.get("google")?.configured ?? false,
+          connectedAt: googleAccount?.createdAt ?? null,
+          linked: hasGoogle
         }
       },
       passkeys: passkeyRows.map((row) => ({
@@ -169,9 +173,9 @@ export const securityRouter = createTRPCRouter({
           status: getStatusValue(hasGithub)
         },
         {
-          description: "Google provider 暂未在 Better Auth 配置中启用。",
+          description: hasGoogle ? "Google 已作为第三方登录方式绑定。" : googleConfigured ? "Google 可作为备用登录方式。" : "Google provider 暂未在 Better Auth 配置中启用。",
           label: "Google",
-          status: "unconfigured" as const
+          status: hasGoogle ? ("active" as const) : googleConfigured ? ("available" as const) : ("unconfigured" as const)
         }
       ],
       score: {

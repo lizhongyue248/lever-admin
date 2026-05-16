@@ -12,6 +12,9 @@ type DashboardHomeContentProps = {
   data: DashboardHomeData
 }
 
+type OrganizationDashboardData = Extract<DashboardHomeData, { view: "organization-admin" }>
+type PersonalDashboardData = Extract<DashboardHomeData, { view: "personal" }>
+
 type ActionItem = {
   count: string
   href: string
@@ -57,8 +60,8 @@ const getActions = (data: DashboardHomeData): ActionItem[] => {
   }
 
   return [
-    { count: data.actions[0]?.count ?? "1", href: data.actions[0]?.href ?? "/dashboard/settings/security", title: "开启 2FA" },
-    { count: data.actions[1]?.count ?? "2", href: data.actions[1]?.href ?? "/dashboard/settings/security", title: "添加 Passkey" },
+    { count: data.actions[0]?.count ?? "0", href: data.actions[0]?.href ?? "/dashboard/settings/security", title: "开启 2FA" },
+    { count: data.actions[1]?.count ?? "0", href: data.actions[1]?.href ?? "/dashboard/settings/security", title: "添加 Passkey" },
     { count: data.actions[2]?.count ?? "0", href: data.actions[2]?.href ?? "/dashboard", title: "处理组织邀请" },
     { count: data.actions[3]?.count ?? "0", href: data.actions[3]?.href ?? "/dashboard/settings/sessions", title: "检查长期会话" }
   ]
@@ -66,10 +69,28 @@ const getActions = (data: DashboardHomeData): ActionItem[] => {
 
 const getFooterSummary = (data: DashboardHomeData) => {
   if (data.view === "organization-admin") {
-    return `${findMetric(data, "成员")} 名成员     ${findMetric(data, "待处理邀请")} 个邀请     ${findMetric(data, "风险 Key")} 个风险 Key`
+    return `${findMetric(data, "成员")} 名成员     ${findMetric(data, "待处理邀请")} 个邀请     ${findMetric(data, "即将过期 Key")} 个即将过期 Key`
   }
 
   return `${findMetric(data, "活跃设备")} 台设备     ${findMetric(data, "待处理邀请")} 个邀请`
+}
+
+const segmentColors = ["text-primary", "text-chart-2", "text-chart-3", "text-chart-4"]
+
+const getDonutSegments = (items: { label: string; value: number }[]): DonutSegment[] => {
+  const total = items.reduce((sum, item) => sum + item.value, 0)
+
+  if (total === 0) {
+    return []
+  }
+
+  return items
+    .filter((item) => item.value > 0)
+    .map((item, index) => ({
+      colorClass: segmentColors[index % segmentColors.length] ?? "text-primary",
+      label: `${item.label} ${item.value}`,
+      value: Math.round((item.value / total) * 100)
+    }))
 }
 
 export const DashboardHomeContent = ({ data }: DashboardHomeContentProps) => {
@@ -148,30 +169,29 @@ const ActionQueue = ({ actions, title }: { actions: ActionItem[]; title: string 
   </Card>
 )
 
-const PersonalDashboardBody = ({ data }: { data: DashboardHomeData }) => {
+const PersonalDashboardBody = ({ data }: { data: PersonalDashboardData }) => {
   const deviceCount = findMetric(data, "活跃设备")
-  const keyCount = findMetric(data, "个人 Key")
 
   return (
     <>
       <section className="grid gap-7 lg:grid-cols-3">
         <DeviceFootprintCard count={deviceCount} />
-        <LoginPortraitCard />
-        <PersonalApiKeyCard count={keyCount} />
+        <LoginPortraitCard methods={data.loginMethods} />
+        <PersonalApiKeyCard status={data.personalApiKeyStatus} />
       </section>
-      <RecentEventsCard />
+      <RecentEventsCard events={data.recentEvents} />
     </>
   )
 }
 
-const OrganizationDashboardBody = ({ data }: { data: DashboardHomeData }) => (
+const OrganizationDashboardBody = ({ data }: { data: OrganizationDashboardData }) => (
   <>
     <section className="grid gap-7 xl:grid-cols-12">
       <SecurityCoverageCard className="xl:col-span-8" data={data} />
-      <PermissionDistributionCard className="xl:col-span-4" />
+      <PermissionDistributionCard className="xl:col-span-4" distribution={data.permissionDistribution} />
     </section>
     <section className="grid gap-7 xl:grid-cols-12">
-      <TeamStructureCard className="xl:col-span-4" />
+      <TeamStructureCard className="xl:col-span-4" structure={data.departmentStructure} />
     </section>
   </>
 )
@@ -180,74 +200,76 @@ const DeviceFootprintCard = ({ count }: { count: string }) => (
   <Card className="min-h-56 rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30">
     <CardHeader className="px-6 pt-6 pb-0">
       <CardTitle className="text-lg">设备足迹</CardTitle>
-      <p className="text-muted-foreground text-xs">近 30 天登录设备保持稳定</p>
+      <p className="text-muted-foreground text-xs">当前活跃登录设备</p>
     </CardHeader>
     <CardContent className="flex h-36 flex-col justify-end px-6 pb-6">
-      <div className="flex items-end gap-3">
-        {[42, 64, 54, 80, 46].map((height, index) => (
-          <div className={cn("w-14 rounded-md bg-primary/35", index === 3 && "bg-primary")} key={height} style={{ height: `${height}px` }} />
-        ))}
-      </div>
-      <p className="-mt-1 font-semibold text-lg">{count} 台活跃设备</p>
+      <div className="mb-4 flex size-20 items-center justify-center rounded-xl bg-accent font-semibold text-4xl text-primary">{count}</div>
+      <p className="font-semibold text-lg">{count} 台活跃设备</p>
     </CardContent>
   </Card>
 )
 
-const LoginPortraitCard = () => (
-  <Card className="min-h-56 rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30">
-    <CardHeader className="px-6 pt-6 pb-0">
-      <CardTitle className="text-lg">登录方式画像</CardTitle>
-      <p className="text-muted-foreground text-xs">密码与 OAuth 组合使用</p>
-    </CardHeader>
-    <CardContent className="flex items-center justify-center gap-8 px-6 pb-6">
-      <DonutChart segments={personalLoginSegments} />
-      <ChartLegend segments={personalLoginSegments} />
-    </CardContent>
-  </Card>
-)
+const LoginPortraitCard = ({ methods }: { methods: PersonalDashboardData["loginMethods"] }) => {
+  const segments = getDonutSegments(methods)
 
-const PersonalApiKeyCard = ({ count }: { count: string }) => (
+  return (
+    <Card className="min-h-56 rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30">
+      <CardHeader className="px-6 pt-6 pb-0">
+        <CardTitle className="text-lg">登录方式画像</CardTitle>
+        <p className="text-muted-foreground text-xs">账号可用登录方式</p>
+      </CardHeader>
+      <CardContent className="flex items-center justify-center gap-8 px-6 pb-6">
+        {segments.length > 0 ? (
+          <>
+            <DonutChart segments={segments} />
+            <ChartLegend segments={segments} />
+          </>
+        ) : (
+          <EmptyInlineState text="暂无登录方式数据" />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+const PersonalApiKeyCard = ({ status }: { status: PersonalDashboardData["personalApiKeyStatus"] }) => (
   <Card className="min-h-56 rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30">
     <CardHeader className="px-6 pt-6 pb-0">
       <CardTitle className="text-lg">个人 API Key 状态</CardTitle>
-      <p className="text-muted-foreground text-xs">凭证暴露面维持在低风险</p>
+      <p className="text-muted-foreground text-xs">个人凭证使用与过期状态</p>
     </CardHeader>
     <CardContent className="flex items-center gap-6 px-6 pb-6">
-      <div className="flex size-20 items-center justify-center rounded-xl bg-accent font-semibold text-4xl text-primary">{count}</div>
+      <div className="flex size-20 items-center justify-center rounded-xl bg-accent font-semibold text-4xl text-primary">{status.totalCount}</div>
       <ul className="space-y-3 text-xs">
         <li className="flex items-center gap-2">
           <Dot />
-          <span>1 个 30 天内使用</span>
+          <span>{status.recentUsedCount} 个 30 天内使用</span>
         </li>
         <li className="flex items-center gap-2">
           <Dot />
-          <span>0 个即将过期</span>
-        </li>
-        <li className="flex items-center gap-2">
-          <Dot />
-          <span>0 个高权限 Scope</span>
+          <span>{status.expiringSoonCount} 个即将过期</span>
         </li>
       </ul>
     </CardContent>
   </Card>
 )
 
-const RecentEventsCard = () => (
+const RecentEventsCard = ({ events }: { events: DashboardHomeData["recentEvents"] }) => (
   <Card className="rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30">
     <CardHeader className="px-6 pt-6 pb-0">
       <CardTitle className="text-lg">最近身份事件</CardTitle>
     </CardHeader>
     <CardContent className="grid gap-5 px-6 pb-7 md:grid-cols-3">
-      {[
-        { description: "Chrome · 上海 · 12 分钟前", title: "登录成功" },
-        { description: "客户成功 · viewer · 2 天后过期", title: "组织邀请待处理" },
-        { description: "cli-prod · 3 小时前", title: "API Key 使用" }
-      ].map((event) => (
-        <div className="rounded-lg bg-muted/70 p-4" key={event.title}>
-          <p className="font-semibold text-xs">{event.title}</p>
-          <p className="mt-4 text-muted-foreground text-xs">{event.description}</p>
-        </div>
-      ))}
+      {events.length > 0 ? (
+        events.map((event) => (
+          <div className="rounded-lg bg-muted/70 p-4" key={event.id}>
+            <p className="font-semibold text-xs">{event.title}</p>
+            <p className="mt-4 break-words text-muted-foreground text-xs">{event.description}</p>
+          </div>
+        ))
+      ) : (
+        <EmptyInlineState text="暂无最近身份事件" />
+      )}
     </CardContent>
   </Card>
 )
@@ -276,76 +298,99 @@ const SecurityCoverageCard = ({ className, data }: { className?: string; data: D
   </Card>
 )
 
-const PermissionDistributionCard = ({ className }: { className?: string }) => (
-  <Card className={cn("rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30", className)}>
-    <CardHeader className="px-6 pt-6 pb-0">
-      <CardTitle className="text-lg">权限分布</CardTitle>
-    </CardHeader>
-    <CardContent className="flex min-h-44 flex-col items-center justify-center gap-3 px-6 pb-6 text-center">
-      <DonutChart segments={permissionSegments} />
-      <p className="text-muted-foreground text-xs">owner/admin 占比 25%</p>
-    </CardContent>
-  </Card>
-)
+const PermissionDistributionCard = ({ className, distribution }: { className?: string; distribution: OrganizationDashboardData["permissionDistribution"] }) => {
+  const segments = getDonutSegments(distribution)
+  const adminCount = distribution.filter((item) => item.label === "owner" || item.label === "admin").reduce((sum, item) => sum + item.value, 0)
+  const totalCount = distribution.reduce((sum, item) => sum + item.value, 0)
 
-const TeamStructureCard = ({ className }: { className?: string }) => (
-  <Card className={cn("min-h-56 rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30", className)}>
-    <CardHeader className="px-6 pt-6 pb-0">
-      <CardTitle className="text-lg">团队结构</CardTitle>
-      <p className="text-muted-foreground text-xs">识别空团队与超大团队</p>
-    </CardHeader>
-    <CardContent className="space-y-5 px-6 pb-6">
-      <div className="flex items-end gap-6">
-        <span className="size-18 rounded-full bg-primary" />
-        <span className="size-14 rounded-full bg-primary/75" />
-        <span className="size-10 rounded-full bg-primary/45" />
-      </div>
-      <p className="text-muted-foreground text-xs">研发团队偏大，建议拆分权限域。</p>
-    </CardContent>
-  </Card>
-)
+  return (
+    <Card className={cn("rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30", className)}>
+      <CardHeader className="px-6 pt-6 pb-0">
+        <CardTitle className="text-lg">权限分布</CardTitle>
+      </CardHeader>
+      <CardContent className="flex min-h-44 flex-col items-center justify-center gap-3 px-6 pb-6 text-center">
+        {segments.length > 0 ? (
+          <>
+            <DonutChart segments={segments} />
+            <ChartLegend segments={segments} />
+            <p className="text-muted-foreground text-xs">
+              owner/admin {adminCount} / {totalCount}
+            </p>
+          </>
+        ) : (
+          <EmptyInlineState text="暂无权限分布数据" />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+const TeamStructureCard = ({ className, structure }: { className?: string; structure: OrganizationDashboardData["departmentStructure"] }) => {
+  const hasDepartmentData = structure.largestDepartmentSize > 0 || structure.emptyDepartmentCount > 0 || structure.unassignedMemberCount > 0
+
+  return (
+    <Card className={cn("min-h-56 rounded-xl py-0 shadow-black/5 shadow-xl dark:shadow-black/30", className)}>
+      <CardHeader className="px-6 pt-6 pb-0">
+        <CardTitle className="text-lg">团队结构</CardTitle>
+        <p className="text-muted-foreground text-xs">识别空部门与未分配成员</p>
+      </CardHeader>
+      <CardContent className="space-y-5 px-6 pb-6">
+        {hasDepartmentData ? (
+          <>
+            <div className="flex items-end gap-6">
+              <MetricBubble label="最大" value={structure.largestDepartmentSize} />
+              <MetricBubble label="空" value={structure.emptyDepartmentCount} />
+              <MetricBubble label="未分配" value={structure.unassignedMemberCount} />
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {structure.largestDepartmentName ? `最大部门：${structure.largestDepartmentName} · ${structure.largestDepartmentSize} 人。` : "暂无成员归属部门。"}
+            </p>
+          </>
+        ) : (
+          <EmptyInlineState text="暂无部门结构数据" />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 const Dot = () => <span className="size-2 rounded-full bg-primary" />
 
-const personalLoginSegments: DonutSegment[] = [
-  { colorClass: "text-primary", label: "密码 58%", value: 58 },
-  { colorClass: "text-chart-2", label: "OAuth 31%", value: 31 },
-  { colorClass: "text-chart-3", label: "Passkey 11%", value: 11 }
-]
-
-const permissionSegments: DonutSegment[] = [
-  { colorClass: "text-primary", label: "owner/admin", value: 25 },
-  { colorClass: "text-chart-2", label: "member", value: 55 },
-  { colorClass: "text-chart-3", label: "viewer", value: 20 }
-]
+const EmptyInlineState = ({ text }: { text: string }) => <p className="text-muted-foreground text-xs">{text}</p>
 
 const DonutChart = ({ segments }: { segments: DonutSegment[] }) => {
-  const first = segments[0]?.value ?? 0
-  const second = segments[1]?.value ?? 0
+  const circumference = 264
+  let accumulatedDash = 0
+
+  const renderedSegments = segments.map((segment) => {
+    const dash = Math.max(0, Math.min(circumference, (segment.value / 100) * circumference))
+    const renderedSegment = {
+      colorClass: segment.colorClass,
+      dash,
+      key: segment.label,
+      offset: -accumulatedDash
+    }
+    accumulatedDash += dash
+
+    return renderedSegment
+  })
 
   return (
     <svg aria-hidden="true" className="size-32 shrink-0 -rotate-90" viewBox="0 0 120 120">
       <circle className="fill-none stroke-accent" cx="60" cy="60" r="42" strokeWidth="16" />
-      <circle
-        className="fill-none stroke-current text-primary"
-        cx="60"
-        cy="60"
-        r="42"
-        strokeDasharray={`${first * 2.64} ${264 - first * 2.64}`}
-        strokeDashoffset="0"
-        strokeLinecap="butt"
-        strokeWidth="16"
-      />
-      <circle
-        className="fill-none stroke-current text-chart-2"
-        cx="60"
-        cy="60"
-        r="42"
-        strokeDasharray={`${second * 2.64} ${264 - second * 2.64}`}
-        strokeDashoffset={`${-(first * 2.64)}`}
-        strokeLinecap="butt"
-        strokeWidth="16"
-      />
+      {renderedSegments.map((segment) => (
+        <circle
+          className={cn("fill-none stroke-current", segment.colorClass)}
+          cx="60"
+          cy="60"
+          key={segment.key}
+          r="42"
+          strokeDasharray={`${segment.dash} ${circumference - segment.dash}`}
+          strokeDashoffset={segment.offset}
+          strokeLinecap="butt"
+          strokeWidth="16"
+        />
+      ))}
     </svg>
   )
 }
@@ -359,4 +404,11 @@ const ChartLegend = ({ segments }: { segments: DonutSegment[] }) => (
       </li>
     ))}
   </ul>
+)
+
+const MetricBubble = ({ label, value }: { label: string; value: number }) => (
+  <span className="flex size-18 flex-col items-center justify-center rounded-full bg-primary/15 text-primary">
+    <span className="font-semibold text-lg">{value}</span>
+    <span className="text-[10px]">{label}</span>
+  </span>
 )

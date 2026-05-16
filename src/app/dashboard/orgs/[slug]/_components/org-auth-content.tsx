@@ -12,6 +12,11 @@ import { api, type RouterOutputs } from "@/trpc/react"
 import { formatRelativeTime } from "../_lib/org-format"
 
 type AuthData = RouterOutputs["org"]["session"]["list"]
+type SessionItem = AuthData["items"][number]
+
+const RiskBadge = ({ session }: { session: SessionItem }) => (
+  <Badge variant={session.riskStatus === "risk" ? "destructive" : "secondary"}>{session.riskStatus === "risk" ? (session.riskReasons[0] ?? "风险会话") : "正常"}</Badge>
+)
 
 export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; slug: string }) => {
   const [page, setPage] = useState(1)
@@ -42,7 +47,7 @@ export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; s
     },
     { cell: ({ row }) => row.original.ipAddress ?? "未知位置", header: "位置", size: 160 },
     { cell: ({ row }) => formatRelativeTime(row.original.lastActiveAt), header: "最后活跃", size: 140 },
-    { cell: () => <Badge variant="secondary">正常</Badge>, header: "风险", size: 100 }
+    { cell: ({ row }) => <RiskBadge session={row.original} />, header: "风险", size: 140 }
   ]
   const sessionData = sessions.data ?? initialData
 
@@ -63,6 +68,10 @@ export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; s
                 </span>
                 <span>位置：{item.ipAddress ?? "未知位置"}</span>
                 <span>最后活跃：{formatRelativeTime(item.lastActiveAt)}</span>
+                <span className="flex items-center gap-1">
+                  风险：
+                  <RiskBadge session={item} />
+                </span>
               </div>
             </div>
           ))}
@@ -76,7 +85,7 @@ export const OrgAuthContent = ({ initialData, slug }: { initialData: AuthData; s
           page={sessionData.page}
           pageCount={sessionData.pageCount}
           pageSize={10}
-          total={sessionData.items.length}
+          total={sessionData.total}
         />
       </CardContent>
     </Card>

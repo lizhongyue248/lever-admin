@@ -40,13 +40,14 @@
 - 客户端表单位于 `src/app/dashboard/settings/profile/_components/profile-form.tsx`。
 - API 位于 `src/server/api/routers/profile.ts`，包含 `profile.get` 与 `profile.update`。
 - 资料完整度统计来源：
-  - 基础分：固定 50。
-  - 邮箱验证：来自 `system_user.email_verified`。
-  - 名称完整：来自 `system_user.name`。
-  - 头像 URL：来自 `system_user.image`。
+  - 资料完整度由服务端按字段权重计算，不使用固定基础分。
+  - 名称完整：来自 `system_user.name`，名称长度满足校验规则记 35 分。
+  - 邮箱验证：来自 `system_user.email_verified`，已验证记 35 分。
+  - 头像 URL：来自 `system_user.image`，存在有效头像 URL 记 30 分。
+  - 总分为上述真实字段得分之和，范围为 0-100；未设置头像或未验证邮箱时按实际缺失扣分。
 - 页面右侧统计来源：
   - 所属组织：统计 `system_member` 中当前用户的成员关系数量。
-  - 活跃会话：统计 `system_session` 中当前用户的会话数量。
+  - 活跃会话：统计 `system_session` 中当前用户未过期会话数量。
 - Pencil 原型包含四个画板：
   - `07 / Profile / Light / Desktop`
   - `07 / Profile / Dark / Desktop`
@@ -59,6 +60,11 @@
 - Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + React Hook Form + Zod: forms, tables, dialogs, validation
+
+## 公共组件使用
+
+- 本页不使用共享 `DataTable` 或 `DataPagination`，因为个人资料第一版只有单个资料表单和统计摘要。
+- 如后续增加登录记录、组织列表或资料变更审计列表，应优先使用 `98-common-components.md` 中定义的共享表格和分页组件。
 
 ## 验收标准
 

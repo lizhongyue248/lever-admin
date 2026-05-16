@@ -90,13 +90,31 @@ export const createUserSessionFixture = async ({ email, userAgent = "E2E Chrome"
       throw new Error(`Cannot create session for missing user: ${email}`)
     }
 
+    const id = `session-${randomUUID()}`
     const token = `session-${randomUUID()}`
     await sql`
       insert into "system_session" ("id", "token", "user_id", "expires_at", "ip_address", "user_agent", "created_at", "updated_at")
-      values (${`session-${randomUUID()}`}, ${token}, ${userId}, now() + interval '7 days', '127.0.0.1', ${userAgent}, now(), now())
+      values (${id}, ${token}, ${userId}, now() + interval '7 days', '127.0.0.1', ${userAgent}, now(), now())
     `
 
-    return { token, userId }
+    return { id, token, userId }
+  } finally {
+    await sql.end()
+  }
+}
+
+export const getSessionById = async (sessionId: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ id: string; user_id: string }[]>`
+      select "id", "user_id"
+      from "system_session"
+      where "id" = ${sessionId}
+      limit 1
+    `
+
+    return rows[0] ?? null
   } finally {
     await sql.end()
   }
@@ -176,6 +194,8 @@ export const createRequestLogFixture = async ({
   durationMs = 148,
   ipAddress = "203.0.113.42",
   method = "POST",
+  organizationId,
+  organizationName,
   path = "/api/trpc/admin.user.ban",
   requestBodyStatus = "redacted",
   requestBodySummary = JSON.stringify(
@@ -206,6 +226,8 @@ export const createRequestLogFixture = async ({
   durationMs?: number
   ipAddress?: string
   method?: string
+  organizationId?: string
+  organizationName?: string
   path?: string
   requestBodyStatus?: string
   requestBodySummary?: string
@@ -243,6 +265,8 @@ export const createRequestLogFixture = async ({
         "user_email",
         "user_name",
         "user_role",
+        "organization_id",
+        "organization_name",
         "request_body_summary",
         "request_body_status",
         "ip_hash",
@@ -271,6 +295,8 @@ export const createRequestLogFixture = async ({
         ${userEmail},
         ${userName},
         ${userRole},
+        ${organizationId ?? null},
+        ${organizationName ?? null},
         ${requestBodySummary},
         ${requestBodyStatus},
         'ip-hash-e2e',
@@ -292,6 +318,62 @@ export const createRequestLogFixture = async ({
   }
 }
 
+export const getRequestLogsByRouteName = async (routeName: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<
+      {
+        metadata: string | null
+        method: string
+        organization_id: string | null
+        path: string
+        route_name: string | null
+        status_code: number | null
+        success: boolean
+        user_email: string | null
+      }[]
+    >`
+      select "method", "path", "route_name", "status_code", "success", "organization_id", "user_email", "metadata"
+      from "system_request_log"
+      where "route_name" = ${routeName}
+      order by "created_at" desc
+    `
+
+    return rows
+  } finally {
+    await sql.end()
+  }
+}
+
+export const assignOrganizationMemberToDepartmentByEmail = async ({ departmentId, email, organizationId }: { departmentId: string; email: string; organizationId: string }) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ member_id: string }[]>`
+      select member."id" as member_id
+      from "system_member" member
+      inner join "system_user" app_user on app_user."id" = member."user_id"
+      where app_user."email" = ${email}
+        and member."organization_id" = ${organizationId}
+      limit 1
+    `
+    const memberId = rows[0]?.member_id
+
+    if (!memberId) {
+      throw new Error(`Cannot assign missing organization member to department: ${email}`)
+    }
+
+    await sql`
+      insert into "system_organization_department_member" ("id", "organization_id", "department_id", "member_id", "created_at", "updated_at")
+      values (${`department-member-${departmentId}-${memberId}`}, ${organizationId}, ${departmentId}, ${memberId}, now(), now())
+      on conflict ("department_id", "member_id") do nothing
+    `
+  } finally {
+    await sql.end()
+  }
+}
+
 export const seedOrganizationWithDepartments = async ({ departmentName, rootName, rootSlug }: { departmentName: string; rootName: string; rootSlug: string }) => {
   const sql = createE2eSql()
   const rootId = `org-${rootSlug}`
@@ -299,9 +381,13 @@ export const seedOrganizationWithDepartments = async ({ departmentName, rootName
 
   try {
     await sql`
-      insert into "system_organization" ("id", "name", "slug", "created_at", "updated_at")
-      values (${rootId}, ${rootName}, ${rootSlug}, now(), now())
-      on conflict ("id") do update set "name" = excluded."name", "slug" = excluded."slug", "updated_at" = now()
+      insert into "system_organization" ("id", "name", "slug", "status", "created_at", "updated_at")
+      values (${rootId}, ${rootName}, ${rootSlug}, 'active', now(), now())
+      on conflict ("id") do update set
+        "name" = excluded."name",
+        "slug" = excluded."slug",
+        "status" = excluded."status",
+        "updated_at" = now()
     `
     await sql`
       insert into "system_organization_department" ("id", "organization_id", "parent_department_id", "name", "path", "depth", "sort_order", "status", "description", "created_at", "updated_at")
@@ -482,6 +568,25 @@ export const getInvitationStatusByEmail = async ({ email, organizationId }: { em
     `
 
     return rows[0]?.status ?? null
+  } finally {
+    await sql.end()
+  }
+}
+
+export const getInvitationByEmail = async ({ email, organizationId }: { email: string; organizationId: string }) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ id: string; status: string }[]>`
+      select "id", "status"
+      from "system_invitation"
+      where "email" = ${email}
+        and "organization_id" = ${organizationId}
+      order by "created_at" desc
+      limit 1
+    `
+
+    return rows[0] ?? null
   } finally {
     await sql.end()
   }

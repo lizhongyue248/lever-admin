@@ -31,6 +31,16 @@
 - `admin.dashboard.getOverview`：聚合平台级用户、组织、会话、邀请和 API Key 摘要。
 - `admin.dashboard.getRiskItems`：读取平台待处理风险事项。
 
+### 管理概览真实数据口径
+
+管理概览页不得使用示例风险、固定异常会话数或静态快捷摘要。所有统计和风险列表必须由服务端从真实表聚合。
+
+- 用户总数、活跃用户来自 `system_user` 和最近 30 天 `system_session` / `system_request_log`。
+- 平台组织数、部门数、成员数和待处理邀请来自 `system_organization`、`system_organization_department`、`system_member`、`system_invitation`。
+- 异常会话沿用 `09-dashboard-settings-sessions.md` 和 `10-dashboard-orgs-slug-settings.md` 的会话风险规则，按全平台去重统计。
+- API Key 数和风险 API Key 来自 `system_apikey` 与 `system_api_key_usage_log`，风险规则与 `14-dashboard-admin-api-keys.md` 保持一致。
+- 风险列表只展示真实存在的待处理项；没有风险时展示空态，不展示固定“过期邀请”“异常登录”等示例条目。
+
 ## 实现要点
 
 - 本页必须使用 adminProcedure 校验平台管理员角色。
@@ -45,6 +55,11 @@
 - Better Auth: authentication, session, admin, organization, passkey, 2FA, API key plugins
 - PostgreSQL: Better Auth tables plus optional product-specific extension tables
 - shadcn/ui + Zod: forms, tables, dialogs, validation
+
+## 公共组件使用
+
+- 本页第一版不使用共享 `DataTable` 或 `DataPagination`，因为管理概览只展示统计卡片、快捷入口和短风险列表。
+- 如风险列表扩展为可搜索、可分页表格，应使用 `98-common-components.md` 中定义的共享 `DataTable` 和 `DataPagination`。
 
 ## 验收标准
 

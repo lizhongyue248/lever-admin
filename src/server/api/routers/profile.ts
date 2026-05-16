@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { eq, sql } from "drizzle-orm"
+import { and, eq, gt, sql } from "drizzle-orm"
 import { z } from "zod"
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc"
@@ -22,7 +22,7 @@ const countRows = async (query: Promise<{ value: number }[]>) => {
 }
 
 const getCompleteness = (profileUser: Pick<typeof user.$inferSelect, "emailVerified" | "image" | "name">) => {
-  const score = 50 + (profileUser.emailVerified ? 20 : 0) + (profileUser.name.trim().length >= 2 ? 15 : 0) + (profileUser.image ? 15 : 0)
+  const score = (profileUser.name.trim().length >= 2 ? 35 : 0) + (profileUser.emailVerified ? 35 : 0) + (profileUser.image ? 30 : 0)
 
   return Math.min(100, Math.max(0, score))
 }
@@ -49,7 +49,12 @@ export const profileRouter = createTRPCRouter({
     }
 
     const organizationCount = await countRows(ctx.db.select({ value: sql<number>`count(*)::int` }).from(member).where(eq(member.userId, userId)))
-    const activeSessionCount = await countRows(ctx.db.select({ value: sql<number>`count(*)::int` }).from(session).where(eq(session.userId, userId)))
+    const activeSessionCount = await countRows(
+      ctx.db
+        .select({ value: sql<number>`count(*)::int` })
+        .from(session)
+        .where(and(eq(session.userId, userId), gt(session.expiresAt, new Date())))
+    )
 
     return {
       stats: {

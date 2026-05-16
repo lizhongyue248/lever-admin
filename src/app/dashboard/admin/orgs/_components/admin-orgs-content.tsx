@@ -1,13 +1,15 @@
 "use client"
 
-import { Building2, Search, Users } from "lucide-react"
+import { Building2, Loader2, Power, PowerOff, Search, Users } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { toast } from "sonner"
 
 import { DataPagination } from "@/components/data-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api, type RouterInputs, type RouterOutputs } from "@/trpc/react"
@@ -15,7 +17,57 @@ import { CreateOrganizationDialog } from "./create-organization-dialog"
 
 type Overview = RouterOutputs["adminOrg"]["getOverview"]
 type Organizations = RouterOutputs["adminOrg"]["list"]
+type OrganizationItem = Organizations["items"][number]
 type OrganizationStatusFilter = RouterInputs["adminOrg"]["list"]["status"]
+
+const OrganizationStatusDialog = ({ organization }: { organization: OrganizationItem }) => {
+  const [open, setOpen] = useState(false)
+  const utils = api.useUtils()
+  const targetStatus = organization.status === "disabled" ? "active" : "disabled"
+  const actionLabel = targetStatus === "disabled" ? "停用" : "启用"
+  const Icon = targetStatus === "disabled" ? PowerOff : Power
+  const updateStatus = api.adminOrg.updateStatus.useMutation({
+    onError: (error) => toast.error(error.message || "组织状态更新失败。"),
+    onSuccess: async () => {
+      await Promise.all([utils.adminOrg.getOverview.invalidate(), utils.adminOrg.list.invalidate()])
+      toast.success(targetStatus === "disabled" ? "组织已停用。" : "组织已启用。")
+      setOpen(false)
+    }
+  })
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
+        <Button aria-label={`${actionLabel}组织 ${organization.name}`} className="w-full" type="button" variant={targetStatus === "disabled" ? "destructive" : "outline"}>
+          <Icon className="size-4" />
+          {actionLabel}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{actionLabel}组织</DialogTitle>
+          <DialogDescription>
+            {targetStatus === "disabled" ? `停用 ${organization.name} 后，普通组织成员将无法继续访问该组织。` : `启用 ${organization.name} 后，组织成员可恢复访问。`}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button disabled={updateStatus.isPending} onClick={() => setOpen(false)} type="button" variant="outline">
+            取消
+          </Button>
+          <Button
+            disabled={updateStatus.isPending}
+            onClick={() => updateStatus.mutate({ organizationId: organization.id, status: targetStatus })}
+            type="button"
+            variant={targetStatus === "disabled" ? "destructive" : "default"}
+          >
+            {updateStatus.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+            确认{actionLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOrganizations: Organizations; overview: Overview }) => {
   const [search, setSearch] = useState("")
@@ -60,7 +112,7 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
             }}
             value={status}
           >
-            <SelectTrigger className="w-full sm:w-36">
+            <SelectTrigger aria-label="状态" className="w-full sm:w-36">
               <SelectValue placeholder="全部状态" />
             </SelectTrigger>
             <SelectContent>
@@ -121,10 +173,19 @@ export const AdminOrgsContent = ({ initialOrganizations, overview }: { initialOr
                   <div className="font-semibold">{item.activeSessionCount}</div>
                   <div className="text-muted-foreground text-xs">活跃会话</div>
                 </div>
+                <div className="rounded-lg bg-muted/60 p-3">
+                  <div className="font-semibold" data-testid="admin-org-risk-count">
+                    {item.riskCount}
+                  </div>
+                  <div className="text-muted-foreground text-xs">风险成员</div>
+                </div>
               </div>
-              <Button asChild className="w-full" type="button" variant="outline">
-                <Link href={`/dashboard/orgs/${item.slug}`}>进入详情</Link>
-              </Button>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <OrganizationStatusDialog organization={item} />
+                <Button asChild className="w-full" type="button" variant="outline">
+                  <Link href={`/dashboard/orgs/${item.slug}`}>进入详情</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
