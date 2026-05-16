@@ -149,6 +149,39 @@ export const createApiKeyFixture = async ({
   }
 }
 
+export const getApiKeyById = async (id: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ enabled: boolean | null; id: string; name: string | null }[]>`
+      select "id", "name", "enabled"
+      from "auth_apikey"
+      where "id" = ${id}
+      limit 1
+    `
+
+    return rows[0] ?? null
+  } finally {
+    await sql.end()
+  }
+}
+
+export const countApiKeysById = async (id: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ count: string }[]>`
+      select count(*)::text as count
+      from "auth_apikey"
+      where "id" = ${id}
+    `
+
+    return Number(rows[0]?.count ?? 0)
+  } finally {
+    await sql.end()
+  }
+}
+
 export const createApiKeyUsageLogFixture = async ({
   apiKeyId,
   configId = "user",
@@ -346,6 +379,23 @@ export const getRequestLogsByRouteName = async (routeName: string) => {
   }
 }
 
+export const countRequestLogsByRouteName = async (routeName: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ count: string }[]>`
+      select count(*)::text as count
+      from "system_request_log"
+      where "route_name" = ${routeName}
+        and "deleted_at" is null
+    `
+
+    return Number(rows[0]?.count ?? 0)
+  } finally {
+    await sql.end()
+  }
+}
+
 export const assignOrganizationMemberToDepartmentByEmail = async ({ departmentId, email, organizationId }: { departmentId: string; email: string; organizationId: string }) => {
   const sql = createE2eSql()
 
@@ -413,6 +463,23 @@ export const getUserByEmail = async (email: string) => {
   try {
     const rows = await sql<{ email: string; email_verified: boolean; id: string; name: string }[]>`
       select "id", "name", "email", "email_verified"
+      from "auth_user"
+      where "email" = ${email}
+      limit 1
+    `
+
+    return rows[0] ?? null
+  } finally {
+    await sql.end()
+  }
+}
+
+export const getUserAdminStateByEmail = async (email: string) => {
+  const sql = createE2eSql()
+
+  try {
+    const rows = await sql<{ banned: boolean | null; email: string; role: string | null }[]>`
+      select "email", "role", "banned"
       from "auth_user"
       where "email" = ${email}
       limit 1

@@ -1,7 +1,7 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "../fixtures/coverage"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
-import { createAdminUserFixture, createApiKeyFixture, createApiKeyUsageLogFixture, getUserByEmail } from "../helpers/db"
+import { countApiKeysById, createAdminUserFixture, createApiKeyFixture, createApiKeyUsageLogFixture, getApiKeyById, getUserByEmail } from "../helpers/db"
 
 test.describe("16 dashboard settings api keys", () => {
   test("redirects anonymous users to sign in with api keys redirect target", async ({ page }) => {
@@ -174,5 +174,45 @@ test.describe("16 dashboard settings api keys", () => {
 
     await page.getByTestId("created-api-key-result").getByRole("button", { name: "关闭" }).click()
     await expect(page.getByTestId("created-api-key-result")).toHaveCount(0)
+  })
+
+  test("disables enables and deletes a personal api key", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed api key flow only needs one browser project")
+
+    const email = await createVerifiedUser(page, "settings-api-keys-mutations")
+    const user = await getUserByEmail(email)
+    expect(user).not.toBeNull()
+    const key = await createApiKeyFixture({
+      name: "Mutable Personal Key",
+      referenceId: user?.id ?? ""
+    })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.goto("/dashboard/settings/api-keys")
+    await page.getByLabel("搜索 API Key").fill("Mutable Personal Key")
+
+    const row = page.getByTestId(`api-key-row-${key.id}`)
+    await expect(row).toBeVisible()
+    await row.getByRole("button", { name: "更多 API Key 操作" }).click()
+    await page.getByRole("menuitem", { name: "禁用" }).click()
+    await expect(page.getByRole("dialog", { name: "禁用 API Key" })).toBeVisible()
+    await page.getByRole("button", { name: "确认禁用" }).click()
+    await expect.poll(async () => (await getApiKeyById(key.id))?.enabled).toBe(false)
+
+    await row.getByRole("button", { name: "更多 API Key 操作" }).click()
+    await page.getByRole("menuitem", { name: "启用" }).click()
+    await expect(page.getByRole("dialog", { name: "启用 API Key" })).toBeVisible()
+    await page.getByRole("button", { name: "确认启用" }).click()
+    await expect.poll(async () => (await getApiKeyById(key.id))?.enabled).toBe(true)
+
+    await row.getByRole("button", { name: "更多 API Key 操作" }).click()
+    await page.getByRole("menuitem", { name: "删除" }).click()
+    await expect(page.getByRole("dialog", { name: "删除 API Key" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "永久删除" })).toBeDisabled()
+    await page.getByLabel("确认删除 API Key").fill("Mutable Personal Key")
+    await page.getByRole("button", { name: "永久删除" }).click()
+    await expect.poll(() => countApiKeysById(key.id)).toBe(0)
   })
 })

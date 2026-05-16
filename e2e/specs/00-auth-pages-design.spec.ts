@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "../fixtures/coverage"
 
 const desktopOnly = (projectName: string) => projectName !== "chromium"
 const mobileOnly = (projectName: string) => projectName !== "mobile-chrome"

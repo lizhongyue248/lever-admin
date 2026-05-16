@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process"
+import { rm } from "node:fs/promises"
 import type { FullConfig } from "@playwright/test"
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql"
 
@@ -86,6 +87,11 @@ const globalSetup = async (_config: FullConfig) => {
 
   let postgres: StartedPostgreSqlContainer | undefined
   let server: ChildProcess | undefined
+
+  if (process.env.E2E_COLLECT_COVERAGE === "1") {
+    await rm(".playwright-coverage", { force: true, recursive: true })
+    await rm("coverage/playwright", { force: true, recursive: true })
+  }
 
   try {
     postgres = await new PostgreSqlContainer("postgres:16-alpine").withDatabase("lever_admin_e2e").withUsername("e2e").withPassword("e2e").start()

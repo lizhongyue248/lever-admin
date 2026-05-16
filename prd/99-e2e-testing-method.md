@@ -31,11 +31,17 @@ pnpm exec playwright install chromium
 
 ```txt
 e2e/
+  fixtures/
+    coverage.ts
   global-setup.ts
   helpers/
     auth-flows.ts
     db.ts
+    files.ts
     test-data.ts
+  scripts/
+    merge-playwright-coverage.mjs
+    run-playwright-coverage.mjs
   specs/
     00-auth-pages-design.spec.ts
     01-sign-in.spec.ts
@@ -53,6 +59,10 @@ e2e/
     12-dashboard-admin-users.spec.ts
     13-dashboard-admin-users-id.spec.ts
     15-dashboard-admin-orgs.spec.ts
+    16-dashboard-settings-api-keys.spec.ts
+    18-dashboard-admin-platform-settings.spec.ts
+    19-dashboard-admin-request-logs.spec.ts
+    uploads-api.spec.ts
 playwright.config.ts
 ```
 
@@ -63,6 +73,7 @@ playwright.config.ts
 ```json
 {
   "test:e2e": "playwright test",
+  "test:e2e:coverage": "node e2e/scripts/run-playwright-coverage.mjs",
   "test:e2e:ui": "playwright test --ui",
   "test:e2e:headed": "playwright test --headed",
   "test:e2e:debug": "playwright test --debug",
@@ -71,6 +82,13 @@ playwright.config.ts
 ```
 
 Playwright 当前限制为 `workers: 4`。拆分为 PRD 一一对应的多个 spec 文件后，若完全按机器核心数并行，Next.js dev server 首次编译和 Better Auth 接口在本地容易出现非业务性的超时噪音；限制并发可以让 E2E 更稳定。
+
+## Playwright 覆盖率
+
+- `pnpm test:e2e:coverage` 只运行 Chromium project，并设置 `E2E_COLLECT_COVERAGE=1`。
+- 覆盖率通过 Playwright Chromium JavaScript coverage API 采集，原始产物写入 `.playwright-coverage/raw/`，汇总报告输出到 `coverage/playwright/coverage-summary.json`。
+- 该报告是 E2E 触达的浏览器端 JavaScript 字节覆盖率，不等同于服务端 TypeScript 分支覆盖率，也不替代后续单元测试覆盖率。
+- 日常 `pnpm test:e2e` 不采集 coverage，避免增加常规测试耗时。
 
 ## 结果与录屏
 
@@ -146,6 +164,9 @@ Playwright 不使用内置 `webServer` 启动 Next.js，因为 `DATABASE_URL` �
 - `prd/14-dashboard-admin-api-keys.md` -> `e2e/specs/14-dashboard-admin-api-keys.spec.ts`
 - `prd/15-dashboard-admin-orgs.md` -> `e2e/specs/15-dashboard-admin-orgs.spec.ts`
 - `prd/16-dashboard-settings-api-keys.md` -> `e2e/specs/16-dashboard-settings-api-keys.spec.ts`
+- `prd/18-dashboard-admin-platform-settings.md` -> `e2e/specs/18-dashboard-admin-platform-settings.spec.ts`
+- `prd/19-dashboard-admin-request-logs.md` -> `e2e/specs/19-dashboard-admin-request-logs.spec.ts`
+- 上传路由共享行为 -> `e2e/specs/uploads-api.spec.ts`
 
 其中 `14-dashboard-admin-api-keys.spec.ts` 和 `16-dashboard-settings-api-keys.spec.ts` 当前如页面尚未实现，可以暂不创建空 spec；补测试时必须使用同名编号文件，或把用例加入已有同名编号文件。暂未实现或暂未覆盖的其他 PRD 同样不创建空 spec。
 
@@ -266,6 +287,8 @@ Playwright 会生成以下目录，均不属于源码：
 - `test-results/`
 - `blob-report/`
 - `.next-e2e/`
+- `.playwright-coverage/`
+- `coverage/playwright/`
 
 这些目录必须加入 `.gitignore`、Biome ignore 和 `tsconfig.json` exclude，避免报告文件进入 lint、format 或 TypeScript 检查。
 

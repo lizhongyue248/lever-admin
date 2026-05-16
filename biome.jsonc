@@ -7,7 +7,7 @@
     "clientKind": "git"
   },
   "files": {
-    "includes": ["**", "!.next-e2e", "!playwright-report", "!test-results", "!blob-report", "!prd/dashboard-api-key-detail-v2.js"]
+    "includes": ["**", "!.next-e2e", "!.playwright-coverage", "!coverage", "!playwright-report", "!test-results", "!blob-report", "!prd/dashboard-api-key-detail-v2.js"]
   },
   "assist": {
     "enabled": true,

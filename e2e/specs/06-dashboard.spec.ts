@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test"
+import { expect, type Page, test } from "../fixtures/coverage"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
 import { addOrganizationMemberByEmail, createApiKeyFixture, createApiKeyUsageLogFixture, getUserByEmail, seedOrganizationWithDepartments, setUserRole } from "../helpers/db"

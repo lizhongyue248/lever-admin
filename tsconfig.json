@@ -42,5 +42,15 @@
     ".next-e2e/dev/types/**/*.ts",
     ".next-e2e/dev/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "generated", ".next-e2e", "playwright-report", "test-results", "blob-report", "prd/dashboard-api-key-detail-v2.js"]
+  "exclude": [
+    "node_modules",
+    "generated",
+    ".next-e2e",
+    ".playwright-coverage",
+    "coverage",
+    "playwright-report",
+    "test-results",
+    "blob-report",
+    "prd/dashboard-api-key-detail-v2.js"
+  ]
 }

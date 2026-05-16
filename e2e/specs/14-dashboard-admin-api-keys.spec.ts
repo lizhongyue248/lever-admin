@@ -1,7 +1,16 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "../fixtures/coverage"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
-import { createAdminUserFixture, createApiKeyFixture, createApiKeyUsageLogFixture, getUserByEmail, seedOrganizationWithDepartments, setUserRole } from "../helpers/db"
+import {
+  countApiKeysById,
+  createAdminUserFixture,
+  createApiKeyFixture,
+  createApiKeyUsageLogFixture,
+  getApiKeyById,
+  getUserByEmail,
+  seedOrganizationWithDepartments,
+  setUserRole
+} from "../helpers/db"
 
 test.describe("14 dashboard admin api keys", () => {
   test("shows the platform admin permission error to non-admin users", async ({ page }, testInfo) => {
@@ -218,5 +227,48 @@ test.describe("14 dashboard admin api keys", () => {
     await page.getByRole("tab", { name: "图表统计" }).click()
     await expect(page.getByTestId("admin-api-key-usage-stats")).toBeVisible()
     await expect(page.getByTestId("admin-api-key-usage-stats").getByText("Top 路径")).toBeVisible()
+  })
+
+  test("persists platform api key disable enable and delete actions", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "DB-backed admin flow only needs one browser project")
+
+    const adminEmail = await createVerifiedUser(page, "dashboard-admin-api-keys-mutations")
+    await setUserRole(adminEmail, "admin")
+    const targetUser = await createAdminUserFixture({
+      email: `api-key-mutations-${Date.now()}@example.com`,
+      name: "Mutable API Owner"
+    })
+    const key = await createApiKeyFixture({
+      name: "Mutable Platform Key",
+      referenceId: targetUser.id
+    })
+
+    await page.goto("/sign-in")
+    await signInViaUi(page, { email: adminEmail })
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.goto("/dashboard/admin/api-keys")
+    await page.getByLabel("搜索平台 API Key").fill("Mutable Platform Key")
+
+    const row = page.getByTestId(`admin-api-key-row-${key.id}`)
+    await expect(row).toBeVisible()
+    await row.getByRole("button", { name: "更多平台 API Key 操作" }).click()
+    await page.getByRole("menuitem", { name: "禁用" }).click()
+    await expect(page.getByRole("dialog", { name: "禁用平台 API Key" })).toBeVisible()
+    await page.getByRole("button", { name: "确认禁用" }).click()
+    await expect.poll(async () => (await getApiKeyById(key.id))?.enabled).toBe(false)
+
+    await row.getByRole("button", { name: "更多平台 API Key 操作" }).click()
+    await page.getByRole("menuitem", { name: "启用" }).click()
+    await expect(page.getByRole("dialog", { name: "启用平台 API Key" })).toBeVisible()
+    await page.getByRole("button", { name: "确认启用" }).click()
+    await expect.poll(async () => (await getApiKeyById(key.id))?.enabled).toBe(true)
+
+    await row.getByRole("button", { name: "更多平台 API Key 操作" }).click()
+    await page.getByRole("menuitem", { name: "删除" }).click()
+    await expect(page.getByRole("dialog", { name: "删除平台 API Key" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "永久删除" })).toBeDisabled()
+    await page.getByLabel("确认删除平台 API Key").fill("Mutable Platform Key")
+    await page.getByRole("button", { name: "永久删除" }).click()
+    await expect.poll(() => countApiKeysById(key.id)).toBe(0)
   })
 })

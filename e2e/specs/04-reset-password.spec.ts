@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "../fixtures/coverage"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
 import { createResetPasswordToken } from "../helpers/db"

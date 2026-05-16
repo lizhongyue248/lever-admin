@@ -1,7 +1,7 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "../fixtures/coverage"
 
 import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
-import { createAdminUserFixture, setUserRole } from "../helpers/db"
+import { countUsersByEmail, createAdminUserFixture, setUserRole } from "../helpers/db"
 
 test.describe("13 dashboard admin users id", () => {
   test("opens the full user detail page directly", async ({ page }, testInfo) => {
@@ -45,5 +45,7 @@ test.describe("13 dashboard admin users id", () => {
     await expect(page.getByRole("button", { name: "硬删除用户" })).toBeDisabled()
     await page.getByLabel("确认删除邮箱").fill(target.email)
     await expect(page.getByRole("button", { name: "硬删除用户" })).toBeEnabled()
+    await page.getByRole("button", { name: "硬删除用户" }).click()
+    await expect.poll(() => countUsersByEmail(target.email)).toBe(0)
   })
 })
