@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "../fixtures/coverage"
 
-import { createVerifiedUser, signInViaUi } from "../helpers/auth-flows"
+import { createVerifiedUserViaApi, signInViaUi } from "../helpers/auth-flows"
 import { deletePlatformSettings, getPlatformSettingValue, setUserRole, upsertPlatformSetting } from "../helpers/db"
 import { localUploadObjectExists } from "../helpers/files"
 
@@ -11,7 +11,7 @@ const resetEmailSettings = async () => {
 }
 
 const signInAsRole = async (page: Page, prefix: string, role: "admin" | "super_admin") => {
-  const email = await createVerifiedUser(page, prefix)
+  const email = await createVerifiedUserViaApi(page, prefix)
   await setUserRole(email, role)
 
   await page.goto("/sign-in")
@@ -34,14 +34,12 @@ const selectStorageProvider = async (page: Page, providerName: "Local" | "S3") =
 const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-toast]").filter({ hasText: text }).first()
 
 const saveEmailSettings = async (page: Page) => {
-  const responsePromise = page.waitForResponse((response) => response.url().includes("adminPlatformSetting.updateEmailSettings"))
-  await page
-    .locator("form")
-    .first()
-    .evaluate((form) => {
-      ;(form as HTMLFormElement).requestSubmit()
-    })
-  await responsePromise
+  const [response] = await Promise.all([
+    page.waitForResponse((response) => response.url().includes("adminPlatformSetting.updateEmailSettings"), { timeout: 30_000 }),
+    page.getByRole("button", { name: "保存配置" }).click()
+  ])
+
+  expect(response.ok()).toBe(true)
 }
 
 test.describe("18 dashboard admin platform settings", () => {

@@ -35,3 +35,21 @@ export const createVerifiedUser = async (page: Page, prefix: string) => {
 
   return email
 }
+
+export const createVerifiedUserViaApi = async (page: Page, prefix: string) => {
+  const email = uniqueEmail(prefix)
+  const response = await page.request.post("/api/auth/sign-up/email", {
+    data: {
+      callbackURL: "/dashboard",
+      email,
+      name: "Verified E2E",
+      password: e2ePassword
+    }
+  })
+
+  expect(response.ok()).toBe(true)
+  await markEmailVerified(email)
+  await page.context().clearCookies()
+
+  return email
+}
