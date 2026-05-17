@@ -66,7 +66,10 @@ export const renderEmailLayout = (input: EmailTemplateLayoutInput) => {
         .email-card { background:#262626 !important; border-color:#3A3A3A !important; }
         .email-divider { background:#3A3A3A !important; }
         .email-panel, .email-note { background:#1F1F1F !important; border-color:#3A3A3A !important; }
-        .email-logo-mark { background:#1D2B44 !important; color:#93C5FD !important; }
+        .email-logo-inner { fill:#202020 !important; }
+        .email-logo-center { fill:#E8F3FF !important; }
+        .email-logo-link { stroke:#E8F3FF !important; }
+        .email-logo-node { fill:#8FB0FF !important; }
         .email-link-panel { background:#1D2B44 !important; }
         .email-title, .email-strong, .email-brand, .email-info-value { color:#FFFFFF !important; }
         .email-muted, .email-copy, .email-footer, .email-info-label { color:#A3A3A3 !important; }
@@ -90,7 +93,16 @@ export const renderEmailLayout = (input: EmailTemplateLayoutInput) => {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
             <tr>
               <td style="width:38px;">
-                <div class="email-logo-mark" style="width:38px;height:38px;border-radius:8px;background:#EAF2FF;color:#2563EB;font-size:18px;font-weight:800;line-height:38px;text-align:center;">L</div>
+                <svg aria-hidden="true" width="38" height="38" viewBox="0 0 136 136" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                  <path d="M68 18L111 43V93L68 118L25 93V43L68 18Z" fill="#4F7DF3"/>
+                  <path class="email-logo-inner" d="M68 36L95 51.5V84.5L68 100L41 84.5V51.5L68 36Z" fill="#FFFFFF"/>
+                  <circle class="email-logo-center" cx="68" cy="68" r="13" fill="#3157D8"/>
+                  <circle class="email-logo-node" cx="48" cy="55" r="7" fill="#4F7DF3"/>
+                  <circle class="email-logo-node" cx="88" cy="55" r="7" fill="#4F7DF3"/>
+                  <circle class="email-logo-node" cx="48" cy="82" r="7" fill="#4F7DF3"/>
+                  <circle class="email-logo-node" cx="88" cy="82" r="7" fill="#4F7DF3"/>
+                  <path class="email-logo-link" d="M55 58L62 64M81 58L74 64M55 79L62 72M81 79L74 72" stroke="#3157D8" stroke-width="4" stroke-linecap="round"/>
+                </svg>
               </td>
               <td style="padding-left:12px;">
                 <div class="email-brand" style="color:#111827;font-size:17px;font-weight:700;line-height:22px;">Lever Admin</div>

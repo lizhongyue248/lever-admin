@@ -2,6 +2,7 @@ import { ShieldCheck } from "lucide-react"
 
 import type { AuthPageKey } from "@/app/(auth)/_lib/auth-pages"
 import { authPages } from "@/app/(auth)/_lib/auth-pages"
+import { BrandLogo } from "@/components/brand-logo"
 
 export const AuthBrandPanel = ({ page }: { page: AuthPageKey }) => {
   const content = authPages[page]
@@ -17,9 +18,7 @@ export const AuthBrandPanel = ({ page }: { page: AuthPageKey }) => {
       <div className="relative z-10 flex min-h-screen flex-col px-16 py-14">
         <div className="space-y-8">
           <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="font-bold text-sm">L</span>
-            </div>
+            <BrandLogo className="size-8" />
             <span className="font-medium text-lg">Lever Admin</span>
           </div>
           <div className="max-w-[390px] space-y-5">

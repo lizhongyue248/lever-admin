@@ -4,6 +4,7 @@ import { Building2, KeyRound, LayoutDashboard, type LucideIcon, ScrollText, Sett
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+import { BrandLogo } from "@/components/brand-logo"
 import {
   ORGANIZATION_ADMIN_ROLES,
   PLATFORM_ROLE_ADMIN,
@@ -90,9 +91,7 @@ export const DashboardSidebar = ({ collapsed = false, data, mobile = false }: Da
       data-testid={mobile ? "dashboard-mobile-sidebar" : "dashboard-sidebar"}
     >
       <div className={cn("flex h-16 shrink-0 items-center gap-3 border-sidebar-border border-b px-4", collapsed && !mobile && "justify-center px-2")}>
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <ShieldCheck className="size-5" />
-        </div>
+        <BrandLogo className="size-9" />
         <div className={cn("min-w-0", collapsed && !mobile && "hidden")}>
           <p className="truncate font-semibold text-sm">Lever Admin</p>
           <p className="text-muted-foreground text-xs">身份与权限中枢</p>

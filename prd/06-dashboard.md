@@ -19,7 +19,7 @@
 - Sidebar：
   - 桌面端固定在左侧，宽度约 `256px - 280px`，背景使用 `sidebar` 变量，右侧使用 `sidebar-border` 细边框。
   - 视觉设计中 Sidebar 背景色应与 Topbar 背景保持一致，避免左侧壳层和顶部壳层割裂。
-  - 顶部展示 `Lever Admin` 品牌区，包含产品标识、产品名和简短状态点。
+  - 顶部展示 `Lever Admin` 品牌区，包含全局共享 `BrandLogo` 产品标识、产品名和简短状态点；产品标识采用 Identity Mesh SVG，需按亮色/暗色主题切换对应资源，不再使用图标库或单字母占位标记。
   - 中部为分组导航，参考 shadcn `Sidebar / SidebarGroup / SidebarMenu` 的信息密度和交互方式。
   - 导航分组建议：
     - 概览：工作台。
