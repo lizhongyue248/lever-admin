@@ -84,6 +84,11 @@ jobs:
       - name: Run Playwright coverage
         run: pnpm test:e2e:coverage
 
+      - name: Verify Playwright coverage summary
+        run: |
+          test -f coverage/playwright/coverage-summary.json
+          cat coverage/playwright/coverage-summary.json
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -106,4 +111,4 @@ jobs:
         with:
           name: playwright-coverage
           path: coverage/playwright/
-          if-no-files-found: error
+          if-no-files-found: ignore
