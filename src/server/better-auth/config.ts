@@ -17,6 +17,7 @@ import {
   PLATFORM_ROLE_SUPPORT,
   PLATFORM_ROLE_USER
 } from "@/lib/const"
+import { getBetterAuthSocialProviders } from "@/server/api/lib/oauth-providers"
 import { db } from "@/server/db"
 import * as schema from "@/server/db/schema"
 import { user as userTable } from "@/server/db/schema"
@@ -41,6 +42,7 @@ const captchaPlugins =
           minScore: captchaMinScore
         })
       ]
+const socialProviders = getBetterAuthSocialProviders(authBaseUrl)
 
 const findUserIdByEmail = async (email: string) => {
   const normalizedEmail = email.trim().toLowerCase()
@@ -119,19 +121,7 @@ export const auth = betterAuth({
       }
     })
   },
-  socialProviders: {
-    github: {
-      clientId: env.BETTER_AUTH_GITHUB_CLIENT_ID,
-      clientSecret: env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
-      redirectURI: `${authBaseUrl}/api/auth/callback/github`
-    }
-    // Enable after Google OAuth env vars are configured.
-    // google: {
-    //   clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
-    //   clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
-    //   redirectURI: `${authBaseUrl}/api/auth/callback/google`
-    // }
-  },
+  socialProviders,
   plugins: [
     ...captchaPlugins,
     admin({

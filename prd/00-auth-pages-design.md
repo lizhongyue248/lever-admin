@@ -112,7 +112,7 @@ Pencil/pencli 已导出以下页面设计图：
 - 密码输入框
 - 忘记密码链接
 - 主按钮：登录并进入应用
-- OAuth 按钮：GitHub、Google
+- OAuth 按钮：根据服务端 OAuth provider registry 动态展示；支持 GitHub、Google、WeChat 候选项，只有 env 中完整配置 `clientId` 与 `clientSecret` 的 provider 才显示。按钮图标使用 `simple-icons` 对应品牌图标；无可用 provider 时隐藏 OAuth 分隔线和按钮组。
 - 底部入口：还没有账号？创建账号
 
 交互状态：
@@ -160,7 +160,7 @@ Pencil/pencli 已导出以下页面设计图：
 - 确认密码输入框
 - 服务条款提示
 - 主按钮：创建账号
-- OAuth 注册按钮：GitHub 注册、Google 注册
+- OAuth 注册按钮：根据服务端 OAuth provider registry 动态展示；支持 GitHub、Google、WeChat 候选项，按钮图标使用 `simple-icons` 对应品牌图标；无可用 provider 时隐藏 OAuth 分隔线和按钮组。
 - 底部入口：已有账号？返回登录
 
 交互状态：

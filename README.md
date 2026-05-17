@@ -93,9 +93,9 @@ Set at least:
 DATABASE_URL="postgresql://postgres:password@localhost:5432/lever-admin"
 BETTER_AUTH_SECRET="your-local-secret"
 BETTER_AUTH_URL="http://localhost:4000"
-BETTER_AUTH_GITHUB_CLIENT_ID="your-github-client-id"
-BETTER_AUTH_GITHUB_CLIENT_SECRET="your-github-client-secret"
 ```
+
+OAuth providers are optional. A provider is shown on the sign-in and sign-up pages only when both its client ID and client secret are configured, for example `BETTER_AUTH_GITHUB_CLIENT_ID` + `BETTER_AUTH_GITHUB_CLIENT_SECRET`, `BETTER_AUTH_GOOGLE_CLIENT_ID` + `BETTER_AUTH_GOOGLE_CLIENT_SECRET`, or `BETTER_AUTH_WECHAT_CLIENT_ID` + `BETTER_AUTH_WECHAT_CLIENT_SECRET`.
 
 Push the schema in local development:
 

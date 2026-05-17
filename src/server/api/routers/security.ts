@@ -4,6 +4,7 @@ import { and, desc, eq, sql } from "drizzle-orm"
 import {
   OAUTH_PROVIDER_GITHUB,
   OAUTH_PROVIDER_GOOGLE,
+  OAUTH_PROVIDER_WECHAT,
   RECENT_LOGIN_STATUS_ACTIVE,
   RECENT_LOGIN_STATUS_AVAILABLE,
   RECENT_LOGIN_STATUS_UNCONFIGURED,
@@ -19,6 +20,14 @@ const credentialProviderIds = new Set(["credential", "email", "email-password"])
 const getDimensionValue = (enabled: boolean) => (enabled ? 100 : 0)
 
 const getStatusValue = (enabled: boolean) => (enabled ? RECENT_LOGIN_STATUS_ACTIVE : RECENT_LOGIN_STATUS_AVAILABLE)
+
+const getOAuthStatusValue = (linked: boolean, configured: boolean) => {
+  if (linked) {
+    return RECENT_LOGIN_STATUS_ACTIVE
+  }
+
+  return configured ? RECENT_LOGIN_STATUS_AVAILABLE : RECENT_LOGIN_STATUS_UNCONFIGURED
+}
 
 export const securityRouter = createTRPCRouter({
   getOverview: protectedProcedure.query(async ({ ctx }) => {
@@ -91,16 +100,22 @@ export const securityRouter = createTRPCRouter({
     const passwordAccount = accountRows.find((row) => row.hasPassword || credentialProviderIds.has(row.providerId))
     const githubAccount = accountRows.find((row) => row.providerId === OAUTH_PROVIDER_GITHUB) ?? null
     const googleAccount = accountRows.find((row) => row.providerId === OAUTH_PROVIDER_GOOGLE) ?? null
+    const wechatAccount = accountRows.find((row) => row.providerId === OAUTH_PROVIDER_WECHAT) ?? null
     const providers = getOAuthProviderConfigs()
     const providerById = new Map(providers.map((provider) => [provider.id, provider]))
+    const githubConfigured = providerById.get(OAUTH_PROVIDER_GITHUB)?.configured ?? false
     const googleConfigured = providerById.get(OAUTH_PROVIDER_GOOGLE)?.configured ?? false
+    const wechatConfigured = providerById.get(OAUTH_PROVIDER_WECHAT)?.configured ?? false
     const hasPassword = Boolean(passwordAccount)
     const hasPasskey = passkeyRows.length > 0
     const hasGithub = Boolean(githubAccount)
     const hasGoogle = Boolean(googleAccount)
+    const hasWechat = Boolean(wechatAccount)
     const hasTwoFactor = Boolean(currentUser.twoFactorEnabled && twoFactorRow?.verified)
-    const loginMethodCount = [hasPassword, hasPasskey, hasGithub, hasGoogle].filter(Boolean).length
+    const loginMethodCount = [hasPassword, hasPasskey, hasGithub, hasGoogle, hasWechat].filter(Boolean).length
     const canUnlinkGithub = hasGithub && loginMethodCount > 1
+    const canUnlinkGoogle = hasGoogle && loginMethodCount > 1
+    const canUnlinkWechat = hasWechat && loginMethodCount > 1
 
     const dimensions = [
       {
@@ -125,7 +140,7 @@ export const securityRouter = createTRPCRouter({
         key: "oauth" as const,
         label: "第三方账号",
         source: "auth_account.provider_id",
-        value: getDimensionValue(hasGithub || hasGoogle)
+        value: getDimensionValue(hasGithub || hasGoogle || hasWechat)
       },
       {
         key: "session" as const,
@@ -147,10 +162,17 @@ export const securityRouter = createTRPCRouter({
         },
         google: {
           accountId: googleAccount?.accountId ?? null,
-          canUnlink: false,
-          configured: providerById.get(OAUTH_PROVIDER_GOOGLE)?.configured ?? false,
+          canUnlink: canUnlinkGoogle,
+          configured: googleConfigured,
           connectedAt: googleAccount?.createdAt ?? null,
           linked: hasGoogle
+        },
+        wechat: {
+          accountId: wechatAccount?.accountId ?? null,
+          canUnlink: canUnlinkWechat,
+          configured: wechatConfigured,
+          connectedAt: wechatAccount?.createdAt ?? null,
+          linked: hasWechat
         }
       },
       passkeys: passkeyRows.map((row) => ({
@@ -176,14 +198,19 @@ export const securityRouter = createTRPCRouter({
           status: getStatusValue(hasPasskey)
         },
         {
-          description: hasGithub ? "GitHub 已作为第三方登录方式绑定。" : "GitHub 可作为备用登录方式。",
+          description: hasGithub ? "GitHub 已作为第三方登录方式绑定。" : githubConfigured ? "GitHub 可作为备用登录方式。" : "GitHub provider 暂未在 Better Auth 配置中启用。",
           label: "GitHub",
-          status: getStatusValue(hasGithub)
+          status: getOAuthStatusValue(hasGithub, githubConfigured)
         },
         {
           description: hasGoogle ? "Google 已作为第三方登录方式绑定。" : googleConfigured ? "Google 可作为备用登录方式。" : "Google provider 暂未在 Better Auth 配置中启用。",
           label: "Google",
-          status: hasGoogle ? RECENT_LOGIN_STATUS_ACTIVE : googleConfigured ? RECENT_LOGIN_STATUS_AVAILABLE : RECENT_LOGIN_STATUS_UNCONFIGURED
+          status: getOAuthStatusValue(hasGoogle, googleConfigured)
+        },
+        {
+          description: hasWechat ? "WeChat 已作为第三方登录方式绑定。" : wechatConfigured ? "WeChat 可作为扫码登录方式。" : "WeChat provider 暂未在 Better Auth 配置中启用。",
+          label: "WeChat",
+          status: getOAuthStatusValue(hasWechat, wechatConfigured)
         }
       ],
       score: {

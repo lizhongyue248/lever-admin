@@ -14,6 +14,9 @@ test.describe("02 sign up", () => {
     await expect(page.getByLabel("密码", { exact: true })).toBeVisible()
     await expect(page.getByLabel("确认密码")).toBeVisible()
     await expect(page.getByRole("button", { name: "创建账号" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "使用 GitHub" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "使用 Google" })).toBeHidden()
+    await expect(page.getByRole("button", { name: "使用 WeChat" })).toBeHidden()
     await expect(page.getByRole("link", { name: "返回登录" })).toBeVisible()
   })
 

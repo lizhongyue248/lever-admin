@@ -14,12 +14,12 @@ import { type FieldErrors, getZodFieldErrors, type SignUpValues, signUpSchema } 
 import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { getEmailVerificationPendingRoute, ROUTE_SIGN_IN } from "@/lib/const"
+import { type AuthOAuthProvider, getEmailVerificationPendingRoute, ROUTE_SIGN_IN } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 
 const emailVerificationPendingTarget = getEmailVerificationPendingRoute()
 
-export const SignUpForm = () => {
+export const SignUpForm = ({ oauthProviders }: { oauthProviders: AuthOAuthProvider[] }) => {
   const router = useRouter()
   const [errors, setErrors] = useState<FieldErrors<keyof SignUpValues & string>>({})
   const [message, setMessage] = useState("")
@@ -154,13 +154,17 @@ export const SignUpForm = () => {
         {pending ? "创建中..." : "创建账号"}
       </Button>
 
-      <div className="flex items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-muted-foreground text-xs">或使用 OAuth</span>
-        <Separator className="flex-1" />
-      </div>
+      {oauthProviders.length > 0 ? (
+        <>
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-muted-foreground text-xs">或使用 OAuth</span>
+            <Separator className="flex-1" />
+          </div>
 
-      <OAuthButtons callbackURL={emailVerificationPendingTarget} onError={setMessage} prefix="使用 " />
+          <OAuthButtons callbackURL={emailVerificationPendingTarget} onError={setMessage} prefix="使用 " providers={oauthProviders} />
+        </>
+      ) : null}
 
       <p className="text-center text-muted-foreground text-sm">
         已有账号？{" "}

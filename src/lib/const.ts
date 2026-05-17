@@ -229,8 +229,13 @@ export const ROUTE_API_UPLOAD_ORG_LOGO = "/api/uploads/org-logo"
 
 export const OAUTH_PROVIDER_GITHUB = "github"
 export const OAUTH_PROVIDER_GOOGLE = "google"
-export const OAUTH_PROVIDERS = [OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE] as const
+export const OAUTH_PROVIDER_WECHAT = "wechat"
+export const OAUTH_PROVIDERS = [OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE, OAUTH_PROVIDER_WECHAT] as const
 export type AuthOAuthProviderId = (typeof OAUTH_PROVIDERS)[number]
+export type AuthOAuthProvider = {
+  id: AuthOAuthProviderId
+  label: string
+}
 
 export const RECENT_LOGIN_STATUS_ACTIVE = "active"
 export const RECENT_LOGIN_STATUS_AVAILABLE = "available"

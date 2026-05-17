@@ -23,7 +23,7 @@
 - 修改密码。
 - 开启或关闭 2FA。
 - 新增或删除 Passkey。
-- 绑定或解绑 GitHub / Google。
+- 绑定或解绑已配置的 GitHub / Google / WeChat；未完整配置 env 的 provider 显示为未配置且不可操作。
 - 查看最近登录方式。
 
 ## 接口与逻辑
@@ -55,7 +55,7 @@
 OAuth provider 配置：
 
 - `security.getOverview` 必须根据服务端可用 provider registry 返回 provider 列表。
-- 第一版 provider registry 至少包含 GitHub；Google 只有在 Better Auth 服务端和客户端均配置完成时才显示为可绑定。
+- Provider registry 至少包含 GitHub、Google 和 WeChat 三个候选项；只有对应 env 同时存在 `CLIENT_ID` 与 `CLIENT_SECRET` 时才返回 `configured=true`。
 - 未配置 provider 可以显示为“未配置”但必须来自配置检测结果，不能在接口中固定 `configured: false`。
 - 已绑定状态来自 `auth_account.provider_id`，解绑操作必须校验当前账号仍保留至少一种可用登录方式。
 
@@ -64,7 +64,7 @@ OAuth provider 配置：
 - 关闭 2FA、删除 Passkey、解绑最后登录方式必须二次确认。
 - Passkey 注册必须在客户端组件中调用浏览器 WebAuthn API。
 - 所有安全操作完成后显示 toast 并刷新当前分区。
-- 首版 GitHub 绑定使用现有 Better Auth GitHub provider；Google provider 仅在服务端 provider registry 检测到完整配置时展示可绑定，否则展示为「未配置」且按钮禁用。
+- GitHub / Google / WeChat 绑定能力使用 Better Auth social provider；provider registry 检测到完整配置时展示可绑定，否则展示为「未配置」且按钮禁用。WeChat provider 使用网站应用扫码登录配置，默认 `lang="cn"`、`scope=["snsapi_login"]`。第三方账号图标使用 `simple-icons` 对应品牌图标。
 - 自动化测试不直接完成 WebAuthn 设备注册和真实 TOTP 校验，只覆盖入口、弹窗、校验提示和可用状态；真实浏览器能力由 Better Auth 客户端 API 承接。
 - 页面聚合接口只返回展示所需字段，不返回 session token、OAuth token、Passkey public key / credential ID、2FA secret 或 backup codes。
 

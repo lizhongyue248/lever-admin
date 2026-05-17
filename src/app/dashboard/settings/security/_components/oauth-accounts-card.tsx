@@ -3,19 +3,20 @@
 import { Link2, Link2Off, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { type ReactNode, useState } from "react"
+import { type SimpleIcon, siGithub, siGoogle, siWechat } from "simple-icons"
 import { toast } from "sonner"
 
+import { SimpleIconMark } from "@/components/simple-icon-mark"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE, ROUTE_DASHBOARD_SETTINGS_SECURITY } from "@/lib/const"
+import { type AuthOAuthProviderId, OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE, OAUTH_PROVIDER_WECHAT, ROUTE_DASHBOARD_SETTINGS_SECURITY } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 import type { RouterOutputs } from "@/trpc/react"
 
 type OAuthProviders = RouterOutputs["security"]["getOverview"]["oauthProviders"]
-type GitHubProvider = OAuthProviders[typeof OAUTH_PROVIDER_GITHUB]
-type GoogleProvider = OAuthProviders[typeof OAUTH_PROVIDER_GOOGLE]
+type OAuthProviderState = OAuthProviders[AuthOAuthProviderId]
 
 type OAuthAccountsCardProps = {
   oauthProviders: OAuthProviders
@@ -28,6 +29,20 @@ type ProviderRowProps = {
   label: string
   linked: boolean
   configured: boolean
+}
+
+type ProviderView = {
+  description: string
+  icon: SimpleIcon
+  id: AuthOAuthProviderId
+  label: string
+  provider: OAuthProviderState
+}
+
+type UnlinkTarget = {
+  accountId: string | null
+  id: AuthOAuthProviderId
+  label: string
 }
 
 const ProviderRow = ({ action, configured, description, icon, label, linked }: ProviderRowProps) => (
@@ -50,32 +65,31 @@ const ProviderRow = ({ action, configured, description, icon, label, linked }: P
 
 export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) => {
   const router = useRouter()
-  const [unlinkTarget, setUnlinkTarget] = useState<GitHubProvider | null>(null)
+  const [unlinkTarget, setUnlinkTarget] = useState<UnlinkTarget | null>(null)
   const [loading, setLoading] = useState(false)
-  const github = oauthProviders[OAUTH_PROVIDER_GITHUB]
 
-  const linkGitHub = async () => {
+  const linkProvider = async (providerId: AuthOAuthProviderId, label: string) => {
     setLoading(true)
 
     try {
       const result = await authClient.linkSocial({
         callbackURL: ROUTE_DASHBOARD_SETTINGS_SECURITY,
-        provider: OAUTH_PROVIDER_GITHUB
+        provider: providerId
       })
 
       if (result.error) {
-        toast.error("发起 GitHub 绑定失败。")
+        toast.error(`发起 ${label} 绑定失败。`)
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const unlinkGitHub = async () => {
+  const unlinkProvider = async () => {
     const target = unlinkTarget
 
     if (!target?.accountId) {
-      toast.error("缺少 GitHub 账号标识，无法解绑。")
+      toast.error(`缺少 ${target?.label ?? "第三方"} 账号标识，无法解绑。`)
       return
     }
 
@@ -84,15 +98,15 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
     try {
       const result = await authClient.unlinkAccount({
         accountId: target.accountId,
-        providerId: OAUTH_PROVIDER_GITHUB
+        providerId: target.id
       })
 
       if (result.error) {
-        toast.error("解绑 GitHub 失败。")
+        toast.error(`解绑 ${target.label} 失败。`)
         return
       }
 
-      toast.success("GitHub 已解绑。")
+      toast.success(`${target.label} 已解绑。`)
       setUnlinkTarget(null)
       router.refresh()
     } finally {
@@ -100,19 +114,66 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
     }
   }
 
-  const githubAction = github.linked ? (
-    <Button className="shrink-0" disabled={!github.canUnlink} onClick={() => setUnlinkTarget(github)} size="sm" type="button" variant="destructive">
-      <Link2Off className="size-3.5" />
-      解绑
-    </Button>
-  ) : (
-    <Button className="shrink-0" disabled={!github.configured || loading} onClick={linkGitHub} size="sm" type="button" variant="outline">
-      {loading ? <Loader2 className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />}
-      绑定 GitHub
-    </Button>
-  )
+  const providerViews: ProviderView[] = [
+    {
+      description: oauthProviders[OAUTH_PROVIDER_GITHUB].linked
+        ? "GitHub 已作为备用登录方式。"
+        : oauthProviders[OAUTH_PROVIDER_GITHUB].configured
+          ? "绑定 GitHub 后可作为备用登录方式。"
+          : "GitHub provider 暂未在 Better Auth 配置中启用。",
+      icon: siGithub,
+      id: OAUTH_PROVIDER_GITHUB,
+      label: "GitHub",
+      provider: oauthProviders[OAUTH_PROVIDER_GITHUB]
+    },
+    {
+      description: oauthProviders[OAUTH_PROVIDER_WECHAT].linked
+        ? "WeChat 已作为备用登录方式。"
+        : oauthProviders[OAUTH_PROVIDER_WECHAT].configured
+          ? "绑定 WeChat 后可使用微信扫码登录。"
+          : "WeChat provider 暂未在 Better Auth 配置中启用。",
+      icon: siWechat,
+      id: OAUTH_PROVIDER_WECHAT,
+      label: "WeChat",
+      provider: oauthProviders[OAUTH_PROVIDER_WECHAT]
+    },
+    {
+      description: oauthProviders[OAUTH_PROVIDER_GOOGLE].linked
+        ? "Google 已作为备用登录方式。"
+        : oauthProviders[OAUTH_PROVIDER_GOOGLE].configured
+          ? "绑定 Google 后可作为备用登录方式。"
+          : "Google provider 暂未在 Better Auth 配置中启用。",
+      icon: siGoogle,
+      id: OAUTH_PROVIDER_GOOGLE,
+      label: "Google",
+      provider: oauthProviders[OAUTH_PROVIDER_GOOGLE]
+    }
+  ]
 
-  const google: GoogleProvider = oauthProviders[OAUTH_PROVIDER_GOOGLE]
+  const renderAction = (view: ProviderView) => {
+    if (view.provider.linked) {
+      return (
+        <Button
+          className="shrink-0"
+          disabled={!view.provider.canUnlink || loading}
+          onClick={() => setUnlinkTarget({ accountId: view.provider.accountId, id: view.id, label: view.label })}
+          size="sm"
+          type="button"
+          variant="destructive"
+        >
+          <Link2Off className="size-3.5" />
+          解绑
+        </Button>
+      )
+    }
+
+    return (
+      <Button className="shrink-0" disabled={!view.provider.configured || loading} onClick={() => linkProvider(view.id, view.label)} size="sm" type="button" variant="outline">
+        {loading ? <Loader2 className="size-3.5 animate-spin" /> : <Link2 className="size-3.5" />}
+        {view.provider.configured ? `绑定 ${view.label}` : "未配置"}
+      </Button>
+    )
+  }
 
   return (
     <>
@@ -121,28 +182,19 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
           <CardTitle className="text-base">第三方账号</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 px-5">
-          <ProviderRow
-            action={githubAction}
-            configured={github.configured}
-            description={github.linked ? "GitHub 已作为备用登录方式。" : "绑定 GitHub 后可作为备用登录方式。"}
-            icon={<span className="font-semibold text-xs">GH</span>}
-            label="GitHub"
-            linked={github.linked}
-          />
-          <ProviderRow
-            action={
-              <Button className="shrink-0" disabled size="sm" type="button" variant="outline">
-                未配置
-              </Button>
-            }
-            configured={google.configured}
-            description="Google provider 暂未在 Better Auth 配置中启用。"
-            icon={<span className="font-semibold text-sm">G</span>}
-            label="Google"
-            linked={google.linked}
-          />
-          {github.linked && !github.canUnlink ? (
-            <p className="text-muted-foreground text-xs leading-5">GitHub 是当前账号仅有的可用登录方式之一时不能直接解绑，请先添加密码或 Passkey。</p>
+          {providerViews.map((view) => (
+            <ProviderRow
+              action={renderAction(view)}
+              configured={view.provider.configured}
+              description={view.description}
+              icon={<SimpleIconMark icon={view.icon} />}
+              key={view.id}
+              label={view.label}
+              linked={view.provider.linked}
+            />
+          ))}
+          {providerViews.some((view) => view.provider.linked && !view.provider.canUnlink) ? (
+            <p className="text-muted-foreground text-xs leading-5">当前第三方账号是仅有的可用登录方式之一时不能直接解绑，请先添加密码或 Passkey。</p>
           ) : null}
         </CardContent>
       </Card>
@@ -150,11 +202,11 @@ export const OAuthAccountsCard = ({ oauthProviders }: OAuthAccountsCardProps) =>
       <Dialog onOpenChange={(open) => !open && setUnlinkTarget(null)} open={Boolean(unlinkTarget)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>解绑 GitHub</DialogTitle>
-            <DialogDescription>解绑后将不能继续使用 GitHub 登录当前账号。请确认账号仍保留其他登录方式。</DialogDescription>
+            <DialogTitle>解绑 {unlinkTarget?.label}</DialogTitle>
+            <DialogDescription>解绑后将不能继续使用 {unlinkTarget?.label} 登录当前账号。请确认账号仍保留其他登录方式。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button disabled={loading} onClick={unlinkGitHub} type="button" variant="destructive">
+            <Button disabled={loading} onClick={unlinkProvider} type="button" variant="destructive">
               {loading ? <Loader2 className="size-4 animate-spin" /> : null}
               确认解绑
             </Button>

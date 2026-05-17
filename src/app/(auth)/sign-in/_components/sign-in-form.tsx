@@ -13,7 +13,7 @@ import { type FieldErrors, getZodFieldErrors, type SignInValues, signInSchema } 
 import { getRecaptchaFetchOptions } from "@/app/(auth)/_lib/recaptcha"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { getEmailVerificationPendingRoute, ROUTE_SIGN_IN_2FA, ROUTE_SIGN_UP } from "@/lib/const"
+import { type AuthOAuthProvider, getEmailVerificationPendingRoute, ROUTE_SIGN_IN_2FA, ROUTE_SIGN_UP } from "@/lib/const"
 import { authClient } from "@/server/better-auth/client"
 
 const getTwoFactorTarget = (redirectTo: string) => {
@@ -28,7 +28,7 @@ const hasTwoFactorRedirect = (value: object | null | undefined): value is { twoF
   return Boolean(value && "twoFactorRedirect" in value && value.twoFactorRedirect)
 }
 
-export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
+export const SignInForm = ({ oauthProviders, redirectTo }: { oauthProviders: AuthOAuthProvider[]; redirectTo: string }) => {
   const router = useRouter()
   const [errors, setErrors] = useState<FieldErrors<keyof SignInValues & string>>({})
   const [message, setMessage] = useState("")
@@ -140,13 +140,17 @@ export const SignInForm = ({ redirectTo }: { redirectTo: string }) => {
         {pending ? "登录中..." : "登录并进入应用"}
       </Button>
 
-      <div className="flex items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-muted-foreground text-xs">或使用 OAuth</span>
-        <Separator className="flex-1" />
-      </div>
+      {oauthProviders.length > 0 ? (
+        <>
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-muted-foreground text-xs">或使用 OAuth</span>
+            <Separator className="flex-1" />
+          </div>
 
-      <OAuthButtons callbackURL={redirectTo} onError={setMessage} />
+          <OAuthButtons callbackURL={redirectTo} onError={setMessage} providers={oauthProviders} />
+        </>
+      ) : null}
 
       <p className="text-center text-muted-foreground text-sm">
         还没有账号？{" "}

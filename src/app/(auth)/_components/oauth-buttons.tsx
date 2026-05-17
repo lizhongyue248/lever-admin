@@ -1,15 +1,34 @@
 "use client"
 
 import { useState } from "react"
+import { type SimpleIcon, siGithub, siGoogle, siWechat } from "simple-icons"
 
 import { getAuthErrorMessage } from "@/app/(auth)/_lib/auth-errors"
+import { SimpleIconMark } from "@/components/simple-icon-mark"
 import { Button } from "@/components/ui/button"
-import { type AuthOAuthProviderId, OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE } from "@/lib/const"
+import { type AuthOAuthProvider, type AuthOAuthProviderId, OAUTH_PROVIDER_GITHUB, OAUTH_PROVIDER_GOOGLE, OAUTH_PROVIDER_WECHAT } from "@/lib/const"
+import { cn } from "@/lib/utils"
 import { authClient } from "@/server/better-auth/client"
 
 type Provider = AuthOAuthProviderId
 
-export const OAuthButtons = ({ callbackURL, onError, prefix = "" }: { callbackURL: string; onError: (message: string) => void; prefix?: string }) => {
+const providerIconById = {
+  [OAUTH_PROVIDER_GITHUB]: siGithub,
+  [OAUTH_PROVIDER_GOOGLE]: siGoogle,
+  [OAUTH_PROVIDER_WECHAT]: siWechat
+} satisfies Record<AuthOAuthProviderId, SimpleIcon>
+
+export const OAuthButtons = ({
+  callbackURL,
+  onError,
+  prefix = "",
+  providers
+}: {
+  callbackURL: string
+  onError: (message: string) => void
+  prefix?: string
+  providers: AuthOAuthProvider[]
+}) => {
   const [pendingProvider, setPendingProvider] = useState<Provider | null>(null)
 
   const signInWithProvider = async (provider: Provider) => {
@@ -28,13 +47,17 @@ export const OAuthButtons = ({ callbackURL, onError, prefix = "" }: { callbackUR
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Button disabled={pendingProvider !== null} onClick={() => signInWithProvider(OAUTH_PROVIDER_GITHUB)} type="button" variant="outline">
-        {pendingProvider === OAUTH_PROVIDER_GITHUB ? "处理中..." : `${prefix}GitHub`}
-      </Button>
-      <Button disabled={pendingProvider !== null} onClick={() => signInWithProvider(OAUTH_PROVIDER_GOOGLE)} type="button" variant="outline">
-        {pendingProvider === OAUTH_PROVIDER_GOOGLE ? "处理中..." : `${prefix}Google`}
-      </Button>
+    <div className={cn("grid gap-3", providers.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+      {providers.map((provider) => {
+        const icon = providerIconById[provider.id]
+
+        return (
+          <Button disabled={pendingProvider !== null} key={provider.id} onClick={() => signInWithProvider(provider.id)} type="button" variant="outline">
+            <SimpleIconMark icon={icon} />
+            {pendingProvider === provider.id ? "处理中..." : `${prefix}${provider.label}`}
+          </Button>
+        )
+      })}
     </div>
   )
 }

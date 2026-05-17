@@ -10,14 +10,14 @@
 ## 页面布局
 
 - AuthLayout：桌面端左右分栏，左侧品牌与价值说明，右侧登录表单；移动端只显示表单。
-- 表单区：邮箱、密码、登录按钮、OAuth 按钮、忘记密码、注册链接。
+- 表单区：邮箱、密码、登录按钮、忘记密码、注册链接；OAuth provider 完整配置时展示对应 OAuth 按钮。
 - 状态区：错误提示、加载状态、被封禁提示、邮箱验证提醒。
 - 移动端：隐藏左侧品牌插画栏，表单卡片在 24px 横向安全边距内居中展示；主题切换按钮固定在页面右上角，不进入卡片内部。
 
 ## 用户动作
 
 - 输入邮箱和密码后提交登录。
-- 点击 GitHub / Google OAuth 登录。
+- 点击已配置的 GitHub / Google / WeChat OAuth 登录；未在 env 中完整配置的 provider 不在登录页展示。
 - 点击忘记密码跳转 /forgot-password。
 - 点击注册跳转 /sign-up。
 - 登录成功后根据 redirectTo 返回原页面，否则进入 /dashboard。
@@ -32,13 +32,14 @@
   - 当 Better Auth 返回 `twoFactorRedirect=true` 时，说明邮箱密码已通过但仍需二次验证；页面跳转 `/sign-in/2fa`。
   - 当 Better Auth 返回 `EMAIL_NOT_VERIFIED` 时，说明密码已通过但邮箱未验证；页面跳转邮箱验证等待页。
   - Better Auth 服务端配置 `emailVerification.sendOnSignIn=true` 时，该错误返回前会触发 `sendVerificationEmail`；邮件中的验证链接成功后回跳 `redirectTo`，默认进入 `/dashboard`。
-- `authClient.signIn.social`：发起 OAuth 登录，provider 可配置为 github/google。
+- `authClient.signIn.social`：发起 OAuth 登录，provider 可配置为 github/google/wechat。页面只渲染服务端 OAuth provider registry 中 `configured=true` 的 provider；provider 配置要求对应 `CLIENT_ID` 和 `CLIENT_SECRET` 同时存在。WeChat 使用 Better Auth WeChat provider，默认 `lang="cn"`、`scope=["snsapi_login"]`，用于网站应用扫码登录。
 - `auth.api.getSession`：服务端页面加载时检查已登录用户，已登录则重定向 /dashboard。
 
 ## 实现要点
 
 - 使用 Zod 校验邮箱格式和密码必填。
 - 登录表单用 client component，提交时调用 Better Auth client。
+- OAuth 按钮图标使用 `simple-icons` 的品牌图标；无可用 OAuth provider 时隐藏 OAuth 分隔线和按钮组，页面描述改为只提示邮箱密码登录。
 - 服务端使用 Better Auth Captcha plugin 校验邮箱密码登录请求；生产环境必须配置 Google reCAPTCHA site key 和 secret key，测试环境跳过外部 captcha 校验。
 - reCAPTCHA 前端脚本默认从 `www.google.com` 加载；国内访问场景可将 `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SCRIPT_HOST` 配置为 `www.recaptcha.net`。
 - App Router 页面读取 searchParams.redirectTo，登录成功后 router.replace。
@@ -58,7 +59,7 @@
 
 | 用例 ID | 场景 | 前置数据 | 操作 | 预期结果 |
 | --- | --- | --- | --- | --- |
-| `auth-sign-in-001` | 未登录用户访问登录页 | 无 | 访问 `/sign-in` | 页面返回 200，显示标题“登录”、邮箱输入框、密码输入框、登录按钮、忘记密码入口、注册入口和主题切换按钮 |
+| `auth-sign-in-001` | 未登录用户访问登录页 | 测试环境只配置 GitHub OAuth env | 访问 `/sign-in` | 页面返回 200，显示标题“登录”、邮箱输入框、密码输入框、登录按钮、GitHub OAuth 按钮、忘记密码入口、注册入口和主题切换按钮；不显示未配置的 Google / WeChat OAuth 按钮 |
 | `auth-sign-in-002` | 桌面端布局 | 无 | 使用桌面 viewport 访问 `/sign-in` | 左侧品牌插画区可见，表单卡片在右侧操作区居中，主题切换按钮固定在页面右上角 |
 | `auth-sign-in-003` | 移动端布局 | 无 | 使用移动 viewport 访问 `/sign-in` | 左侧品牌插画区不可见，表单卡片在 24px 横向安全边距内展示，主题切换按钮固定在页面右上角 |
 | `auth-sign-in-004` | 客户端校验 | 无 | 不输入邮箱和密码直接提交 | 页面停留在 `/sign-in`，展示邮箱或密码校验提示，不产生已登录会话 |
