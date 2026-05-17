@@ -35,9 +35,12 @@ const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-t
 
 const saveEmailSettings = async (page: Page) => {
   const responsePromise = page.waitForResponse((response) => response.url().includes("adminPlatformSetting.updateEmailSettings"))
-  await page.locator("form").first().evaluate((form) => {
-    ;(form as HTMLFormElement).requestSubmit()
-  })
+  await page
+    .locator("form")
+    .first()
+    .evaluate((form) => {
+      ;(form as HTMLFormElement).requestSubmit()
+    })
   await responsePromise
 }
 
