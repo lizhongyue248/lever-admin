@@ -78,16 +78,19 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Chromium E2E with Playwright coverage
-        run: pnpm test:e2e:coverage
+      - name: Run Chromium E2E tests
+        run: pnpm exec playwright test --project=chromium
+
+      - name: Run mobile E2E tests
+        run: pnpm exec playwright test --project=mobile-chrome
+
+      - name: Run Playwright coverage smoke
+        run: pnpm test:e2e:coverage -- e2e/specs/00-auth-pages-design.spec.ts
 
       - name: Verify Playwright coverage summary
         run: |
           test -f coverage/playwright/coverage-summary.json
           cat coverage/playwright/coverage-summary.json
-
-      - name: Run mobile E2E tests
-        run: pnpm exec playwright test --project=mobile-chrome
 
       - name: Upload Playwright report
         if: always()
