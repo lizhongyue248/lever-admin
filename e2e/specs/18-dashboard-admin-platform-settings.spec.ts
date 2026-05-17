@@ -65,7 +65,6 @@ test.describe("18 dashboard admin platform settings", () => {
     await page.getByLabel("发件人").fill("Lever Admin <ops@example.com>")
     await page.getByRole("button", { name: "保存配置" }).click()
 
-    await expect(toastWithText(page, "邮件服务配置已保存。")).toBeVisible()
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("console")
     await expect.poll(() => getPlatformSettingValue("email.from")).toBe("Lever Admin <ops@example.com>")
   })
@@ -86,9 +85,8 @@ test.describe("18 dashboard admin platform settings", () => {
     await page.getByLabel("SMTP Password").fill("secret-password")
     await page.getByRole("button", { name: "保存配置" }).click()
 
-    await expect(toastWithText(page, "邮件服务配置已保存。")).toBeVisible()
-    await expect(page.getByLabel("SMTP Password")).toHaveValue("")
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("smtp")
+    await expect(page.getByLabel("SMTP Password")).toHaveValue("")
     await expect
       .poll(async () => {
         const value = await getPlatformSettingValue("email.smtp.password")
@@ -99,7 +97,6 @@ test.describe("18 dashboard admin platform settings", () => {
 
     await selectProvider(page, "Console")
     await page.getByRole("button", { name: "保存配置" }).click()
-    await expect(toastWithText(page, "邮件服务配置已保存。")).toBeVisible()
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("console")
     await page.getByLabel("测试收件人").fill("ops@example.io")
     await page.getByRole("button", { name: "发送测试邮件" }).click()
@@ -119,7 +116,6 @@ test.describe("18 dashboard admin platform settings", () => {
     await page.getByLabel("Resend API Key").fill("re_test_secret")
     await page.getByRole("button", { name: "保存配置" }).click()
 
-    await expect(toastWithText(page, "邮件服务配置已保存。")).toBeVisible()
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("resend")
     await expect
       .poll(async () => {

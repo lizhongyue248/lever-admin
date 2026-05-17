@@ -116,6 +116,7 @@ const globalSetup = async (_config: FullConfig) => {
   }
 
   process.env.BETTER_AUTH_URL = env.BETTER_AUTH_URL
+  process.env.BETTER_AUTH_SECRET = env.BETTER_AUTH_SECRET
   process.env.DATABASE_URL = env.DATABASE_URL
   process.env.E2E_BASE_URL = env.E2E_BASE_URL
   process.env.E2E_PORT = env.E2E_PORT

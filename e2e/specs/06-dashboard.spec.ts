@@ -241,9 +241,7 @@ test.describe("06 dashboard", () => {
 
     await page.getByRole("button", { name: "折叠菜单栏" }).click()
     await expect(page.getByRole("button", { name: "展开菜单栏" })).toBeVisible()
-    const collapsedBox = await sidebar.boundingBox()
-
-    expect(collapsedBox?.width).toBeLessThan(expandedBox?.width ?? 0)
+    await expect.poll(async () => (await sidebar.boundingBox())?.width ?? 0).toBeLessThan(expandedBox?.width ?? 0)
     await expect(page.getByTestId("dashboard-sidebar-label-工作台")).toBeHidden()
 
     await page.getByRole("button", { name: "展开菜单栏" }).click()
