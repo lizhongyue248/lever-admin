@@ -2,7 +2,7 @@
 
 import { Mail, Save, Send, ShieldAlert } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { type FormEvent, useState } from "react"
+import { type FormEvent, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -52,6 +52,7 @@ const testSchema = z.object({
 
 export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettings: EmailSettings }) => {
   const router = useRouter()
+  const [hydrated, setHydrated] = useState(false)
   const [savedEmailSettings, setSavedEmailSettings] = useState(initialEmailSettings)
   const [provider, setProvider] = useState<Provider>(initialEmailSettings.provider)
   const [from, setFrom] = useState(initialEmailSettings.from)
@@ -66,6 +67,10 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
   const [clearSmtpPassword, setClearSmtpPassword] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   const update = api.adminPlatformSetting.updateEmailSettings.useMutation({
     onError: (error) => {
@@ -212,7 +217,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
         </CardTitle>
       </CardHeader>
       <CardContent className="grid min-w-0 gap-5 px-5 pb-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
-        <form className="min-w-0 space-y-4" onSubmit={handleSubmit}>
+        <form className="min-w-0 space-y-4" data-hydrated={hydrated ? "true" : "false"} data-testid="email-settings-form" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="email-provider">Provider</Label>
             <Select disabled={update.isPending} onValueChange={handleProviderChange} value={provider}>

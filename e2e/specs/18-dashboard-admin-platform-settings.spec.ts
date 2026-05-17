@@ -34,6 +34,7 @@ const selectStorageProvider = async (page: Page, providerName: "Local" | "S3") =
 const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-toast]").filter({ hasText: text }).first()
 
 const saveEmailSettings = async (page: Page) => {
+  await expect(page.getByTestId("email-settings-form")).toHaveAttribute("data-hydrated", "true")
   await page.getByRole("button", { exact: true, name: "保存配置" }).click()
 }
 
