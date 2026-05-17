@@ -79,7 +79,19 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run Chromium E2E tests
+        id: chromium_e2e
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_REPORT_PATH: test-results/chromium-results.json
         run: pnpm exec playwright test --project=chromium
+
+      - name: Summarize Chromium E2E failures
+        if: steps.chromium_e2e.outcome == 'failure'
+        run: node e2e/scripts/summarize-playwright-json.mjs test-results/chromium-results.json
+
+      - name: Stop after Chromium E2E failure
+        if: steps.chromium_e2e.outcome == 'failure'
+        run: exit 1
 
       - name: Run mobile E2E tests
         run: pnpm exec playwright test --project=mobile-chrome
