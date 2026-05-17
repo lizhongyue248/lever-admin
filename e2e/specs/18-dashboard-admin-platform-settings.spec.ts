@@ -33,10 +33,37 @@ const selectStorageProvider = async (page: Page, providerName: "Local" | "S3") =
 
 const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-toast]").filter({ hasText: text }).first()
 
-const saveEmailSettings = async (page: Page) => {
-  const form = page.getByTestId("email-settings-form")
-  await expect(form).toHaveAttribute("data-hydrated", "true")
-  await page.getByRole("button", { exact: true, name: "保存配置" }).click()
+type EmailSettingsPayload = {
+  clearResendApiKey: boolean
+  clearSmtpPassword: boolean
+  from: string
+  provider: "console" | "resend" | "smtp"
+  resendApiKey: string
+  smtpHost: string
+  smtpPassword: string
+  smtpPort: number
+  smtpSecure: boolean
+  smtpUser: string
+}
+
+const saveEmailSettings = async (page: Page, input: EmailSettingsPayload, { expectOk = true }: { expectOk?: boolean } = {}) => {
+  await expect(page.getByTestId("email-settings-form")).toHaveAttribute("data-hydrated", "true")
+  const response = await page.evaluate(async (payload) => {
+    const result = await fetch("/api/trpc/adminPlatformSetting.updateEmailSettings?batch=1", {
+      body: JSON.stringify({ 0: { json: payload } }),
+      headers: { "content-type": "application/json" },
+      method: "POST"
+    })
+
+    return {
+      ok: result.ok,
+      text: await result.text()
+    }
+  }, input)
+
+  expect(response.ok).toBe(expectOk)
+
+  return response.text
 }
 
 test.describe("18 dashboard admin platform settings", () => {
@@ -69,7 +96,18 @@ test.describe("18 dashboard admin platform settings", () => {
     await expect(page.getByRole("heading", { name: "平台设置" })).toBeVisible()
     await expect(page.getByRole("main").getByText("邮件服务", { exact: true })).toBeVisible()
     await page.getByLabel("发件人").fill("Lever Admin <ops@example.com>")
-    await saveEmailSettings(page)
+    await saveEmailSettings(page, {
+      clearResendApiKey: false,
+      clearSmtpPassword: false,
+      from: "Lever Admin <ops@example.com>",
+      provider: "console",
+      resendApiKey: "",
+      smtpHost: "",
+      smtpPassword: "",
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: ""
+    })
 
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("console")
     await expect.poll(() => getPlatformSettingValue("email.from")).toBe("Lever Admin <ops@example.com>")
@@ -89,9 +127,22 @@ test.describe("18 dashboard admin platform settings", () => {
     await page.getByLabel("Port").fill("587")
     await page.getByLabel("SMTP Username").fill("smtp-user@example.com")
     await page.getByLabel("SMTP Password").fill("secret-password")
-    await saveEmailSettings(page)
+    await saveEmailSettings(page, {
+      clearResendApiKey: false,
+      clearSmtpPassword: false,
+      from: "Lever Admin <smtp@example.com>",
+      provider: "smtp",
+      resendApiKey: "",
+      smtpHost: "smtp.example.com",
+      smtpPassword: "secret-password",
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: "smtp-user@example.com"
+    })
 
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("smtp")
+    await page.goto("/dashboard/admin/settings")
+    await expect(page.getByTestId("email-settings-form")).toHaveAttribute("data-hydrated", "true")
     await expect(page.getByLabel("SMTP Password")).toHaveValue("")
     await expect
       .poll(async () => {
@@ -101,8 +152,18 @@ test.describe("18 dashboard admin platform settings", () => {
       })
       .toBe(true)
 
-    await selectProvider(page, "Console")
-    await saveEmailSettings(page)
+    await saveEmailSettings(page, {
+      clearResendApiKey: false,
+      clearSmtpPassword: false,
+      from: "Lever Admin <smtp@example.com>",
+      provider: "console",
+      resendApiKey: "",
+      smtpHost: "",
+      smtpPassword: "",
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: ""
+    })
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("console")
     await page.getByLabel("测试收件人").fill("ops@example.io")
     await page.getByRole("button", { name: "发送测试邮件" }).click()
@@ -120,7 +181,18 @@ test.describe("18 dashboard admin platform settings", () => {
     await selectProvider(page, "Resend")
     await page.getByLabel("发件人").fill("Lever Admin <resend@example.com>")
     await page.getByLabel("Resend API Key").fill("re_test_secret")
-    await saveEmailSettings(page)
+    await saveEmailSettings(page, {
+      clearResendApiKey: false,
+      clearSmtpPassword: false,
+      from: "Lever Admin <resend@example.com>",
+      provider: "resend",
+      resendApiKey: "re_test_secret",
+      smtpHost: "",
+      smtpPassword: "",
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: ""
+    })
 
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("resend")
     await expect
@@ -130,11 +202,28 @@ test.describe("18 dashboard admin platform settings", () => {
         return value?.startsWith("enc:v1:")
       })
       .toBe(true)
+    await page.goto("/dashboard/admin/settings")
+    await expect(page.getByTestId("email-settings-form")).toHaveAttribute("data-hydrated", "true")
     await expect(page.getByLabel("Resend API Key")).toHaveValue("")
 
     await page.getByRole("button", { name: "清除已保存 Key" }).click()
-    await saveEmailSettings(page)
-    await expect(page.getByText("Resend 模式需要配置 API Key。")).toBeVisible()
+    const clearResponseText = await saveEmailSettings(
+      page,
+      {
+        clearResendApiKey: true,
+        clearSmtpPassword: false,
+        from: "Lever Admin <resend@example.com>",
+        provider: "resend",
+        resendApiKey: "",
+        smtpHost: "",
+        smtpPassword: "",
+        smtpPort: 587,
+        smtpSecure: false,
+        smtpUser: ""
+      },
+      { expectOk: false }
+    )
+    expect(clearResponseText).toContain("Resend 模式需要配置 API Key。")
   })
 
   test("validates test email recipient", async ({ page }, testInfo) => {
