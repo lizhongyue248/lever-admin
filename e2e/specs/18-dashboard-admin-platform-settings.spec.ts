@@ -36,9 +36,7 @@ const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-t
 const saveEmailSettings = async (page: Page) => {
   const form = page.getByTestId("email-settings-form")
   await expect(form).toHaveAttribute("data-hydrated", "true")
-  await form.evaluate((element) => {
-    ;(element as HTMLFormElement).requestSubmit()
-  })
+  await page.getByRole("button", { exact: true, name: "保存配置" }).click()
 }
 
 test.describe("18 dashboard admin platform settings", () => {

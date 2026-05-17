@@ -150,8 +150,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
     }
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const submitEmailSettings = () => {
     const formValues = {
       from,
       provider,
@@ -191,6 +190,11 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
       smtpSecure: parsed.data.provider === EMAIL_PROVIDER_SMTP ? parsed.data.smtpSecure : false,
       smtpUser: parsed.data.provider === EMAIL_PROVIDER_SMTP ? parsed.data.smtpUser : ""
     })
+  }
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    submitEmailSettings()
   }
 
   const handleSendTest = () => {
@@ -376,7 +380,7 @@ export const EmailSettingsCard = ({ initialEmailSettings }: { initialEmailSettin
           {formError ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive text-xs">{formError}</p> : null}
 
           <div className="flex justify-start border-t pt-4 sm:justify-end">
-            <Button className="w-full sm:w-auto" disabled={update.isPending} type="submit">
+            <Button className="w-full sm:w-auto" disabled={update.isPending} onClick={submitEmailSettings} type="button">
               <Save className="size-4" />
               保存配置
             </Button>
