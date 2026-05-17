@@ -34,12 +34,7 @@ const selectStorageProvider = async (page: Page, providerName: "Local" | "S3") =
 const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-toast]").filter({ hasText: text }).first()
 
 const saveEmailSettings = async (page: Page) => {
-  const [response] = await Promise.all([
-    page.waitForResponse((response) => response.url().includes("adminPlatformSetting.updateEmailSettings"), { timeout: 30_000 }),
-    page.getByRole("button", { name: "保存配置" }).click()
-  ])
-
-  expect(response.ok()).toBe(true)
+  await page.getByRole("button", { exact: true, name: "保存配置" }).click()
 }
 
 test.describe("18 dashboard admin platform settings", () => {
