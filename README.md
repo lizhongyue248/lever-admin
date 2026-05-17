@@ -9,18 +9,91 @@
 <h1 align="center">Lever Admin</h1>
 
 <p align="center">
-  A lightweight identity, organization, permission, and API key management admin system powered by Better Auth.
+  A lightweight identity, organization, and API key management admin system built on the Create T3 stack and powered by Better Auth, tRPC, Drizzle ORM.
+</p>
+
+<p align="center">
+  <strong>An AI-native engineering showcase: designed, implemented, reviewed, and documented by AI agents following explicit product, coding, and verification rules.</strong>
 </p>
 
 <p align="center">
   <a href="README.zh-CN.md">中文文档</a>
 </p>
 
+## AI-Native Engineering
+
+Lever Admin is not only an admin product. It is also a practical demonstration of how an AI agent can build a real codebase while staying inside human-defined engineering boundaries. The foundation follows the [Create T3 App](https://create.t3.gg/) approach: a modular, type-safe Next.js stack with TypeScript, tRPC, Tailwind CSS, and a database layer adapted here to Drizzle and Better Auth.
+
+The repository is organized so AI development stays auditable:
+
+- Product intent is captured first in `prd/`.
+- Page-level UI is designed and reviewed through Pencil `.pen` files before implementation.
+- Implementation work follows `AGENTS.md`, PRD acceptance criteria, coding rules, and scoped verification commands.
+- Shared UI, auth, table, settings, logging, and storage behavior is implemented through reusable project patterns instead of one-off generated code.
+- AI-assisted changes are expected to leave behind clearer requirements, updated designs, typed code, and runnable verification evidence.
+- E2E tests are also part of the AI workflow: agents write and update Playwright specs, seed realistic auth data through Testcontainers PostgreSQL, add coverage instrumentation, and run the same verification commands a human maintainer would use before accepting a change.
+
+AI and MCP references used by this workflow:
+
+- [Create T3 App](https://create.t3.gg/) as the type-safe full-stack foundation for the project.
+- [Pencil documentation](https://docs.pen.dev/) for `.pen` design files and design-as-code workflows.
+- [Superpowers](https://claude.com/plugins/superpowers) for structured AI engineering workflows such as brainstorming, planning, TDD, systematic debugging, and code review.
+- [Better Auth MCP plugin](https://better-auth.com/docs/plugins/mcp) for Better Auth MCP/OAuth integration patterns.
+- [shadcn/ui MCP server](https://ui.shadcn.com/docs/registry/mcp) for registry-aware component discovery and installation.
+
 ## Overview
 
 Lever Admin is an admin console for teams that need a focused control plane for authentication and access management. It is built around Better Auth-native capabilities instead of generic business modules, so the first product surface stays close to identity governance: accounts, sessions, organizations, members, invitations, roles, security settings, API keys, platform settings, and request audit logs.
 
 The project follows a PRD-first workflow. Product requirements live in `prd/`, page-level UI is designed with Pencil `.pen` files, and implementation is verified with TypeScript, Biome, production builds, and Playwright E2E tests.
+
+AI-generated E2E coverage is treated as product evidence, not a side task. When an AI agent changes a user flow, it is expected to update the corresponding Playwright scenario, run it against the Testcontainers PostgreSQL database, and keep coverage instrumentation available through `pnpm test:e2e:coverage`.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <strong>Authentication</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/auth-designs-dark/01-sign-in.dark.png">
+        <img alt="Lever Admin sign-in page" src="prd/auth-designs/01-sign-in.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <strong>Platform Users</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-admin-design-export/12-admin-users-list-dark-desktop.png">
+        <img alt="Lever Admin platform users page" src="prd/dashboard-admin-design-export/12-admin-users-list-light-desktop.png">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>Organization Management</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-org-design-export/10-dashboard-orgs-information-desktop-dark.png">
+        <img alt="Lever Admin organization management page" src="prd/dashboard-org-design-export/10-dashboard-orgs-information-desktop-light.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <strong>API Keys</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-api-key-design-export/14-dashboard-admin-api-keys-desktop-dark.png">
+        <img alt="Lever Admin API key management page" src="prd/dashboard-api-key-design-export/14-dashboard-admin-api-keys-desktop-light.png">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <strong>Account Security</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-design-export/08-dashboard-settings-security-desktop-dark.png">
+        <img alt="Lever Admin account security settings page" src="prd/dashboard-design-export/08-dashboard-settings-security-desktop-light.png">
+      </picture>
+    </td>
+  </tr>
+</table>
 
 ## Use Cases
 
@@ -45,6 +118,7 @@ Current product focus:
 
 ## Tech Stack
 
+- Foundation: [Create T3 App](https://create.t3.gg/) style full-stack TypeScript architecture
 - Framework: Next.js 16 App Router, React 19, TypeScript strict mode
 - API: tRPC 11, TanStack Query
 - Auth: Better Auth 1.6+ with Drizzle adapter and plugins

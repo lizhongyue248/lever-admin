@@ -18271,22 +18271,6 @@
               "fontWeight": "700"
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "Lcovh",
-          "x": 760,
-          "y": 0,
-          "name": "pLogScriptL",
-          "width": 680,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "personal",
-            "mode": "logs",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -20354,22 +20338,6 @@
               "fontWeight": "700"
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "BCsrR",
-          "x": 760,
-          "y": 0,
-          "name": "pStatScriptL",
-          "width": 680,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "personal",
-            "mode": "stats",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -22437,22 +22405,6 @@
               "fontWeight": "700"
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "E8jhs",
-          "x": 760,
-          "y": 0,
-          "name": "pLogScriptD",
-          "width": 680,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "personal",
-            "mode": "logs",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -24520,22 +24472,6 @@
               "fontWeight": "700"
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "feeD8",
-          "x": 760,
-          "y": 0,
-          "name": "pStatScriptD",
-          "width": 680,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "personal",
-            "mode": "stats",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -27452,22 +27388,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "o1SGnW",
-          "x": 720,
-          "y": 0,
-          "name": "aLogScriptL",
-          "width": 720,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "platform",
-            "mode": "logs",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -30384,22 +30304,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "Vn6WH",
-          "x": 720,
-          "y": 0,
-          "name": "aStatScriptL",
-          "width": 720,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "platform",
-            "mode": "stats",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -33316,22 +33220,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "da0sS",
-          "x": 720,
-          "y": 0,
-          "name": "aLogScriptD",
-          "width": 720,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "platform",
-            "mode": "logs",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -36248,22 +36136,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "iXUJa",
-          "x": 720,
-          "y": 0,
-          "name": "aStatScriptD",
-          "width": 720,
-          "height": 1024,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "platform",
-            "mode": "stats",
-            "surface": "sheet"
-          }
         }
       ]
     },
@@ -38351,22 +38223,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "NDWoh",
-          "x": 280,
-          "y": 64,
-          "name": "pPageStatScriptL",
-          "width": 1160,
-          "height": 960,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "personal",
-            "mode": "stats",
-            "surface": "page"
-          }
         }
       ]
     },
@@ -40454,22 +40310,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "S2ZFvw",
-          "x": 280,
-          "y": 64,
-          "name": "pPageStatScriptD",
-          "width": 1160,
-          "height": 960,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "personal",
-            "mode": "stats",
-            "surface": "page"
-          }
         }
       ]
     },
@@ -43329,22 +43169,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "on0wL",
-          "x": 280,
-          "y": 64,
-          "name": "aPageStatScriptL",
-          "width": 1160,
-          "height": 960,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "platform",
-            "mode": "stats",
-            "surface": "page"
-          }
         }
       ]
     },
@@ -46204,22 +46028,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "vS9gw",
-          "x": 280,
-          "y": 64,
-          "name": "aPageStatScriptD",
-          "width": 1160,
-          "height": 960,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "platform",
-            "mode": "stats",
-            "surface": "page"
-          }
         }
       ]
     },
@@ -46985,22 +46793,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "m0SwDS",
-          "x": 0,
-          "y": 56,
-          "name": "pMobileStatScriptL",
-          "width": 390,
-          "height": 788,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "personal",
-            "mode": "stats",
-            "surface": "mobile"
-          }
         }
       ]
     },
@@ -47766,22 +47558,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "Frfuk",
-          "x": 0,
-          "y": 56,
-          "name": "pMobileStatScriptD",
-          "width": 390,
-          "height": 788,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "personal",
-            "mode": "stats",
-            "surface": "mobile"
-          }
         }
       ]
     },
@@ -48709,22 +48485,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "lJN5y",
-          "x": 0,
-          "y": 56,
-          "name": "aMobileStatScriptL",
-          "width": 390,
-          "height": 788,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "light",
-            "owner": "platform",
-            "mode": "stats",
-            "surface": "mobile"
-          }
         }
       ]
     },
@@ -49652,22 +49412,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "script",
-          "id": "j7PTE",
-          "x": 0,
-          "y": 56,
-          "name": "aMobileStatScriptD",
-          "width": 390,
-          "height": 788,
-          "scriptUri": "dashboard-api-key-detail-v2.js",
-          "inputs": {
-            "theme": "dark",
-            "owner": "platform",
-            "mode": "stats",
-            "surface": "mobile"
-          }
         }
       ]
     }

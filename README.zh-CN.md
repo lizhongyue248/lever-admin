@@ -9,18 +9,91 @@
 <h1 align="center">Lever Admin</h1>
 
 <p align="center">
-  基于 Better Auth 的轻量级身份、组织、权限和 API Key 管理后台。
+  基于 Create T3 技术栈构建，并结合 Better Auth、tRPC、Drizzle ORM 的轻量级身份、组织和 API Key 管理后台。
+</p>
+
+<p align="center">
+  <strong>一个 AI 原生工程实践展示：由 AI agent 在明确的产品规范、编码规范和验证规范下完成设计、实现、审查和文档编写。</strong>
 </p>
 
 <p align="center">
   <a href="README.md">English</a>
 </p>
 
+## AI 原生工程实践
+
+Lever Admin 不只是一个管理后台产品，也是一个展示 AI agent 如何在工程边界内构建真实代码库的实践样例。项目基础遵循 [Create T3 App](https://create.t3.gg/) 的技术路线：以类型安全为核心，使用 Next.js、TypeScript、tRPC、Tailwind CSS，并在本项目中结合 Drizzle 和 Better Auth 完成身份治理产品。
+
+本仓库通过以下方式让 AI 开发过程可追踪、可审查：
+
+- 产品意图先沉淀到 `prd/`。
+- 页面级 UI 先通过 Pencil `.pen` 设计文件完成设计和确认，再进入编码。
+- 实现过程遵循 `AGENTS.md`、PRD 验收标准、编码规范和限定范围内的验证命令。
+- 共享 UI、认证、表格、设置、日志和存储能力优先沉淀为项目内可复用模式，而不是一次性生成代码。
+- AI 辅助开发完成后，应该留下更清晰的需求、更准确的设计、类型安全的代码和可复现的验证结果。
+- E2E 测试也是 AI 工作流的一部分：AI agent 会编写和维护 Playwright 用例，通过 Testcontainers PostgreSQL 构造真实认证数据，增加覆盖率采集，并运行与人工维护者一致的验证命令。
+
+本工作流使用和参考的 AI / MCP 工具：
+
+- [Create T3 App](https://create.t3.gg/)：作为项目类型安全全栈架构的基础参考。
+- [Pencil documentation](https://docs.pen.dev/)：用于 `.pen` 设计文件和 design-as-code 工作流。
+- [Superpowers](https://claude.com/plugins/superpowers)：用于结构化 AI 工程流程，包括需求澄清、规划、TDD、系统化调试和代码审查。
+- [Better Auth MCP plugin](https://better-auth.com/docs/plugins/mcp)：用于 Better Auth MCP/OAuth 集成参考。
+- [shadcn/ui MCP server](https://ui.shadcn.com/docs/registry/mcp)：用于 registry-aware 的组件发现和安装。
+
 ## 产品介绍
 
 Lever Admin 是一个面向身份治理和访问管理的后台控制台。它围绕 Better Auth 原生能力构建，不追求大而全的通用业务后台，而是聚焦账号、会话、组织、成员、邀请、角色、安全设置、API Key、平台设置和请求审计日志。
 
 项目采用 PRD 优先的开发方式。产品需求放在 `prd/`，页面级视觉设计使用 Pencil `.pen` 文件，代码实现通过 TypeScript、Biome、生产构建和 Playwright E2E 测试进行验证。
+
+AI 生成的 E2E 覆盖被视为产品验收证据，而不是附属任务。当 AI agent 修改用户流程时，需要同步更新对应的 Playwright 场景，使用 Testcontainers PostgreSQL 数据库运行，并通过 `pnpm test:e2e:coverage` 保留覆盖率采集能力。
+
+## 产品截图
+
+<table>
+  <tr>
+    <td width="50%">
+      <strong>认证入口</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/auth-designs-dark/01-sign-in.dark.png">
+        <img alt="Lever Admin 登录页面" src="prd/auth-designs/01-sign-in.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <strong>平台用户</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-admin-design-export/12-admin-users-list-dark-desktop.png">
+        <img alt="Lever Admin 平台用户页面" src="prd/dashboard-admin-design-export/12-admin-users-list-light-desktop.png">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>组织管理</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-org-design-export/10-dashboard-orgs-information-desktop-dark.png">
+        <img alt="Lever Admin 组织管理页面" src="prd/dashboard-org-design-export/10-dashboard-orgs-information-desktop-light.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <strong>API Key 管理</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-api-key-design-export/14-dashboard-admin-api-keys-desktop-dark.png">
+        <img alt="Lever Admin API Key 管理页面" src="prd/dashboard-api-key-design-export/14-dashboard-admin-api-keys-desktop-light.png">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <strong>账号安全</strong><br>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="prd/dashboard-design-export/08-dashboard-settings-security-desktop-dark.png">
+        <img alt="Lever Admin 账号安全设置页面" src="prd/dashboard-design-export/08-dashboard-settings-security-desktop-light.png">
+      </picture>
+    </td>
+  </tr>
+</table>
 
 ## 使用场景
 
@@ -45,6 +118,7 @@ Lever Admin 是一个面向身份治理和访问管理的后台控制台。它�
 
 ## 技术栈
 
+- 技术基础：[Create T3 App](https://create.t3.gg/) 风格的类型安全全栈 TypeScript 架构
 - 框架：Next.js 16 App Router、React 19、TypeScript strict mode
 - API：tRPC 11、TanStack Query
 - 认证：Better Auth 1.6+、Drizzle adapter 和相关插件
