@@ -33,6 +33,14 @@ const selectStorageProvider = async (page: Page, providerName: "Local" | "S3") =
 
 const toastWithText = (page: Page, text: string) => page.locator("[data-sonner-toast]").filter({ hasText: text }).first()
 
+const saveEmailSettings = async (page: Page) => {
+  const responsePromise = page.waitForResponse((response) => response.url().includes("adminPlatformSetting.updateEmailSettings"))
+  await page.locator("form").first().evaluate((form) => {
+    ;(form as HTMLFormElement).requestSubmit()
+  })
+  await responsePromise
+}
+
 test.describe("18 dashboard admin platform settings", () => {
   test.afterEach(async ({ page: _page }, testInfo) => {
     if (testInfo.project.name !== "chromium") {
@@ -63,7 +71,7 @@ test.describe("18 dashboard admin platform settings", () => {
     await expect(page.getByRole("heading", { name: "平台设置" })).toBeVisible()
     await expect(page.getByRole("main").getByText("邮件服务", { exact: true })).toBeVisible()
     await page.getByLabel("发件人").fill("Lever Admin <ops@example.com>")
-    await page.getByRole("button", { name: "保存配置" }).click()
+    await saveEmailSettings(page)
 
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("console")
     await expect.poll(() => getPlatformSettingValue("email.from")).toBe("Lever Admin <ops@example.com>")
@@ -83,7 +91,7 @@ test.describe("18 dashboard admin platform settings", () => {
     await page.getByLabel("Port").fill("587")
     await page.getByLabel("SMTP Username").fill("smtp-user@example.com")
     await page.getByLabel("SMTP Password").fill("secret-password")
-    await page.getByRole("button", { name: "保存配置" }).click()
+    await saveEmailSettings(page)
 
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("smtp")
     await expect(page.getByLabel("SMTP Password")).toHaveValue("")
@@ -96,7 +104,7 @@ test.describe("18 dashboard admin platform settings", () => {
       .toBe(true)
 
     await selectProvider(page, "Console")
-    await page.getByRole("button", { name: "保存配置" }).click()
+    await saveEmailSettings(page)
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("console")
     await page.getByLabel("测试收件人").fill("ops@example.io")
     await page.getByRole("button", { name: "发送测试邮件" }).click()
@@ -114,7 +122,7 @@ test.describe("18 dashboard admin platform settings", () => {
     await selectProvider(page, "Resend")
     await page.getByLabel("发件人").fill("Lever Admin <resend@example.com>")
     await page.getByLabel("Resend API Key").fill("re_test_secret")
-    await page.getByRole("button", { name: "保存配置" }).click()
+    await saveEmailSettings(page)
 
     await expect.poll(() => getPlatformSettingValue("email.provider")).toBe("resend")
     await expect
@@ -127,7 +135,7 @@ test.describe("18 dashboard admin platform settings", () => {
     await expect(page.getByLabel("Resend API Key")).toHaveValue("")
 
     await page.getByRole("button", { name: "清除已保存 Key" }).click()
-    await page.getByRole("button", { name: "保存配置" }).click()
+    await saveEmailSettings(page)
     await expect(page.getByText("Resend 模式需要配置 API Key。")).toBeVisible()
   })
 
